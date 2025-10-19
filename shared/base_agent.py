@@ -9,6 +9,7 @@ health monitoring, and standardized message handling.
 import asyncio
 import json
 import logging
+import os
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -131,11 +132,16 @@ class BaseAgent(ABC):
     def __init__(
         self,
         agent_id: str,
-        kafka_bootstrap_servers: str = "localhost:9092",
+        kafka_bootstrap_servers: str = None,
         log_level: str = "INFO"
     ):
         self.agent_id = agent_id
-        self.kafka_bootstrap_servers = kafka_bootstrap_servers
+        # Read from environment variable first, then use parameter, finally fall back to default
+        self.kafka_bootstrap_servers = (
+            os.getenv("KAFKA_BOOTSTRAP_SERVERS") or 
+            kafka_bootstrap_servers or 
+            "localhost:9092"
+        )
         self.status = AgentStatus.STOPPED
         self.start_time = None
         self.error_count = 0
