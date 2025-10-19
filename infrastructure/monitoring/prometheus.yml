@@ -1,0 +1,70 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'multi-agent-ecommerce'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Multi-agent system services
+  - job_name: 'multi-agent-services'
+    static_configs:
+      - targets:
+          - 'postgres:5432'
+          - 'redis:6379'
+          - 'kafka:9092'
+        labels:
+          group: 'infrastructure'
+
+  # Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          service: 'grafana'
+
+  # Loki
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+        labels:
+          service: 'loki'
+
+  # Agents (when they expose metrics)
+  - job_name: 'agents'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:8001'  # order_agent
+          - 'host.docker.internal:8002'  # inventory_agent
+          - 'host.docker.internal:8003'  # product_agent
+          - 'host.docker.internal:8004'  # carrier_selection_agent
+        labels:
+          group: 'agents'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node exporter (if added)
+  - job_name: 'node'
+    static_configs:
+      - targets: []
+        # - 'node-exporter:9100'
+
