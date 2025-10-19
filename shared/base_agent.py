@@ -21,6 +21,10 @@ from contextlib import asynccontextmanager
 import structlog
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class MessageType(str, Enum):
