@@ -200,10 +200,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
         super().__init__(agent_id="risk_anomaly_detection_agent", **kwargs)
         self.app = FastAPI(title="Risk and Anomaly Detection Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Risk and anomaly data
         self.active_alerts: Dict[str, RiskAlert] = {}
         self.detection_models: Dict[str, AnomalyDetectionModel] = {}
@@ -610,7 +607,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
     async def _ai_anomaly_detection(self, metrics: Dict[str, Any]) -> AnomalyResult:
         """AI-powered anomaly detection using OpenAI."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 return AnomalyResult(
                     is_anomaly=False,
                     anomaly_score=0.0,
@@ -782,7 +779,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
         """Assess risk for a specific category."""
         try:
             # Use AI to assess risk if available
-            if openai.api_key:
+            if os.getenv("OPENAI_API_KEY"):
                 ai_assessment = await self._ai_risk_assessment(risk_category, context)
                 if ai_assessment:
                     return ai_assessment

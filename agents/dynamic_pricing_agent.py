@@ -137,10 +137,7 @@ class DynamicPricingAgent(BaseAgent):
         super().__init__(agent_id="dynamic_pricing_agent", **kwargs)
         self.app = FastAPI(title="Dynamic Pricing Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Pricing data and strategies
         self.pricing_strategies: Dict[str, PricingStrategy] = {}
         self.competitor_prices: Dict[str, List[CompetitorPrice]] = {}
@@ -451,7 +448,7 @@ class DynamicPricingAgent(BaseAgent):
     ) -> Optional[Dict[str, Any]]:
         """Use AI to generate price recommendation."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 self.logger.warning("OpenAI API key not configured, using rule-based pricing")
                 return None
             

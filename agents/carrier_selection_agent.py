@@ -196,10 +196,7 @@ class CarrierSelectionAgent(BaseAgent):
         self.repository: Optional[CarrierRepository] = None
         self.app = FastAPI(title="Carrier Selection Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Carrier performance metrics (in production, this would be in a database)
         self.carrier_performance: Dict[str, Dict[str, float]] = {}
         
@@ -746,7 +743,7 @@ class CarrierSelectionAgent(BaseAgent):
     async def _call_openai_api(self, prompt: str) -> Optional[Dict[str, Any]]:
         """Call OpenAI API for carrier selection."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 self.logger.warning("OpenAI API key not configured, skipping AI selection")
                 return None
             

@@ -199,10 +199,7 @@ class ReverseLogisticsAgent(BaseAgent):
         super().__init__(agent_id="reverse_logistics_agent", **kwargs)
         self.app = FastAPI(title="Reverse Logistics Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Reverse logistics data
         self.return_requests: Dict[str, ReturnRequest] = {}
         self.quality_assessments: Dict[str, QualityAssessment] = {}
@@ -584,7 +581,7 @@ class ReverseLogisticsAgent(BaseAgent):
     async def _ai_quality_assessment(self, return_request: ReturnRequest) -> Dict[str, Any]:
         """Use AI to assist in quality assessment."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 return self._rule_based_quality_assessment(return_request)
             
             # Prepare AI prompt
@@ -878,7 +875,7 @@ class ReverseLogisticsAgent(BaseAgent):
     async def _ai_resale_recommendation(self, product_id: str, condition: ItemCondition, market_analysis: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Use AI to generate resale recommendation."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 return None
             
             prompt = f"""

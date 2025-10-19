@@ -141,10 +141,7 @@ class CustomerCommunicationAgent(BaseAgent):
         super().__init__(agent_id="customer_communication_agent", **kwargs)
         self.app = FastAPI(title="Customer Communication Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Communication data
         self.active_chat_sessions: Dict[str, Dict[str, Any]] = {}
         self.email_templates: Dict[str, EmailTemplate] = {}
@@ -455,7 +452,7 @@ class CustomerCommunicationAgent(BaseAgent):
     async def _analyze_message(self, message: str) -> Tuple[str, str]:
         """Analyze message sentiment and intent."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 # Fallback analysis
                 return self._simple_sentiment_analysis(message), self._simple_intent_detection(message)
             
@@ -530,7 +527,7 @@ class CustomerCommunicationAgent(BaseAgent):
     async def _generate_chatbot_response(self, message: str, session: Dict[str, Any], intent: str) -> ChatbotResponse:
         """Generate AI-powered chatbot response."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 return self._generate_rule_based_response(message, intent)
             
             # Prepare context from session history
