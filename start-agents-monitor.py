@@ -43,7 +43,7 @@ BOLD = "\033[1m"
 ERROR_COLOR = "\033[91m"  # Red
 WARNING_COLOR = "\033[93m"  # Yellow
 SUCCESS_COLOR = "\033[92m"  # Green
-INFO_COLOR = "\033[94m"  # Blue
+INFO_COLOR = "\033[93m"  # Yellow (changed from blue)
 
 # Agent configuration
 AGENTS = [
@@ -83,17 +83,17 @@ class AgentMonitor:
         
         # Detect error/warning/success patterns
         msg_lower = message.lower()
-        if "error" in msg_lower or "exception" in msg_lower or "failed" in msg_lower or is_error:
-            msg_color = ERROR_COLOR
+        if "error" in msg_lower or "exception" in msg_lower or "failed" in msg_lower or "crashed" in msg_lower or "traceback" in msg_lower or is_error:
+            msg_color = ERROR_COLOR  # Red for errors
             prefix = "✗"
-        elif "warning" in msg_lower or "warn" in msg_lower:
-            msg_color = WARNING_COLOR
+        elif "warning" in msg_lower or "warn" in msg_lower or "deprecated" in msg_lower:
+            msg_color = WARNING_COLOR  # Yellow for warnings
             prefix = "⚠"
-        elif "success" in msg_lower or "started" in msg_lower or "ready" in msg_lower:
-            msg_color = SUCCESS_COLOR
+        elif "success" in msg_lower or "started" in msg_lower or "ready" in msg_lower or "complete" in msg_lower:
+            msg_color = SUCCESS_COLOR  # Green for success
             prefix = "✓"
         else:
-            msg_color = ""
+            msg_color = INFO_COLOR  # Yellow for info
             prefix = "•"
         
         # Format: [HH:MM:SS] [AgentName] • Message
