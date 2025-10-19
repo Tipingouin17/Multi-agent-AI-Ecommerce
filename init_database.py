@@ -32,7 +32,7 @@ async def init_database():
         host=os.getenv("DATABASE_HOST", "localhost"),
         port=int(os.getenv("DATABASE_PORT", "5432")),
         database=os.getenv("DATABASE_NAME", "multi_agent_ecommerce"),
-        user=os.getenv("DATABASE_USER", "postgres"),
+        username=os.getenv("DATABASE_USER", "postgres"),
         password=os.getenv("DATABASE_PASSWORD", "postgres"),
         echo=False
     )
@@ -41,7 +41,7 @@ async def init_database():
     print(f"  Host: {db_config.host}")
     print(f"  Port: {db_config.port}")
     print(f"  Database: {db_config.database}")
-    print(f"  User: {db_config.user}")
+    print(f"  User: {db_config.username}")
     print()
     
     # Create database manager
@@ -74,9 +74,9 @@ async def init_database():
         print("  1. Ensure PostgreSQL is running")
         print("  2. Check your .env file has correct database credentials")
         print("  3. Verify the database exists:")
-        print(f"     psql -h {db_config.host} -U {db_config.user} -l")
+        print(f"     psql -h {db_config.host} -U {db_config.username} -l")
         print("  4. Create database if needed:")
-        print(f"     createdb -h {db_config.host} -U {db_config.user} {db_config.database}")
+        print(f"     createdb -h {db_config.host} -U {db_config.username} {db_config.database}")
         print()
         return False
     
