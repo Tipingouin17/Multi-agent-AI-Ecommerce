@@ -14,7 +14,7 @@ import json
 import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
-from email.mime.multipart import MimeMultipart
+from email.mime.multipart import MIMEMultipart
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 

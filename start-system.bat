@@ -21,6 +21,24 @@ call venv\Scripts\activate.bat
 echo [OK] Virtual environment activated
 echo.
 
+REM Check dependencies
+echo Checking Python dependencies...
+python -c "import fastapi, uvicorn, pydantic" >nul 2>&1
+if errorlevel 1 (
+    echo [WARNING] Dependencies missing or not installed
+    echo Running dependency installer...
+    echo.
+    call check-and-install-dependencies.bat
+    if errorlevel 1 (
+        echo [ERROR] Dependency installation failed
+        pause
+        exit /b 1
+    )
+) else (
+    echo [OK] Dependencies OK
+)
+echo.
+
 REM Step 1: Check Docker
 echo ============================================================
 echo Step 1: Checking Docker Services

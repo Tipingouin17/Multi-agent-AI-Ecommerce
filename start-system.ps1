@@ -57,6 +57,24 @@ Write-Host "Activating virtual environment..." -ForegroundColor Gray
 Write-Success "Virtual environment activated"
 Write-Host ""
 
+# Check dependencies
+Write-Host "Checking Python dependencies..." -ForegroundColor Gray
+$testImport = python -c "import fastapi, uvicorn, pydantic" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Warn "Dependencies missing or not installed"
+    Write-Host "Running dependency installer..." -ForegroundColor Yellow
+    Write-Host ""
+    & ".\check-and-install-dependencies.ps1"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Failure "Dependency installation failed"
+        pause
+        exit 1
+    }
+} else {
+    Write-Success "Dependencies OK"
+}
+Write-Host ""
+
 # Step 1: Check Docker
 if (-not $SkipDocker) {
     Write-Step "Step 1: Checking Docker Services"
