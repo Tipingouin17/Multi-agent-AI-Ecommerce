@@ -115,8 +115,32 @@ if (-not $SkipDocker) {
     
     if (-not $SkipWait) {
         Write-Host ""
-        Write-Host "Waiting for services to initialize (15 seconds)..." -ForegroundColor Gray
-        Start-Sleep -Seconds 15
+        Write-Host "Waiting for Kafka to be fully ready..." -ForegroundColor Yellow
+        Write-Host "This may take 60-90 seconds after a fresh start" -ForegroundColor Gray
+        Write-Host ""
+        
+        $maxAttempts = 18
+        $attempt = 0
+        $kafkaReady = $false
+        
+        while ($attempt -lt $maxAttempts -and -not $kafkaReady) {
+            $attempt++
+            Write-Host "  Checking Kafka... Attempt $attempt/$maxAttempts" -ForegroundColor Gray
+            
+            $result = docker exec multi-agent-kafka kafka-broker-api-versions --bootstrap-server localhost:9092 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $kafkaReady = $true
+                Write-Success "Kafka is ready and accepting connections!"
+            } else {
+                Start-Sleep -Seconds 5
+            }
+        }
+        
+        if (-not $kafkaReady) {
+            Write-Warn "Kafka may not be fully ready. Agents might fail to connect."
+            Write-Host "You can wait longer and restart agents with: python start-agents-monitor.py" -ForegroundColor Gray
+        }
     }
     
     # Step 3: Verify Database Connection
