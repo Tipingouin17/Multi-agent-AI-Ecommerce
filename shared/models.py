@@ -542,3 +542,23 @@ class RedisConfig(BaseModel):
     def url(self) -> str:
         auth = f":{self.password}@" if self.password else ""
         return f"redis://{auth}{self.host}:{self.port}/{self.database}"
+
+
+
+# API Response Models
+class APIResponse(BaseModel):
+    """Standard API response model for external API calls."""
+    success: bool
+    status_code: int
+    data: Optional[Any] = None
+    message: Optional[str] = None
+    errors: Optional[List[str]] = None
+    metadata: Optional[Dict[str, Any]] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+            Decimal: lambda v: str(v)
+        }
+

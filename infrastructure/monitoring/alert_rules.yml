@@ -1,0 +1,74 @@
+groups:
+  - name: multi_agent_alerts
+    interval: 30s
+    rules:
+      # Agent health alerts
+      - alert: AgentDown
+        expr: up{job="agents"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent {{ $labels.instance }} is down"
+          description: "Agent {{ $labels.instance }} has been down for more than 2 minutes."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(agent_errors_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.agent_id }}"
+          description: "Agent {{ $labels.agent_id }} has error rate > 10/s for 5 minutes."
+
+      # Database connection issues
+      - alert: DatabaseConnectionFailure
+        expr: up{job="multi-agent-services",service="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "Cannot connect to PostgreSQL database."
+
+      # Kafka issues
+      - alert: KafkaDown
+        expr: up{job="multi-agent-services",service="kafka"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Kafka broker is down"
+          description: "Kafka message broker is not responding."
+
+      # Redis issues
+      - alert: RedisDown
+        expr: up{job="multi-agent-services",service="redis"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis cache server is not responding."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 90% for 5 minutes."
+
+      # Disk space
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 10%."
+

@@ -19,7 +19,6 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
-import openai
 import sys
 import os
 
@@ -39,6 +38,7 @@ if project_root not in sys.path:
 
 # Now try the import
 try:
+    from shared.openai_helper import chat_completion
     from shared.base_agent import BaseAgent, MessageType, AgentMessage
     print("Successfully imported shared.base_agent")
 except ImportError as e:
@@ -196,10 +196,7 @@ class CarrierSelectionAgent(BaseAgent):
         self.repository: Optional[CarrierRepository] = None
         self.app = FastAPI(title="Carrier Selection Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Carrier performance metrics (in production, this would be in a database)
         self.carrier_performance: Dict[str, Dict[str, float]] = {}
         
@@ -746,11 +743,11 @@ class CarrierSelectionAgent(BaseAgent):
     async def _call_openai_api(self, prompt: str) -> Optional[Dict[str, Any]]:
         """Call OpenAI API for carrier selection."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 self.logger.warning("OpenAI API key not configured, skipping AI selection")
                 return None
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert logistics AI assistant that helps select optimal shipping carriers."},
@@ -760,7 +757,7 @@ class CarrierSelectionAgent(BaseAgent):
                 max_tokens=500
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             
             # Try to parse JSON response
             try:

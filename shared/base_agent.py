@@ -9,6 +9,7 @@ health monitoring, and standardized message handling.
 import asyncio
 import json
 import logging
+import os
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -20,23 +21,66 @@ from contextlib import asynccontextmanager
 import structlog
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class MessageType(str, Enum):
     """Standard message types for inter-agent communication."""
+    # Order Management
     ORDER_CREATED = "order_created"
     ORDER_UPDATED = "order_updated"
+    ORDER_STATUS_UPDATED = "order_status_updated"
+    ORDER_CANCELLED = "order_cancelled"
+    ORDER_FULFILLMENT_REQUIRED = "order_fulfillment_required"
+    
+    # Inventory Management
     INVENTORY_UPDATE = "inventory_update"
+    INVENTORY_UPDATED = "inventory_updated"  # Past tense variant
+    STOCK_ALERT = "stock_alert"
+    
+    # Pricing
     PRICE_UPDATE = "price_update"
+    PRICE_UPDATED = "price_updated"  # Past tense variant
+    COMPETITOR_PRICE_UPDATE = "competitor_price_update"
+    
+    # Logistics
     CARRIER_SELECTED = "carrier_selected"
     WAREHOUSE_SELECTED = "warehouse_selected"
+    SHIPMENT_CREATED = "shipment_created"
+    
+    # Returns & Customer Service
+    RETURN_REQUESTED = "return_requested"
+    RETURN_APPROVED = "return_approved"
+    RETURN_REJECTED = "return_rejected"
+    ITEM_RECEIVED = "item_received"
+    QUALITY_ASSESSMENT_COMPLETED = "quality_assessment_completed"
+    REFURBISHMENT_COMPLETED = "refurbishment_completed"
+    
+    # Product Management
+    PRODUCT_CREATED = "product_created"
+    PRODUCT_UPDATED = "product_updated"
+    PRODUCT_DELETED = "product_deleted"
+    
+    # System & Monitoring
     ERROR_DETECTED = "error_detected"
+    ERROR_OCCURRED = "error_occurred"  # Variant
     HEALTH_CHECK = "health_check"
     AGENT_STARTED = "agent_started"
     AGENT_STOPPED = "agent_stopped"
+    SYSTEM_METRICS = "system_metrics"
+    PERFORMANCE_DATA = "performance_data"
+    EXTERNAL_EVENT = "external_event"
+    
+    # Analytics & Forecasting
     DEMAND_FORECAST = "demand_forecast"
     RISK_ALERT = "risk_alert"
+    
+    # Customer Communication
     CUSTOMER_NOTIFICATION = "customer_notification"
+    CUSTOMER_MESSAGE = "customer_message"
 
 
 class AgentStatus(str, Enum):
@@ -102,11 +146,16 @@ class BaseAgent(ABC):
     def __init__(
         self,
         agent_id: str,
-        kafka_bootstrap_servers: str = "localhost:9092",
+        kafka_bootstrap_servers: str = None,
         log_level: str = "INFO"
     ):
         self.agent_id = agent_id
-        self.kafka_bootstrap_servers = kafka_bootstrap_servers
+        # Read from environment variable first, then use parameter, finally fall back to default
+        self.kafka_bootstrap_servers = (
+            os.getenv("KAFKA_BOOTSTRAP_SERVERS") or 
+            kafka_bootstrap_servers or 
+            "localhost:9092"
+        )
         self.status = AgentStatus.STOPPED
         self.start_time = None
         self.error_count = 0
@@ -169,7 +218,8 @@ class BaseAgent(ABC):
             self.producer = AIOKafkaProducer(
                 bootstrap_servers=self.kafka_bootstrap_servers,
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                key_serializer=lambda k: k.encode('utf-8') if k else None
+                key_serializer=lambda k: k.encode('utf-8') if k else None,
+                api_version='auto'  # Auto-detect Kafka version to fix UnrecognizedBrokerVersion
             )
             await self.producer.start()
             
@@ -180,7 +230,8 @@ class BaseAgent(ABC):
                 bootstrap_servers=self.kafka_bootstrap_servers,
                 group_id=f"{self.agent_id}_group",
                 value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-                auto_offset_reset='latest'
+                auto_offset_reset='latest',
+                api_version='auto'  # Auto-detect Kafka version to fix UnrecognizedBrokerVersion
             )
             await self.consumer.start()
             

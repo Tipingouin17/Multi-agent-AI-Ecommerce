@@ -19,7 +19,6 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
-import openai
 import sys
 import os
 
@@ -39,6 +38,7 @@ if project_root not in sys.path:
 
 # Now try the import
 try:
+    from shared.openai_helper import chat_completion
     from shared.base_agent import BaseAgent, MessageType, AgentMessage
     print("Successfully imported shared.base_agent")
 except ImportError as e:
@@ -137,10 +137,7 @@ class DynamicPricingAgent(BaseAgent):
         super().__init__(agent_id="dynamic_pricing_agent", **kwargs)
         self.app = FastAPI(title="Dynamic Pricing Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Pricing data and strategies
         self.pricing_strategies: Dict[str, PricingStrategy] = {}
         self.competitor_prices: Dict[str, List[CompetitorPrice]] = {}
@@ -451,7 +448,7 @@ class DynamicPricingAgent(BaseAgent):
     ) -> Optional[Dict[str, Any]]:
         """Use AI to generate price recommendation."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 self.logger.warning("OpenAI API key not configured, using rule-based pricing")
                 return None
             
@@ -490,7 +487,7 @@ class DynamicPricingAgent(BaseAgent):
             """
             
             # Call OpenAI API
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert pricing strategist with deep knowledge of e-commerce pricing optimization."},
@@ -500,7 +497,7 @@ class DynamicPricingAgent(BaseAgent):
                 max_tokens=500
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             
             # Parse JSON response
             try:

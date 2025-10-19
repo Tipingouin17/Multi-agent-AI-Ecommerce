@@ -20,7 +20,6 @@ from enum import Enum
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
-import openai
 import sys
 import os
 
@@ -40,6 +39,7 @@ if project_root not in sys.path:
 
 # Now try the import
 try:
+    from shared.openai_helper import chat_completion
     from shared.base_agent import BaseAgent, MessageType, AgentMessage
     print("Successfully imported shared.base_agent")
 except ImportError as e:
@@ -199,10 +199,7 @@ class ReverseLogisticsAgent(BaseAgent):
         super().__init__(agent_id="reverse_logistics_agent", **kwargs)
         self.app = FastAPI(title="Reverse Logistics Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Reverse logistics data
         self.return_requests: Dict[str, ReturnRequest] = {}
         self.quality_assessments: Dict[str, QualityAssessment] = {}
@@ -584,7 +581,7 @@ class ReverseLogisticsAgent(BaseAgent):
     async def _ai_quality_assessment(self, return_request: ReturnRequest) -> Dict[str, Any]:
         """Use AI to assist in quality assessment."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 return self._rule_based_quality_assessment(return_request)
             
             # Prepare AI prompt
@@ -613,7 +610,7 @@ class ReverseLogisticsAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert quality assessor for returned e-commerce products."},
@@ -623,7 +620,7 @@ class ReverseLogisticsAgent(BaseAgent):
                 max_tokens=400
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             ai_result = json.loads(content)
             
             # Calculate resale value (assuming original price of €50 for simulation)
@@ -878,7 +875,7 @@ class ReverseLogisticsAgent(BaseAgent):
     async def _ai_resale_recommendation(self, product_id: str, condition: ItemCondition, market_analysis: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Use AI to generate resale recommendation."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 return None
             
             prompt = f"""
@@ -914,7 +911,7 @@ class ReverseLogisticsAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert in e-commerce resale optimization and pricing strategy."},
@@ -924,7 +921,7 @@ class ReverseLogisticsAgent(BaseAgent):
                 max_tokens=400
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             ai_result = json.loads(content)
             
             return {

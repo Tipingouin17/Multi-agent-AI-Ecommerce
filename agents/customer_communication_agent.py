@@ -14,14 +14,13 @@ import json
 import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
-from email.mime.multipart import MimeMultipart
+from email.mime.multipart import MIMEMultipart
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, EmailStr
 import structlog
-import openai
 import sys
 import os
 
@@ -41,6 +40,7 @@ if project_root not in sys.path:
 
 # Now try the import
 try:
+    from shared.openai_helper import chat_completion
     from shared.base_agent import BaseAgent, MessageType, AgentMessage
     print("Successfully imported shared.base_agent")
 except ImportError as e:
@@ -141,10 +141,7 @@ class CustomerCommunicationAgent(BaseAgent):
         super().__init__(agent_id="customer_communication_agent", **kwargs)
         self.app = FastAPI(title="Customer Communication Agent API", version="1.0.0")
         self.setup_routes()
-        
-        # Initialize OpenAI client
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        
+        # OpenAI client is initialized in openai_helper
         # Communication data
         self.active_chat_sessions: Dict[str, Dict[str, Any]] = {}
         self.email_templates: Dict[str, EmailTemplate] = {}
@@ -455,7 +452,7 @@ class CustomerCommunicationAgent(BaseAgent):
     async def _analyze_message(self, message: str) -> Tuple[str, str]:
         """Analyze message sentiment and intent."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 # Fallback analysis
                 return self._simple_sentiment_analysis(message), self._simple_intent_detection(message)
             
@@ -472,7 +469,7 @@ class CustomerCommunicationAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert customer service analyst."},
@@ -482,7 +479,7 @@ class CustomerCommunicationAgent(BaseAgent):
                 max_tokens=100
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             analysis = json.loads(content)
             
             return analysis.get("sentiment", "neutral"), analysis.get("intent", "general")
@@ -530,7 +527,7 @@ class CustomerCommunicationAgent(BaseAgent):
     async def _generate_chatbot_response(self, message: str, session: Dict[str, Any], intent: str) -> ChatbotResponse:
         """Generate AI-powered chatbot response."""
         try:
-            if not openai.api_key:
+            if not os.getenv("OPENAI_API_KEY"):
                 return self._generate_rule_based_response(message, intent)
             
             # Prepare context from session history
@@ -561,7 +558,7 @@ class CustomerCommunicationAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a professional customer service chatbot."},
@@ -571,7 +568,7 @@ class CustomerCommunicationAgent(BaseAgent):
                 max_tokens=300
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             ai_response = json.loads(content)
             
             return ChatbotResponse(

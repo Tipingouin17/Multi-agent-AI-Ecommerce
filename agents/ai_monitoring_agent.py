@@ -23,7 +23,6 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
 import statistics
-import openai
 import psutil
 import requests
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -39,8 +38,10 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize OpenAI client
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Import OpenAI helper
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from shared.openai_helper import chat_completion
 
 class AlertSeverity(Enum):
     """Alert severity levels"""
@@ -637,14 +638,17 @@ class AIMonitoringAgent:
             Respond in JSON format with keys: recommendation, resolution_steps, estimated_impact, confidence, auto_resolvable, human_approval_required
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=1000,
                 temperature=0.3
             )
             
-            ai_response = json.loads(response.choices[0].message.content)
+            if not response:
+                return None
+            
+            ai_response = json.loads(response["choices"][0]["message"]["content"])
             
             return {
                 "recommendation": ai_response.get("recommendation", "Manual investigation required"),
@@ -686,14 +690,17 @@ class AIMonitoringAgent:
             Provide a concise root cause analysis in 1-2 sentences.
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=200,
                 temperature=0.3
             )
             
-            return response.choices[0].message.content.strip()
+            if not response:
+                return "Unable to generate root cause analysis - OpenAI API not configured"
+            
+            return response["choices"][0]["message"]["content"].strip()
             
         except Exception as e:
             logger.error(f"Error analyzing agent issues: {e}")
@@ -783,14 +790,17 @@ class AIMonitoringAgent:
             Respond in JSON format with keys: impact_assessment, optimization_suggestions, expected_improvement, implementation_complexity, confidence
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=800,
                 temperature=0.3
             )
             
-            ai_response = json.loads(response.choices[0].message.content)
+            if not response:
+                return None
+            
+            ai_response = json.loads(response["choices"][0]["message"]["content"])
             
             return PerformanceInsight(
                 id=f"insight_{int(time.time())}_{category}",
