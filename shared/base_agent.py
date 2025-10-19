@@ -24,19 +24,48 @@ from pydantic import BaseModel, Field
 
 class MessageType(str, Enum):
     """Standard message types for inter-agent communication."""
+    # Order Management
     ORDER_CREATED = "order_created"
     ORDER_UPDATED = "order_updated"
+    ORDER_CANCELLED = "order_cancelled"
+    
+    # Inventory Management
     INVENTORY_UPDATE = "inventory_update"
+    STOCK_ALERT = "stock_alert"
+    
+    # Pricing
     PRICE_UPDATE = "price_update"
+    COMPETITOR_PRICE_UPDATE = "competitor_price_update"
+    
+    # Logistics
     CARRIER_SELECTED = "carrier_selected"
     WAREHOUSE_SELECTED = "warehouse_selected"
+    SHIPMENT_CREATED = "shipment_created"
+    
+    # Returns & Customer Service
+    RETURN_REQUESTED = "return_requested"
+    RETURN_APPROVED = "return_approved"
+    RETURN_REJECTED = "return_rejected"
+    
+    # Product Management
+    PRODUCT_CREATED = "product_created"
+    PRODUCT_UPDATED = "product_updated"
+    PRODUCT_DELETED = "product_deleted"
+    
+    # System & Monitoring
     ERROR_DETECTED = "error_detected"
     HEALTH_CHECK = "health_check"
     AGENT_STARTED = "agent_started"
     AGENT_STOPPED = "agent_stopped"
+    SYSTEM_METRICS = "system_metrics"
+    
+    # Analytics & Forecasting
     DEMAND_FORECAST = "demand_forecast"
     RISK_ALERT = "risk_alert"
+    
+    # Customer Communication
     CUSTOMER_NOTIFICATION = "customer_notification"
+    CUSTOMER_MESSAGE = "customer_message"
 
 
 class AgentStatus(str, Enum):
