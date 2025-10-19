@@ -24,8 +24,9 @@ from shared.order_models import (
     FulfillmentPlan, FulfillmentPlanCreate, FulfillmentPlanUpdate,
     DeliveryAttempt, DeliveryAttemptCreate,
     CancellationRequest, CancellationRequestCreate, CancellationRequestReview,
-    GiftOrder, OrderStatus, ShipmentStatus, FulfillmentStatus, CancellationStatus
+    GiftOptions, ShipmentStatus, FulfillmentStatus, CancellationStatus
 )
+from shared.models import OrderStatus
 from shared.order_repository_extended import OrderRepositoryFacade
 
 
