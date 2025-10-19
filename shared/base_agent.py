@@ -30,6 +30,7 @@ class MessageType(str, Enum):
     ORDER_UPDATED = "order_updated"
     ORDER_STATUS_UPDATED = "order_status_updated"
     ORDER_CANCELLED = "order_cancelled"
+    ORDER_FULFILLMENT_REQUIRED = "order_fulfillment_required"
     
     # Inventory Management
     INVENTORY_UPDATE = "inventory_update"
@@ -67,6 +68,7 @@ class MessageType(str, Enum):
     AGENT_STOPPED = "agent_stopped"
     SYSTEM_METRICS = "system_metrics"
     PERFORMANCE_DATA = "performance_data"
+    EXTERNAL_EVENT = "external_event"
     
     # Analytics & Forecasting
     DEMAND_FORECAST = "demand_forecast"
