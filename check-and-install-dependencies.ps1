@@ -125,8 +125,8 @@ if ($missingPackages.Count -gt 0 -or $Force) {
         Write-Failure "Failed to install dependencies"
         Write-Host ""
         Write-Host "Try running manually:" -ForegroundColor Yellow
-        Write-Host "  .\venv\Scripts\Activate.ps1"
-        Write-Host "  pip install -r requirements.txt"
+        Write-Host '  .\venv\Scripts\Activate.ps1'
+        Write-Host '  pip install -r requirements.txt'
         exit 1
     }
     
@@ -173,6 +173,6 @@ Write-Host "✓ Dependency Check Complete" -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "You can now start the system:" -ForegroundColor Cyan
-Write-Host "  .\start-system.ps1" -ForegroundColor White
+Write-Host '  .\start-system.ps1' -ForegroundColor White
 Write-Host ""
 
