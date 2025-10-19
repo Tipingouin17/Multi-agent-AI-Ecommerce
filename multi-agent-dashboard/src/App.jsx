@@ -13,7 +13,7 @@ import AlertsManagement from './pages/admin/AlertsManagement'
 import PerformanceAnalytics from './pages/admin/PerformanceAnalytics'
 import SystemConfiguration from './pages/admin/SystemConfiguration'
 import { WebSocketProvider } from './contexts/WebSocketContext'
-// Merchant components
+// Merchant components
 import MerchantLayout from './components/layouts/MerchantLayout'
 import MerchantDashboard from './pages/merchant/Dashboard'
 import ProductManagement from './pages/merchant/ProductManagement'
