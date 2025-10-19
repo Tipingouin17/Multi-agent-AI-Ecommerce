@@ -32,6 +32,7 @@ class MessageType(str, Enum):
     
     # Inventory Management
     INVENTORY_UPDATE = "inventory_update"
+    INVENTORY_UPDATED = "inventory_updated"  # Past tense variant
     STOCK_ALERT = "stock_alert"
     
     # Pricing
@@ -47,6 +48,7 @@ class MessageType(str, Enum):
     RETURN_REQUESTED = "return_requested"
     RETURN_APPROVED = "return_approved"
     RETURN_REJECTED = "return_rejected"
+    ITEM_RECEIVED = "item_received"
     
     # Product Management
     PRODUCT_CREATED = "product_created"
@@ -59,6 +61,7 @@ class MessageType(str, Enum):
     AGENT_STARTED = "agent_started"
     AGENT_STOPPED = "agent_stopped"
     SYSTEM_METRICS = "system_metrics"
+    PERFORMANCE_DATA = "performance_data"
     
     # Analytics & Forecasting
     DEMAND_FORECAST = "demand_forecast"
