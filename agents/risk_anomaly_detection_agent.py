@@ -27,9 +27,6 @@ from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 import sys
 import os
-# Import OpenAI helper
-from shared.openai_helper import chat_completion
-
 
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
@@ -47,6 +44,7 @@ if project_root not in sys.path:
 
 # Now try the import
 try:
+    from shared.openai_helper import chat_completion
     from shared.base_agent import BaseAgent, MessageType, AgentMessage
     print("Successfully imported shared.base_agent")
 except ImportError as e:
