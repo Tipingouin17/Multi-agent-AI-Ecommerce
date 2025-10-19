@@ -20,9 +20,11 @@ from enum import Enum
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
-import openai
 import sys
 import os
+# Import OpenAI helper
+from shared.openai_helper import chat_completion
+
 
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
@@ -613,7 +615,7 @@ class ReverseLogisticsAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert quality assessor for returned e-commerce products."},
@@ -623,7 +625,7 @@ class ReverseLogisticsAgent(BaseAgent):
                 max_tokens=400
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             ai_result = json.loads(content)
             
             # Calculate resale value (assuming original price of €50 for simulation)
@@ -914,7 +916,7 @@ class ReverseLogisticsAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert in e-commerce resale optimization and pricing strategy."},
@@ -924,7 +926,7 @@ class ReverseLogisticsAgent(BaseAgent):
                 max_tokens=400
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             ai_result = json.loads(content)
             
             return {

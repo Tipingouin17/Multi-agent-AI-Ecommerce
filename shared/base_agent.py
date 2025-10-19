@@ -218,7 +218,8 @@ class BaseAgent(ABC):
             self.producer = AIOKafkaProducer(
                 bootstrap_servers=self.kafka_bootstrap_servers,
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                key_serializer=lambda k: k.encode('utf-8') if k else None
+                key_serializer=lambda k: k.encode('utf-8') if k else None,
+                api_version='auto'  # Auto-detect Kafka version to fix UnrecognizedBrokerVersion
             )
             await self.producer.start()
             
@@ -229,7 +230,8 @@ class BaseAgent(ABC):
                 bootstrap_servers=self.kafka_bootstrap_servers,
                 group_id=f"{self.agent_id}_group",
                 value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-                auto_offset_reset='latest'
+                auto_offset_reset='latest',
+                api_version='auto'  # Auto-detect Kafka version to fix UnrecognizedBrokerVersion
             )
             await self.consumer.start()
             

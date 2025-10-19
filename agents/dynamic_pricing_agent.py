@@ -19,9 +19,11 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
-import openai
 import sys
 import os
+# Import OpenAI helper
+from shared.openai_helper import chat_completion
+
 
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
@@ -490,7 +492,7 @@ class DynamicPricingAgent(BaseAgent):
             """
             
             # Call OpenAI API
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert pricing strategist with deep knowledge of e-commerce pricing optimization."},
@@ -500,7 +502,7 @@ class DynamicPricingAgent(BaseAgent):
                 max_tokens=500
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             
             # Parse JSON response
             try:

@@ -22,12 +22,14 @@ from dataclasses import dataclass
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
-import openai
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 import sys
 import os
+# Import OpenAI helper
+from shared.openai_helper import chat_completion
+
 
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
@@ -654,7 +656,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert system monitoring and anomaly detection specialist."},
@@ -664,7 +666,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
                 max_tokens=500
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             ai_result = json.loads(content)
             
             return AnomalyResult(
@@ -834,7 +836,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert risk assessment analyst with deep knowledge of e-commerce operations and system reliability."},
@@ -844,7 +846,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
                 max_tokens=600
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             ai_result = json.loads(content)
             
             # Create risk assessment record

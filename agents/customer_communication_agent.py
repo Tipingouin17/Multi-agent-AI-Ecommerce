@@ -21,9 +21,11 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, EmailStr
 import structlog
-import openai
 import sys
 import os
+# Import OpenAI helper
+from shared.openai_helper import chat_completion
+
 
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
@@ -472,7 +474,7 @@ class CustomerCommunicationAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert customer service analyst."},
@@ -482,7 +484,7 @@ class CustomerCommunicationAgent(BaseAgent):
                 max_tokens=100
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             analysis = json.loads(content)
             
             return analysis.get("sentiment", "neutral"), analysis.get("intent", "general")
@@ -561,7 +563,7 @@ class CustomerCommunicationAgent(BaseAgent):
             }}
             """
             
-            response = await openai.ChatCompletion.acreate(
+            response = await chat_completion(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a professional customer service chatbot."},
@@ -571,7 +573,7 @@ class CustomerCommunicationAgent(BaseAgent):
                 max_tokens=300
             )
             
-            content = response.choices[0].message.content
+            content = response["choices"][0]["message"]["content"]
             ai_response = json.loads(content)
             
             return ChatbotResponse(
