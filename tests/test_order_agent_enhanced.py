@@ -21,16 +21,17 @@ from unittest.mock import Mock, patch, AsyncMock
 from shared.database import DatabaseManager
 from shared.order_models import (
     OrderModificationCreate,
-    OrderSplitRequest, OrderSplitItem,
+    OrderSplitRequest,
     PartialShipmentCreate, PartialShipmentItem,
-    FulfillmentPlanCreate, FulfillmentPlanItem,
+    FulfillmentPlanCreate, FulfillmentItem,
     DeliveryAttemptCreate,
     CancellationRequestCreate, CancellationRequestReview,
     OrderNoteCreate, OrderNoteUpdate,
     OrderTagCreate,
     OrderTimelineEventCreate,
-    OrderStatus, ShipmentStatus, FulfillmentStatus, CancellationStatus
+    ShipmentStatus, FulfillmentStatus, CancellationStatus
 )
+from shared.models import OrderStatus
 from agents.services.order_service import EnhancedOrderService
 
 
