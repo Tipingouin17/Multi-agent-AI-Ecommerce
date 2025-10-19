@@ -59,7 +59,8 @@ Write-Host ""
 
 # Check dependencies
 Write-Host "Checking Python dependencies..." -ForegroundColor Gray
-$testImport = python -c "import fastapi, uvicorn, pydantic" 2>&1
+$venvPython = ".\venv\Scripts\python.exe"
+$testImport = & $venvPython -c "import fastapi, uvicorn, pydantic" 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Warn "Dependencies missing or not installed"
     Write-Host "Running dependency installer..." -ForegroundColor Yellow
