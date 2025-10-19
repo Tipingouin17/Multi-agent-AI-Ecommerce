@@ -85,14 +85,14 @@ async def run_migration():
                 'order_modifications',
                 'order_splits',
                 'partial_shipments',
-                'partial_shipment_items',
+                'fulfillment_plans',
+                'delivery_attempts',
+                'cancellation_requests',
                 'order_timeline',
                 'order_notes',
                 'order_tags',
-                'order_fulfillment_plan',
-                'fulfillment_plan_items',
-                'order_delivery_attempts',
-                'order_cancellation_requests'
+                'gift_options',
+                'scheduled_deliveries'
             ]
             
             for table in tables_to_check:
@@ -118,9 +118,9 @@ async def run_migration():
             print("Verifying views...")
             
             views_to_check = [
-                'order_modification_summary',
-                'order_fulfillment_metrics',
-                'order_delivery_performance'
+                'order_fulfillment_summary',
+                'order_cancellation_stats',
+                'order_modification_audit'
             ]
             
             for view in views_to_check:
