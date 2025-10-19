@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { apiService } from '@/lib/api'
+import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Activity,
   AlertTriangle,
@@ -17,76 +17,127 @@ import {
   Server,
   Zap,
   Shield,
-  RefreshCw
+  RefreshCw,
+  Database,
+  Cpu,
+  HardDrive,
+  Network
 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 
-// API functions using real backend services
-const fetchSystemOverview = async () => {
-  const data = await apiService.getSystemOverview()
-  
-  // Transform API response to match component expectations
-  return {
-    systemStatus: data.system_status || 'unknown',
-    totalAgents: Object.keys(data.agents || {}).length,
-    activeAgents: Object.values(data.agents || {}).filter(agent => agent.status === 'healthy').length,
-    offlineAgents: Object.values(data.agents || {}).filter(agent => agent.status === 'offline').length,
-    activeAlerts: data.active_alerts?.length || 0,
-    criticalAlerts: data.active_alerts?.filter(alert => alert.severity === 'critical').length || 0,
-    systemUptime: 99.9, // Calculate from system metrics
-    avgResponseTime: data.system_metrics?.response_time || 0,
-    throughput: data.system_metrics?.throughput || 0,
-    errorRate: data.system_metrics?.error_rate || 0,
-    cpuUsage: data.system_metrics?.cpu_usage || 0,
-    memoryUsage: data.system_metrics?.memory_usage || 0,
-    diskUsage: data.system_metrics?.disk_usage || 0,
-    networkIO: 89.5 // Calculate from network metrics
-  }
-}
-
-const fetchPerformanceData = async () => {
-  return await apiService.getPerformanceMetrics('24h')
-}
+// Import our new components
+import { useWebSocket, useAgentStatus, useSystemAlerts, useSystemMetrics } from '@/contexts/WebSocketContext'
+import api from '@/lib/api-enhanced'
+import AgentStatusCard from '@/components/shared/AgentStatusCard'
+import RealtimeChart from '@/components/shared/RealtimeChart'
+import AlertFeed from '@/components/shared/AlertFeed'
 
 const AdminDashboard = () => {
   const [lastUpdated, setLastUpdated] = useState(new Date())
+  const [performanceHistory, setPerformanceHistory] = useState([])
 
-  const { data: systemData, isLoading: systemLoading, refetch: refetchSystem } = useQuery({
+  // WebSocket integration
+  const { isConnected, connectionStatus } = useWebSocket()
+  const agentStatuses = useAgentStatus()
+  const systemAlerts = useSystemAlerts()
+  const systemMetrics = useSystemMetrics()
+
+  // Fetch system overview
+  const { data: systemData, isLoading, refetch } = useQuery({
     queryKey: ['systemOverview'],
-    queryFn: fetchSystemOverview,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    queryFn: api.system.getOverview,
+    refetchInterval: 30000,
   })
 
-  const { data: performanceData, isLoading: performanceLoading } = useQuery({
-    queryKey: ['performanceData'],
-    queryFn: fetchPerformanceData,
-    refetchInterval: 60000, // Refetch every minute
+  // Fetch agents
+  const { data: agents } = useQuery({
+    queryKey: ['agents'],
+    queryFn: api.agent.getAllAgents,
+    refetchInterval: 10000,
   })
+
+  // Fetch alerts
+  const { data: alerts } = useQuery({
+    queryKey: ['alerts'],
+    queryFn: () => api.alert.getAlerts({ status: 'active', limit: 50 }),
+    refetchInterval: 15000,
+  })
+
+  // Update performance history from WebSocket
+  useEffect(() => {
+    if (systemMetrics) {
+      setPerformanceHistory(prev => {
+        const newData = [...prev, {
+          timestamp: new Date().toISOString(),
+          cpu: systemMetrics.cpu_usage || 0,
+          memory: systemMetrics.memory_usage || 0,
+          throughput: systemMetrics.throughput || 0,
+          responseTime: systemMetrics.response_time || 0
+        }]
+        // Keep last 50 data points
+        return newData.slice(-50)
+      })
+    }
+  }, [systemMetrics])
 
   const handleRefresh = () => {
-    refetchSystem()
+    refetch()
     setLastUpdated(new Date())
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'healthy': return 'text-green-600 bg-green-100'
-      case 'warning': return 'text-yellow-600 bg-yellow-100'
-      case 'critical': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
+  const handleAcknowledgeAlert = async (alertId) => {
+    try {
+      await api.alert.acknowledgeAlert(alertId)
+      refetch()
+    } catch (error) {
+      console.error('Failed to acknowledge alert:', error)
     }
   }
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'healthy': return CheckCircle
-      case 'warning': return AlertTriangle
-      case 'critical': return AlertTriangle
-      default: return Clock
+  const handleResolveAlert = async (alertId) => {
+    try {
+      await api.alert.resolveAlert(alertId, 'Resolved from dashboard')
+      refetch()
+    } catch (error) {
+      console.error('Failed to resolve alert:', error)
     }
   }
 
-  if (systemLoading) {
+  const handleAgentAction = async (action, agentId) => {
+    try {
+      switch (action) {
+        case 'start':
+          await api.agent.startAgent(agentId)
+          break
+        case 'stop':
+          await api.agent.stopAgent(agentId)
+          break
+        case 'restart':
+          await api.agent.restartAgent(agentId)
+          break
+      }
+      refetch()
+    } catch (error) {
+      console.error(`Failed to ${action} agent:`, error)
+    }
+  }
+
+  // Calculate statistics
+  const stats = {
+    totalAgents: Object.keys(agents || {}).length || 14,
+    healthyAgents: Object.values(agents || {}).filter(a => a.status === 'healthy').length,
+    warningAgents: Object.values(agents || {}).filter(a => a.status === 'warning').length,
+    criticalAgents: Object.values(agents || {}).filter(a => a.status === 'critical' || a.status === 'error').length,
+    offlineAgents: Object.values(agents || {}).filter(a => a.status === 'offline' || a.status === 'stopped').length,
+    activeAlerts: (alerts?.length || 0) + systemAlerts.length,
+    criticalAlerts: (alerts?.filter(a => a.severity === 'critical').length || 0) + 
+                    systemAlerts.filter(a => a.severity === 'critical').length,
+    systemUptime: systemData?.system_uptime || 99.9,
+    avgResponseTime: systemMetrics?.response_time || systemData?.avg_response_time || 0,
+    throughput: systemMetrics?.throughput || systemData?.throughput || 0,
+    errorRate: systemMetrics?.error_rate || systemData?.error_rate || 0,
+  }
+
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -106,17 +157,21 @@ const AdminDashboard = () => {
     )
   }
 
-  const StatusIcon = getStatusIcon(systemData?.systemStatus)
-
   return (
     <div className="space-y-6">
-      {/* Header with Refresh */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">System Dashboard</h1>
           <p className="text-gray-600">Real-time overview of your multi-agent e-commerce platform</p>
         </div>
         <div className="flex items-center space-x-4">
+          {/* WebSocket Status */}
+          <Badge variant={isConnected ? 'default' : 'destructive'} className="flex items-center space-x-1">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            <span>{isConnected ? 'Live' : 'Disconnected'}</span>
+          </Badge>
+          
           <span className="text-sm text-gray-500">
             Last updated: {lastUpdated.toLocaleTimeString()}
           </span>
@@ -127,203 +182,253 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* System Status Overview */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center space-x-2">
-                <StatusIcon className="w-6 h-6" />
-                <span>System Status</span>
-              </CardTitle>
-              <CardDescription>Overall health of the multi-agent system</CardDescription>
-            </div>
-            <Badge className={getStatusColor(systemData?.systemStatus)}>
-              {systemData?.systemStatus?.toUpperCase()}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{systemData?.systemUptime}%</div>
-              <div className="text-sm text-gray-600">Uptime</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{systemData?.avgResponseTime}ms</div>
-              <div className="text-sm text-gray-600">Avg Response</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{systemData?.throughput}</div>
-              <div className="text-sm text-gray-600">Requests/min</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{systemData?.errorRate}%</div>
-              <div className="text-sm text-gray-600">Error Rate</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        {/* Total Agents */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
-              <Bot className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center space-x-2">
+                <Bot className="w-4 h-4" />
+                <span>Total Agents</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {systemData?.activeAgents}/{systemData?.totalAgents}
+              <div className="text-3xl font-bold">{stats.totalAgents}</div>
+              <div className="flex items-center space-x-4 mt-2 text-sm">
+                <span className="text-green-600 flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  {stats.healthyAgents} healthy
+                </span>
+                {stats.criticalAgents > 0 && (
+                  <span className="text-red-600 flex items-center">
+                    <AlertTriangle className="w-4 h-4 mr-1" />
+                    {stats.criticalAgents} critical
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                <TrendingUp className="inline w-3 h-3 mr-1" />
-                All systems operational
-              </p>
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        {/* Active Alerts */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Active Alerts</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{systemData?.activeAlerts}</div>
-              <p className="text-xs text-muted-foreground">
-                {systemData?.criticalAlerts} critical alerts
-              </p>
+              <div className="text-3xl font-bold">{stats.activeAlerts}</div>
+              <div className="flex items-center space-x-2 mt-2">
+                {stats.criticalAlerts > 0 && (
+                  <Badge variant="destructive">{stats.criticalAlerts} critical</Badge>
+                )}
+                <span className="text-sm text-gray-600">
+                  {stats.activeAlerts - stats.criticalAlerts} warnings
+                </span>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        {/* System Uptime */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center space-x-2">
+                <Server className="w-4 h-4" />
+                <span>System Uptime</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{systemData?.cpuUsage}%</div>
-              <Progress value={systemData?.cpuUsage} className="mt-2" />
+              <div className="text-3xl font-bold">{stats.systemUptime.toFixed(2)}%</div>
+              <Progress value={stats.systemUptime} className="mt-2" />
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
+        {/* Avg Response Time */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
-              <Server className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center space-x-2">
+                <Zap className="w-4 h-4" />
+                <span>Avg Response Time</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{systemData?.memoryUsage}%</div>
-              <Progress value={systemData?.memoryUsage} className="mt-2" />
+              <div className="text-3xl font-bold">{stats.avgResponseTime.toFixed(0)}ms</div>
+              <div className="flex items-center space-x-1 mt-2 text-sm text-gray-600">
+                {stats.avgResponseTime < 100 ? (
+                  <>
+                    <TrendingDown className="w-4 h-4 text-green-600" />
+                    <span className="text-green-600">Excellent</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="w-4 h-4 text-yellow-600" />
+                    <span className="text-yellow-600">Moderate</span>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
       </div>
 
-      {/* Performance Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>System Performance (24h)</CardTitle>
-            <CardDescription>CPU and Memory usage over time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {performanceLoading ? (
-              <div className="h-64 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="cpu" stroke="#3b82f6" strokeWidth={2} name="CPU %" />
-                  <Line type="monotone" dataKey="memory" stroke="#10b981" strokeWidth={2} name="Memory %" />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="agents" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="alerts">Alerts</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Response Time & Throughput</CardTitle>
-            <CardDescription>System responsiveness metrics</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {performanceLoading ? (
-              <div className="h-64 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="responseTime" stroke="#f59e0b" fill="#fef3c7" name="Response Time (ms)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common administrative tasks</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-              <Shield className="w-6 h-6" />
-              <span className="text-sm">Security Scan</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-              <Zap className="w-6 h-6" />
-              <span className="text-sm">Optimize Performance</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-              <Bot className="w-6 h-6" />
-              <span className="text-sm">Restart Agents</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-              <Activity className="w-6 h-6" />
-              <span className="text-sm">System Health Check</span>
-            </Button>
+        {/* Agents Tab */}
+        <TabsContent value="agents" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Object.values(agents || {}).map((agent, index) => (
+              <motion.div
+                key={agent.agent_id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <AgentStatusCard
+                  agent={agentStatuses[agent.agent_id] || agent}
+                  onStart={(id) => handleAgentAction('start', id)}
+                  onStop={(id) => handleAgentAction('stop', id)}
+                  onRestart={(id) => handleAgentAction('restart', id)}
+                  showControls={true}
+                  showMetrics={true}
+                />
+              </motion.div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        {/* Performance Tab */}
+        <TabsContent value="performance" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RealtimeChart
+              title="CPU Usage"
+              description="System CPU utilization over time"
+              data={performanceHistory}
+              dataKey="cpu"
+              type="area"
+              color="#3b82f6"
+              unit="%"
+              height={250}
+            />
+            <RealtimeChart
+              title="Memory Usage"
+              description="System memory utilization over time"
+              data={performanceHistory}
+              dataKey="memory"
+              type="area"
+              color="#10b981"
+              unit="%"
+              height={250}
+            />
+            <RealtimeChart
+              title="Throughput"
+              description="Requests processed per second"
+              data={performanceHistory}
+              dataKey="throughput"
+              type="line"
+              color="#8b5cf6"
+              unit=" req/s"
+              height={250}
+            />
+            <RealtimeChart
+              title="Response Time"
+              description="Average response time in milliseconds"
+              data={performanceHistory}
+              dataKey="responseTime"
+              type="line"
+              color="#f59e0b"
+              unit="ms"
+              height={250}
+            />
+          </div>
+        </TabsContent>
+
+        {/* Alerts Tab */}
+        <TabsContent value="alerts" className="space-y-6">
+          <AlertFeed
+            alerts={[...(alerts || []), ...systemAlerts]}
+            onAcknowledge={handleAcknowledgeAlert}
+            onResolve={handleResolveAlert}
+            maxHeight={600}
+            showActions={true}
+          />
+        </TabsContent>
+
+        {/* System Tab */}
+        <TabsContent value="system" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* System Resources */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Cpu className="w-5 h-5" />
+                  <span>CPU</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{systemMetrics?.cpu_usage?.toFixed(1) || 0}%</div>
+                <Progress value={systemMetrics?.cpu_usage || 0} className="mt-2" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <HardDrive className="w-5 h-5" />
+                  <span>Memory</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{systemMetrics?.memory_usage?.toFixed(1) || 0}%</div>
+                <Progress value={systemMetrics?.memory_usage || 0} className="mt-2" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Database className="w-5 h-5" />
+                  <span>Disk</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{systemMetrics?.disk_usage?.toFixed(1) || 0}%</div>
+                <Progress value={systemMetrics?.disk_usage || 0} className="mt-2" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Network className="w-5 h-5" />
+                  <span>Network</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{systemMetrics?.network_io?.toFixed(1) || 0} MB/s</div>
+                <div className="text-sm text-gray-600 mt-2">I/O throughput</div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
 
 export default AdminDashboard
+

@@ -12,8 +12,8 @@ import SystemMonitoring from './pages/admin/SystemMonitoring'
 import AlertsManagement from './pages/admin/AlertsManagement'
 import PerformanceAnalytics from './pages/admin/PerformanceAnalytics'
 import SystemConfiguration from './pages/admin/SystemConfiguration'
-
-// Merchant components
+import { WebSocketProvider } from './contexts/WebSocketContext'
+// Merchant components
 import MerchantLayout from './components/layouts/MerchantLayout'
 import MerchantDashboard from './pages/merchant/Dashboard'
 import ProductManagement from './pages/merchant/ProductManagement'
@@ -275,6 +275,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <WebSocketProvider>
       <BrowserRouter>
         {!selectedInterface && (
           <InterfaceSelector 
@@ -331,6 +332,7 @@ function App() {
           <DatabaseTest onReset={handleInterfaceReset} />
         )}
       </BrowserRouter>
+      </WebSocketProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
