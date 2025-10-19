@@ -93,10 +93,10 @@ foreach ($package in $criticalPackages) {
     Write-Host "Checking $package... " -NoNewline -ForegroundColor Gray
     
     if (Test-PythonPackage $package) {
-        Write-Host "✓ Installed" -ForegroundColor Green
+        Write-Host "[OK] Installed" -ForegroundColor Green
         $installedPackages += $package
     } else {
-        Write-Host "✗ Missing" -ForegroundColor Red
+        Write-Host "[X] Missing" -ForegroundColor Red
         $missingPackages += $package
     }
 }
@@ -140,9 +140,9 @@ if ($missingPackages.Count -gt 0 -or $Force) {
         Write-Host "Verifying $package... " -NoNewline -ForegroundColor Gray
         
         if (Test-PythonPackage $package) {
-            Write-Host "✓ OK" -ForegroundColor Green
+            Write-Host "[OK] OK" -ForegroundColor Green
         } else {
-            Write-Host "✗ Still missing" -ForegroundColor Red
+            Write-Host "[X] Still missing" -ForegroundColor Red
             $stillMissing += $package
         }
     }
@@ -169,7 +169,7 @@ if ($missingPackages.Count -gt 0 -or $Force) {
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
-Write-Host "✓ Dependency Check Complete" -ForegroundColor Green
+Write-Host "[OK] Dependency Check Complete" -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "You can now start the system:" -ForegroundColor Cyan
