@@ -28,6 +28,7 @@ class MessageType(str, Enum):
     # Order Management
     ORDER_CREATED = "order_created"
     ORDER_UPDATED = "order_updated"
+    ORDER_STATUS_UPDATED = "order_status_updated"
     ORDER_CANCELLED = "order_cancelled"
     
     # Inventory Management
@@ -37,6 +38,7 @@ class MessageType(str, Enum):
     
     # Pricing
     PRICE_UPDATE = "price_update"
+    PRICE_UPDATED = "price_updated"  # Past tense variant
     COMPETITOR_PRICE_UPDATE = "competitor_price_update"
     
     # Logistics
@@ -49,6 +51,8 @@ class MessageType(str, Enum):
     RETURN_APPROVED = "return_approved"
     RETURN_REJECTED = "return_rejected"
     ITEM_RECEIVED = "item_received"
+    QUALITY_ASSESSMENT_COMPLETED = "quality_assessment_completed"
+    REFURBISHMENT_COMPLETED = "refurbishment_completed"
     
     # Product Management
     PRODUCT_CREATED = "product_created"
@@ -57,6 +61,7 @@ class MessageType(str, Enum):
     
     # System & Monitoring
     ERROR_DETECTED = "error_detected"
+    ERROR_OCCURRED = "error_occurred"  # Variant
     HEALTH_CHECK = "health_check"
     AGENT_STARTED = "agent_started"
     AGENT_STOPPED = "agent_stopped"
