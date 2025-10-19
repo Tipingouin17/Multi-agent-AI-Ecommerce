@@ -36,13 +36,7 @@ from agents.services.order_service import EnhancedOrderService
 
 
 # Fixtures
-
-@pytest.fixture
-async def db_manager():
-    """Create database manager for tests."""
-    manager = DatabaseManager()
-    yield manager
-    # Cleanup would go here
+# Note: db_manager fixture is defined in conftest.py
 
 @pytest.fixture
 async def order_service(db_manager):
@@ -70,22 +64,21 @@ def sample_modification_data():
 def sample_split_request():
     """Sample order split request."""
     return OrderSplitRequest(
-        parent_order_id="test-order-123",
+        order_id="test-order-123",
         split_reason="multi_warehouse",
-        splits=[
-            OrderSplitItem(
-                child_order_id="test-order-123-1",
-                items=[{"product_id": "prod-1", "quantity": 2}],
-                warehouse_id="warehouse-1",
-                estimated_ship_date=datetime.now() + timedelta(days=1)
-            ),
-            OrderSplitItem(
-                child_order_id="test-order-123-2",
-                items=[{"product_id": "prod-2", "quantity": 1}],
-                warehouse_id="warehouse-2",
-                estimated_ship_date=datetime.now() + timedelta(days=2)
-            )
-        ]
+        item_splits=[
+            {
+                "item_id": "item-1",
+                "quantity": 2,
+                "warehouse_id": "warehouse-1"
+            },
+            {
+                "item_id": "item-2",
+                "quantity": 1,
+                "warehouse_id": "warehouse-2"
+            }
+        ],
+        metadata={"estimated_ship_dates": ["2024-01-15", "2024-01-16"]}
     )
 
 

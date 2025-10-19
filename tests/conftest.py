@@ -4,7 +4,19 @@ Pytest configuration and shared fixtures.
 
 import pytest
 import asyncio
+import os
 from typing import Generator
+from dotenv import load_dotenv
+
+from shared.database import DatabaseManager
+from shared.models import DatabaseConfig
+
+
+# Load environment variables from .env.test if it exists, otherwise from .env
+if os.path.exists(".env.test"):
+    load_dotenv(".env.test")
+else:
+    load_dotenv()
 
 
 @pytest.fixture(scope="session")
@@ -13,6 +25,40 @@ def event_loop() -> Generator:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture(scope="session")
+def db_config() -> DatabaseConfig:
+    """Create database configuration from environment variables."""
+    return DatabaseConfig(
+        host=os.getenv("DATABASE_HOST", "localhost"),
+        port=int(os.getenv("DATABASE_PORT", "5432")),
+        database=os.getenv("DATABASE_NAME", "multi_agent_ecommerce"),
+        username=os.getenv("DATABASE_USER", "postgres"),
+        password=os.getenv("DATABASE_PASSWORD", ""),
+        pool_size=5,  # Smaller pool for testing
+        max_overflow=10,
+        echo=False  # Set to True for SQL debugging
+    )
+
+
+@pytest.fixture(scope="session")
+async def db_manager(db_config: DatabaseConfig) -> DatabaseManager:
+    """Create database manager for tests."""
+    manager = DatabaseManager(db_config)
+    await manager.initialize_async()
+    
+    # Test connection
+    try:
+        await manager.test_connection()
+    except Exception as e:
+        pytest.skip(f"Database connection failed: {e}")
+    
+    yield manager
+    
+    # Cleanup
+    if manager.async_engine:
+        await manager.async_engine.dispose()
 
 
 @pytest.fixture
