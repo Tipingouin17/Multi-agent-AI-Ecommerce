@@ -28,6 +28,25 @@ BEGIN
             ALTER TABLE carriers RENAME COLUMN active TO is_active;
             RAISE NOTICE 'Renamed active column to is_active in carriers table';
         END IF;
+        
+        -- Add carrier_code column if missing
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'carriers' AND column_name = 'carrier_code') THEN
+            ALTER TABLE carriers ADD COLUMN carrier_code VARCHAR(50);
+            -- Update existing rows with a default code based on carrier_id
+            UPDATE carriers SET carrier_code = 'CARRIER_' || carrier_id WHERE carrier_code IS NULL;
+            -- Make it unique after populating
+            ALTER TABLE carriers ADD CONSTRAINT carriers_carrier_code_unique UNIQUE (carrier_code);
+            RAISE NOTICE 'Added carrier_code column to carriers table';
+        END IF;
+        
+        -- Add carrier_name column if missing
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'carriers' AND column_name = 'carrier_name') THEN
+            ALTER TABLE carriers ADD COLUMN carrier_name VARCHAR(100);
+            UPDATE carriers SET carrier_name = 'Carrier ' || carrier_id WHERE carrier_name IS NULL;
+            RAISE NOTICE 'Added carrier_name column to carriers table';
+        END IF;
     END IF;
 END $$;
 

@@ -43,9 +43,9 @@ CREATE TABLE IF NOT EXISTS carriers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_carriers_active ON carriers(is_active);
-CREATE INDEX idx_carriers_code ON carriers(carrier_code);
-CREATE INDEX idx_carriers_type ON carriers(carrier_type);
+CREATE INDEX IF NOT EXISTS idx_carriers_active ON carriers(is_active);
+CREATE INDEX IF NOT EXISTS idx_carriers_code ON carriers(carrier_code);
+CREATE INDEX IF NOT EXISTS idx_carriers_type ON carriers(carrier_type);
 
 COMMENT ON TABLE carriers IS 'Shipping carrier configurations';
 
@@ -85,9 +85,9 @@ CREATE TABLE IF NOT EXISTS carrier_services (
     UNIQUE(carrier_id, service_code)
 );
 
-CREATE INDEX idx_carrier_services_carrier ON carrier_services(carrier_id);
-CREATE INDEX idx_carrier_services_active ON carrier_services(is_active);
-CREATE INDEX idx_carrier_services_type ON carrier_services(service_type);
+CREATE INDEX IF NOT EXISTS idx_carrier_services_carrier ON carrier_services(carrier_id);
+CREATE INDEX IF NOT EXISTS idx_carrier_services_active ON carrier_services(is_active);
+CREATE INDEX IF NOT EXISTS idx_carrier_services_type ON carrier_services(service_type);
 
 COMMENT ON TABLE carrier_services IS 'Carrier service offerings';
 
@@ -133,11 +133,11 @@ CREATE TABLE IF NOT EXISTS shipping_rates (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_shipping_rates_carrier ON shipping_rates(carrier_id);
-CREATE INDEX idx_shipping_rates_service ON shipping_rates(service_id);
-CREATE INDEX idx_shipping_rates_destination ON shipping_rates(destination_country, destination_postal_code);
-CREATE INDEX idx_shipping_rates_active ON shipping_rates(is_active);
-CREATE INDEX idx_shipping_rates_effective ON shipping_rates(effective_date, expiry_date);
+CREATE INDEX IF NOT EXISTS idx_shipping_rates_carrier ON shipping_rates(carrier_id);
+CREATE INDEX IF NOT EXISTS idx_shipping_rates_service ON shipping_rates(service_id);
+CREATE INDEX IF NOT EXISTS idx_shipping_rates_destination ON shipping_rates(destination_country, destination_postal_code);
+CREATE INDEX IF NOT EXISTS idx_shipping_rates_active ON shipping_rates(is_active);
+CREATE INDEX IF NOT EXISTS idx_shipping_rates_effective ON shipping_rates(effective_date, expiry_date);
 
 COMMENT ON TABLE shipping_rates IS 'Carrier shipping rates and pricing';
 
@@ -197,12 +197,12 @@ CREATE TABLE IF NOT EXISTS shipments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_shipments_order ON shipments(order_id);
-CREATE INDEX idx_shipments_carrier ON shipments(carrier_id);
-CREATE INDEX idx_shipments_tracking ON shipments(tracking_number);
-CREATE INDEX idx_shipments_status ON shipments(shipment_status);
-CREATE INDEX idx_shipments_created ON shipments(created_at DESC);
-CREATE INDEX idx_shipments_delivery_date ON shipments(estimated_delivery_date);
+CREATE INDEX IF NOT EXISTS idx_shipments_order ON shipments(order_id);
+CREATE INDEX IF NOT EXISTS idx_shipments_carrier ON shipments(carrier_id);
+CREATE INDEX IF NOT EXISTS idx_shipments_tracking ON shipments(tracking_number);
+CREATE INDEX IF NOT EXISTS idx_shipments_status ON shipments(shipment_status);
+CREATE INDEX IF NOT EXISTS idx_shipments_created ON shipments(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_shipments_delivery_date ON shipments(estimated_delivery_date);
 
 COMMENT ON TABLE shipments IS 'Shipment records with AI carrier selection';
 
@@ -235,9 +235,9 @@ CREATE TABLE IF NOT EXISTS tracking_events (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_tracking_events_shipment ON tracking_events(shipment_id);
-CREATE INDEX idx_tracking_events_type ON tracking_events(event_type);
-CREATE INDEX idx_tracking_events_timestamp ON tracking_events(event_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_tracking_events_shipment ON tracking_events(shipment_id);
+CREATE INDEX IF NOT EXISTS idx_tracking_events_type ON tracking_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_tracking_events_timestamp ON tracking_events(event_timestamp DESC);
 
 COMMENT ON TABLE tracking_events IS 'Shipment tracking events';
 
@@ -276,8 +276,8 @@ CREATE TABLE IF NOT EXISTS carrier_performance_history (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_carrier_performance_carrier ON carrier_performance_history(carrier_id);
-CREATE INDEX idx_carrier_performance_period ON carrier_performance_history(period_start, period_end);
+CREATE INDEX IF NOT EXISTS idx_carrier_performance_carrier ON carrier_performance_history(carrier_id);
+CREATE INDEX IF NOT EXISTS idx_carrier_performance_period ON carrier_performance_history(period_start, period_end);
 
 COMMENT ON TABLE carrier_performance_history IS 'Historical carrier performance for AI learning';
 
@@ -323,10 +323,10 @@ CREATE TABLE IF NOT EXISTS ai_carrier_selection_log (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ai_selection_order ON ai_carrier_selection_log(order_id);
-CREATE INDEX idx_ai_selection_shipment ON ai_carrier_selection_log(shipment_id);
-CREATE INDEX idx_ai_selection_carrier ON ai_carrier_selection_log(selected_carrier_id);
-CREATE INDEX idx_ai_selection_created ON ai_carrier_selection_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_selection_order ON ai_carrier_selection_log(order_id);
+CREATE INDEX IF NOT EXISTS idx_ai_selection_shipment ON ai_carrier_selection_log(shipment_id);
+CREATE INDEX IF NOT EXISTS idx_ai_selection_carrier ON ai_carrier_selection_log(selected_carrier_id);
+CREATE INDEX IF NOT EXISTS idx_ai_selection_created ON ai_carrier_selection_log(created_at DESC);
 
 COMMENT ON TABLE ai_carrier_selection_log IS 'AI carrier selection decisions and outcomes for learning';
 

@@ -33,9 +33,9 @@ CREATE TABLE IF NOT EXISTS notification_templates (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_notification_templates_code ON notification_templates(template_code);
-CREATE INDEX idx_notification_templates_channel ON notification_templates(channel);
-CREATE INDEX idx_notification_templates_category ON notification_templates(category);
+CREATE INDEX IF NOT EXISTS idx_notification_templates_code ON notification_templates(template_code);
+CREATE INDEX IF NOT EXISTS idx_notification_templates_channel ON notification_templates(channel);
+CREATE INDEX IF NOT EXISTS idx_notification_templates_category ON notification_templates(category);
 
 COMMENT ON TABLE notification_templates IS 'Notification templates for multi-channel messaging';
 
@@ -89,12 +89,12 @@ CREATE TABLE IF NOT EXISTS notifications (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_notifications_recipient ON notifications(recipient_id);
-CREATE INDEX idx_notifications_channel ON notifications(channel);
-CREATE INDEX idx_notifications_status ON notifications(notification_status);
-CREATE INDEX idx_notifications_context ON notifications(context_type, context_id);
-CREATE INDEX idx_notifications_created ON notifications(created_at DESC);
-CREATE INDEX idx_notifications_sent ON notifications(sent_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_channel ON notifications(channel);
+CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(notification_status);
+CREATE INDEX IF NOT EXISTS idx_notifications_context ON notifications(context_type, context_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_sent ON notifications(sent_at DESC);
 
 COMMENT ON TABLE notifications IS 'Notification records across all channels';
 
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
     UNIQUE(customer_id)
 );
 
-CREATE INDEX idx_notification_preferences_customer ON notification_preferences(customer_id);
+CREATE INDEX IF NOT EXISTS idx_notification_preferences_customer ON notification_preferences(customer_id);
 
 COMMENT ON TABLE notification_preferences IS 'Customer notification preferences';
 
@@ -166,8 +166,8 @@ CREATE TABLE IF NOT EXISTS notification_schedules (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_notification_schedules_next_run ON notification_schedules(next_run_at);
-CREATE INDEX idx_notification_schedules_active ON notification_schedules(is_active);
+CREATE INDEX IF NOT EXISTS idx_notification_schedules_next_run ON notification_schedules(next_run_at);
+CREATE INDEX IF NOT EXISTS idx_notification_schedules_active ON notification_schedules(is_active);
 
 COMMENT ON TABLE notification_schedules IS 'Scheduled notification campaigns';
 
@@ -193,9 +193,9 @@ CREATE TABLE IF NOT EXISTS notification_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_notification_logs_notification ON notification_logs(notification_id);
-CREATE INDEX idx_notification_logs_event ON notification_logs(event_type);
-CREATE INDEX idx_notification_logs_timestamp ON notification_logs(event_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_notification_logs_notification ON notification_logs(notification_id);
+CREATE INDEX IF NOT EXISTS idx_notification_logs_event ON notification_logs(event_type);
+CREATE INDEX IF NOT EXISTS idx_notification_logs_timestamp ON notification_logs(event_timestamp DESC);
 
 COMMENT ON TABLE notification_logs IS 'Notification delivery event logs';
 
@@ -220,7 +220,7 @@ SELECT
 FROM notifications
 GROUP BY channel, DATE_TRUNC('day', created_at);
 
-CREATE INDEX idx_notification_summary_channel_date ON notification_summary_by_channel(channel, date DESC);
+CREATE INDEX IF NOT EXISTS idx_notification_summary_channel_date ON notification_summary_by_channel(channel, date DESC);
 
 COMMENT ON MATERIALIZED VIEW notification_summary_by_channel IS 'Daily notification metrics by channel';
 

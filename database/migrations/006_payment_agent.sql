@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS payment_gateways (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_payment_gateways_active ON payment_gateways(is_active);
-CREATE INDEX idx_payment_gateways_type ON payment_gateways(gateway_type);
+CREATE INDEX IF NOT EXISTS idx_payment_gateways_active ON payment_gateways(is_active);
+CREATE INDEX IF NOT EXISTS idx_payment_gateways_type ON payment_gateways(gateway_type);
 
 COMMENT ON TABLE payment_gateways IS 'Payment gateway configurations';
 
@@ -73,10 +73,10 @@ CREATE TABLE IF NOT EXISTS payment_methods (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_payment_methods_customer ON payment_methods(customer_id);
-CREATE INDEX idx_payment_methods_gateway ON payment_methods(gateway_id);
-CREATE INDEX idx_payment_methods_default ON payment_methods(customer_id, is_default);
-CREATE INDEX idx_payment_methods_type ON payment_methods(method_type);
+CREATE INDEX IF NOT EXISTS idx_payment_methods_customer ON payment_methods(customer_id);
+CREATE INDEX IF NOT EXISTS idx_payment_methods_gateway ON payment_methods(gateway_id);
+CREATE INDEX IF NOT EXISTS idx_payment_methods_default ON payment_methods(customer_id, is_default);
+CREATE INDEX IF NOT EXISTS idx_payment_methods_type ON payment_methods(method_type);
 
 COMMENT ON TABLE payment_methods IS 'Customer payment methods (tokenized)';
 
@@ -129,14 +129,14 @@ CREATE TABLE IF NOT EXISTS payment_transactions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_payment_transactions_order ON payment_transactions(order_id);
-CREATE INDEX idx_payment_transactions_customer ON payment_transactions(customer_id);
-CREATE INDEX idx_payment_transactions_method ON payment_transactions(payment_method_id);
-CREATE INDEX idx_payment_transactions_gateway ON payment_transactions(gateway_id);
-CREATE INDEX idx_payment_transactions_status ON payment_transactions(transaction_status);
-CREATE INDEX idx_payment_transactions_type ON payment_transactions(transaction_type);
-CREATE INDEX idx_payment_transactions_created ON payment_transactions(created_at DESC);
-CREATE INDEX idx_payment_transactions_gateway_id ON payment_transactions(gateway_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_order ON payment_transactions(order_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_customer ON payment_transactions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_method ON payment_transactions(payment_method_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_gateway ON payment_transactions(gateway_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_status ON payment_transactions(transaction_status);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_type ON payment_transactions(transaction_type);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_created ON payment_transactions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_gateway_id ON payment_transactions(gateway_transaction_id);
 
 COMMENT ON TABLE payment_transactions IS 'Payment transaction records';
 
@@ -182,11 +182,11 @@ CREATE TABLE IF NOT EXISTS payment_refunds (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_payment_refunds_transaction ON payment_refunds(transaction_id);
-CREATE INDEX idx_payment_refunds_order ON payment_refunds(order_id);
-CREATE INDEX idx_payment_refunds_customer ON payment_refunds(customer_id);
-CREATE INDEX idx_payment_refunds_status ON payment_refunds(refund_status);
-CREATE INDEX idx_payment_refunds_created ON payment_refunds(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_refunds_transaction ON payment_refunds(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_payment_refunds_order ON payment_refunds(order_id);
+CREATE INDEX IF NOT EXISTS idx_payment_refunds_customer ON payment_refunds(customer_id);
+CREATE INDEX IF NOT EXISTS idx_payment_refunds_status ON payment_refunds(refund_status);
+CREATE INDEX IF NOT EXISTS idx_payment_refunds_created ON payment_refunds(created_at DESC);
 
 COMMENT ON TABLE payment_refunds IS 'Payment refund records';
 
@@ -226,10 +226,10 @@ CREATE TABLE IF NOT EXISTS payment_authorizations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_payment_authorizations_order ON payment_authorizations(order_id);
-CREATE INDEX idx_payment_authorizations_customer ON payment_authorizations(customer_id);
-CREATE INDEX idx_payment_authorizations_status ON payment_authorizations(authorization_status);
-CREATE INDEX idx_payment_authorizations_expires ON payment_authorizations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_payment_authorizations_order ON payment_authorizations(order_id);
+CREATE INDEX IF NOT EXISTS idx_payment_authorizations_customer ON payment_authorizations(customer_id);
+CREATE INDEX IF NOT EXISTS idx_payment_authorizations_status ON payment_authorizations(authorization_status);
+CREATE INDEX IF NOT EXISTS idx_payment_authorizations_expires ON payment_authorizations(expires_at);
 
 COMMENT ON TABLE payment_authorizations IS 'Payment authorization holds';
 
@@ -273,11 +273,11 @@ CREATE TABLE IF NOT EXISTS payment_disputes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_payment_disputes_transaction ON payment_disputes(transaction_id);
-CREATE INDEX idx_payment_disputes_order ON payment_disputes(order_id);
-CREATE INDEX idx_payment_disputes_customer ON payment_disputes(customer_id);
-CREATE INDEX idx_payment_disputes_status ON payment_disputes(dispute_status);
-CREATE INDEX idx_payment_disputes_created ON payment_disputes(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_disputes_transaction ON payment_disputes(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_payment_disputes_order ON payment_disputes(order_id);
+CREATE INDEX IF NOT EXISTS idx_payment_disputes_customer ON payment_disputes(customer_id);
+CREATE INDEX IF NOT EXISTS idx_payment_disputes_status ON payment_disputes(dispute_status);
+CREATE INDEX IF NOT EXISTS idx_payment_disputes_created ON payment_disputes(created_at DESC);
 
 COMMENT ON TABLE payment_disputes IS 'Payment disputes and chargebacks';
 
@@ -309,10 +309,10 @@ CREATE TABLE IF NOT EXISTS payment_webhooks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_payment_webhooks_gateway ON payment_webhooks(gateway_id);
-CREATE INDEX idx_payment_webhooks_processed ON payment_webhooks(processed);
-CREATE INDEX idx_payment_webhooks_event ON payment_webhooks(event_type);
-CREATE INDEX idx_payment_webhooks_received ON payment_webhooks(received_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_webhooks_gateway ON payment_webhooks(gateway_id);
+CREATE INDEX IF NOT EXISTS idx_payment_webhooks_processed ON payment_webhooks(processed);
+CREATE INDEX IF NOT EXISTS idx_payment_webhooks_event ON payment_webhooks(event_type);
+CREATE INDEX IF NOT EXISTS idx_payment_webhooks_received ON payment_webhooks(received_at DESC);
 
 COMMENT ON TABLE payment_webhooks IS 'Payment gateway webhook events';
 
@@ -343,11 +343,11 @@ CREATE TABLE IF NOT EXISTS payment_audit_log (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_payment_audit_transaction ON payment_audit_log(transaction_id);
-CREATE INDEX idx_payment_audit_refund ON payment_audit_log(refund_id);
-CREATE INDEX idx_payment_audit_action ON payment_audit_log(action);
-CREATE INDEX idx_payment_audit_actor ON payment_audit_log(actor);
-CREATE INDEX idx_payment_audit_created ON payment_audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_audit_transaction ON payment_audit_log(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_payment_audit_refund ON payment_audit_log(refund_id);
+CREATE INDEX IF NOT EXISTS idx_payment_audit_action ON payment_audit_log(action);
+CREATE INDEX IF NOT EXISTS idx_payment_audit_actor ON payment_audit_log(actor);
+CREATE INDEX IF NOT EXISTS idx_payment_audit_created ON payment_audit_log(created_at DESC);
 
 COMMENT ON TABLE payment_audit_log IS 'Complete audit trail for payment operations';
 

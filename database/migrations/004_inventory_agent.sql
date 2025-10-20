@@ -234,12 +234,12 @@ CREATE TABLE IF NOT EXISTS inventory_batches (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_product ON inventory_batches(product_id);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_location ON inventory_batches(location_id);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_number ON inventory_batches(batch_number);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_expiry ON inventory_batches(expiry_date);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_status ON inventory_batches(quality_status);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_active ON inventory_batches(is_active);
+CREATE INDEX IF NOT EXISTS idx_inventory_batches_product ON inventory_batches(product_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_batches_location ON inventory_batches(location_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_batches_number ON inventory_batches(batch_number);
+CREATE INDEX IF NOT EXISTS idx_inventory_batches_expiry ON inventory_batches(expiry_date);
+CREATE INDEX IF NOT EXISTS idx_inventory_batches_status ON inventory_batches(quality_status);
+CREATE INDEX IF NOT EXISTS idx_inventory_batches_active ON inventory_batches(is_active);
 
 COMMENT ON TABLE inventory_batches IS 'Batch and lot tracking for inventory';
 
