@@ -147,6 +147,7 @@ class SmartMigration:
         migration_files = [
             ('002_order_agent_enhancements.sql', 'Order Agent enhancements'),
             ('003_product_agent_enhancements.sql', 'Product Agent enhancements'),
+            ('006_5_fix_existing_schema.sql', 'Schema compatibility fixes'),
             ('004_inventory_agent.sql', 'Inventory Agent'),
             ('005_customer_agent.sql', 'Customer Agent'),
             ('006_payment_agent.sql', 'Payment Agent'),
