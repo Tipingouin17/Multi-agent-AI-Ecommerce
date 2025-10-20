@@ -267,7 +267,7 @@ SELECT
     cp.last_login_at,
     cl.loyalty_tier,
     cl.points_balance,
-    COUNT(DISTINCT o.order_id) as total_orders,
+    COUNT(DISTINCT o.id) as total_orders,
     COALESCE(SUM(o.total_amount), 0) as lifetime_value,
     MAX(o.created_at) as last_order_date,
     COUNT(DISTINCT ci.interaction_id) as total_interactions

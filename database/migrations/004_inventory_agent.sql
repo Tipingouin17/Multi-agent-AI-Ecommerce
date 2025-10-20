@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS warehouse_locations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_warehouse_locations_type ON warehouse_locations(location_type);
-CREATE INDEX idx_warehouse_locations_active ON warehouse_locations(is_active);
+CREATE INDEX IF NOT EXISTS idx_warehouse_locations_type ON warehouse_locations(location_type);
+CREATE INDEX IF NOT EXISTS idx_warehouse_locations_active ON warehouse_locations(is_active);
 
 COMMENT ON TABLE warehouse_locations IS 'Warehouse and storage location definitions';
 
@@ -52,10 +52,10 @@ CREATE TABLE IF NOT EXISTS stock_levels (
     UNIQUE(product_id, location_id)
 );
 
-CREATE INDEX idx_stock_levels_product ON stock_levels(product_id);
-CREATE INDEX idx_stock_levels_location ON stock_levels(location_id);
-CREATE INDEX idx_stock_levels_available ON stock_levels(quantity_available);
-CREATE INDEX idx_stock_levels_reorder ON stock_levels(quantity_available, reorder_point) WHERE quantity_available <= reorder_point;
+CREATE INDEX IF NOT EXISTS idx_stock_levels_product ON stock_levels(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_levels_location ON stock_levels(location_id);
+CREATE INDEX IF NOT EXISTS idx_stock_levels_available ON stock_levels(quantity_available);
+CREATE INDEX IF NOT EXISTS idx_stock_levels_reorder ON stock_levels(quantity_available, reorder_point) WHERE quantity_available <= reorder_point;
 
 COMMENT ON TABLE stock_levels IS 'Real-time stock levels by product and location';
 
@@ -83,13 +83,13 @@ CREATE TABLE IF NOT EXISTS stock_movements (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_stock_movements_product ON stock_movements(product_id);
-CREATE INDEX idx_stock_movements_from ON stock_movements(from_location_id);
-CREATE INDEX idx_stock_movements_to ON stock_movements(to_location_id);
-CREATE INDEX idx_stock_movements_type ON stock_movements(movement_type);
-CREATE INDEX idx_stock_movements_status ON stock_movements(status);
-CREATE INDEX idx_stock_movements_reference ON stock_movements(reference_id, reference_type);
-CREATE INDEX idx_stock_movements_created ON stock_movements(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_from ON stock_movements(from_location_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_to ON stock_movements(to_location_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_type ON stock_movements(movement_type);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_status ON stock_movements(status);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_reference ON stock_movements(reference_id, reference_type);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_created ON stock_movements(created_at DESC);
 
 COMMENT ON TABLE stock_movements IS 'Complete audit trail of all stock movements';
 
@@ -119,11 +119,11 @@ CREATE TABLE IF NOT EXISTS replenishment_orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_replenishment_product ON replenishment_orders(product_id);
-CREATE INDEX idx_replenishment_location ON replenishment_orders(location_id);
-CREATE INDEX idx_replenishment_status ON replenishment_orders(order_status);
-CREATE INDEX idx_replenishment_supplier ON replenishment_orders(supplier_id);
-CREATE INDEX idx_replenishment_expected ON replenishment_orders(expected_delivery_date);
+CREATE INDEX IF NOT EXISTS idx_replenishment_product ON replenishment_orders(product_id);
+CREATE INDEX IF NOT EXISTS idx_replenishment_location ON replenishment_orders(location_id);
+CREATE INDEX IF NOT EXISTS idx_replenishment_status ON replenishment_orders(order_status);
+CREATE INDEX IF NOT EXISTS idx_replenishment_supplier ON replenishment_orders(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_replenishment_expected ON replenishment_orders(expected_delivery_date);
 
 COMMENT ON TABLE replenishment_orders IS 'Purchase orders for stock replenishment';
 
@@ -147,12 +147,12 @@ CREATE TABLE IF NOT EXISTS stock_alerts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_stock_alerts_product ON stock_alerts(product_id);
-CREATE INDEX idx_stock_alerts_location ON stock_alerts(location_id);
-CREATE INDEX idx_stock_alerts_type ON stock_alerts(alert_type);
-CREATE INDEX idx_stock_alerts_severity ON stock_alerts(severity);
-CREATE INDEX idx_stock_alerts_resolved ON stock_alerts(is_resolved);
-CREATE INDEX idx_stock_alerts_created ON stock_alerts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_stock_alerts_product ON stock_alerts(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_alerts_location ON stock_alerts(location_id);
+CREATE INDEX IF NOT EXISTS idx_stock_alerts_type ON stock_alerts(alert_type);
+CREATE INDEX IF NOT EXISTS idx_stock_alerts_severity ON stock_alerts(severity);
+CREATE INDEX IF NOT EXISTS idx_stock_alerts_resolved ON stock_alerts(is_resolved);
+CREATE INDEX IF NOT EXISTS idx_stock_alerts_created ON stock_alerts(created_at DESC);
 
 COMMENT ON TABLE stock_alerts IS 'Automated alerts for inventory issues';
 
@@ -177,10 +177,10 @@ CREATE TABLE IF NOT EXISTS cycle_counts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_cycle_counts_location ON cycle_counts(location_id);
-CREATE INDEX idx_cycle_counts_status ON cycle_counts(count_status);
-CREATE INDEX idx_cycle_counts_scheduled ON cycle_counts(scheduled_date);
-CREATE INDEX idx_cycle_counts_assigned ON cycle_counts(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_cycle_counts_location ON cycle_counts(location_id);
+CREATE INDEX IF NOT EXISTS idx_cycle_counts_status ON cycle_counts(count_status);
+CREATE INDEX IF NOT EXISTS idx_cycle_counts_scheduled ON cycle_counts(scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_cycle_counts_assigned ON cycle_counts(assigned_to);
 
 COMMENT ON TABLE cycle_counts IS 'Scheduled inventory cycle counts';
 
@@ -204,10 +204,10 @@ CREATE TABLE IF NOT EXISTS cycle_count_details (
     notes TEXT
 );
 
-CREATE INDEX idx_cycle_count_details_count ON cycle_count_details(count_id);
-CREATE INDEX idx_cycle_count_details_product ON cycle_count_details(product_id);
-CREATE INDEX idx_cycle_count_details_variance ON cycle_count_details(variance) WHERE variance != 0;
-CREATE INDEX idx_cycle_count_details_reconciled ON cycle_count_details(is_reconciled);
+CREATE INDEX IF NOT EXISTS idx_cycle_count_details_count ON cycle_count_details(count_id);
+CREATE INDEX IF NOT EXISTS idx_cycle_count_details_product ON cycle_count_details(product_id);
+CREATE INDEX IF NOT EXISTS idx_cycle_count_details_variance ON cycle_count_details(variance) WHERE variance != 0;
+CREATE INDEX IF NOT EXISTS idx_cycle_count_details_reconciled ON cycle_count_details(is_reconciled);
 
 COMMENT ON TABLE cycle_count_details IS 'Individual product counts within cycle counts';
 
@@ -234,12 +234,12 @@ CREATE TABLE IF NOT EXISTS inventory_batches (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_inventory_batches_product ON inventory_batches(product_id);
-CREATE INDEX idx_inventory_batches_location ON inventory_batches(location_id);
-CREATE INDEX idx_inventory_batches_number ON inventory_batches(batch_number);
-CREATE INDEX idx_inventory_batches_expiry ON inventory_batches(expiry_date);
-CREATE INDEX idx_inventory_batches_status ON inventory_batches(quality_status);
-CREATE INDEX idx_inventory_batches_active ON inventory_batches(is_active);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_product ON inventory_batches(product_id);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_location ON inventory_batches(location_id);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_number ON inventory_batches(batch_number);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_expiry ON inventory_batches(expiry_date);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_status ON inventory_batches(quality_status);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_inventory_batches_active ON inventory_batches(is_active);
 
 COMMENT ON TABLE inventory_batches IS 'Batch and lot tracking for inventory';
 
@@ -263,11 +263,11 @@ CREATE TABLE IF NOT EXISTS stock_reservations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_stock_reservations_product ON stock_reservations(product_id);
-CREATE INDEX idx_stock_reservations_location ON stock_reservations(location_id);
-CREATE INDEX idx_stock_reservations_order ON stock_reservations(order_id);
-CREATE INDEX idx_stock_reservations_status ON stock_reservations(reservation_status);
-CREATE INDEX idx_stock_reservations_expiry ON stock_reservations(reserved_until);
+CREATE INDEX IF NOT EXISTS idx_stock_reservations_product ON stock_reservations(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_reservations_location ON stock_reservations(location_id);
+CREATE INDEX IF NOT EXISTS idx_stock_reservations_order ON stock_reservations(order_id);
+CREATE INDEX IF NOT EXISTS idx_stock_reservations_status ON stock_reservations(reservation_status);
+CREATE INDEX IF NOT EXISTS idx_stock_reservations_expiry ON stock_reservations(reserved_until);
 
 COMMENT ON TABLE stock_reservations IS 'Stock reservations for orders';
 
@@ -289,9 +289,9 @@ CREATE TABLE IF NOT EXISTS inventory_valuation (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_inventory_valuation_product ON inventory_valuation(product_id);
-CREATE INDEX idx_inventory_valuation_location ON inventory_valuation(location_id);
-CREATE INDEX idx_inventory_valuation_date ON inventory_valuation(valuation_date DESC);
+CREATE INDEX IF NOT EXISTS idx_inventory_valuation_product ON inventory_valuation(product_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_valuation_location ON inventory_valuation(location_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_valuation_date ON inventory_valuation(valuation_date DESC);
 
 COMMENT ON TABLE inventory_valuation IS 'Historical inventory valuation records';
 
@@ -323,7 +323,7 @@ JOIN warehouse_locations wl ON sl.location_id = wl.location_id
 WHERE wl.is_active = true;
 
 CREATE UNIQUE INDEX idx_inventory_summary_product_location ON inventory_summary(product_id, location_id);
-CREATE INDEX idx_inventory_summary_status ON inventory_summary(stock_status);
+CREATE INDEX IF NOT EXISTS idx_inventory_summary_status ON inventory_summary(stock_status);
 
 COMMENT ON MATERIALIZED VIEW inventory_summary IS 'Real-time inventory summary across all locations';
 
@@ -340,8 +340,8 @@ FROM stock_movements
 WHERE created_at >= CURRENT_DATE - INTERVAL '90 days'
 GROUP BY product_id, movement_type, DATE_TRUNC('day', created_at);
 
-CREATE INDEX idx_stock_movement_summary_product ON stock_movement_summary(product_id);
-CREATE INDEX idx_stock_movement_summary_date ON stock_movement_summary(movement_date DESC);
+CREATE INDEX IF NOT EXISTS idx_stock_movement_summary_product ON stock_movement_summary(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movement_summary_date ON stock_movement_summary(movement_date DESC);
 
 COMMENT ON MATERIALIZED VIEW stock_movement_summary IS 'Stock movement analytics for last 90 days';
 
