@@ -238,6 +238,34 @@ services:
       - dev
     restart: unless-stopped
 
+  # Document Generation Agent
+  document-generation-agent:
+    build:
+      context: ../agents
+      dockerfile: Dockerfile.document_generation
+    container_name: multi-agent-document-generation
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: multi_agent_ecommerce
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DOCUMENT_STORAGE_PATH: /app/storage/documents
+    volumes:
+      - document_storage:/app/storage/documents
+    networks:
+      - multi-agent-network
+    depends_on:
+      - postgres
+      - kafka
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep document_generation_agent.py || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
   # pgAdmin (Optional - for development)
   pgadmin:
     image: dpage/pgadmin4:7.8
@@ -304,6 +332,8 @@ volumes:
   pgadmin_data:
     driver: local
   init_scripts:
+    driver: local
+  document_storage:
     driver: local
 
 networks:
