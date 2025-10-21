@@ -146,6 +146,9 @@ class AIMarketplaceMonitoringService:
                         data_type=data_type,
                         issue_count=len(issues))
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return issues
     
     async def generate_ai_suggestion(
@@ -183,6 +186,9 @@ class AIMarketplaceMonitoringService:
                         issue_type=issue_type,
                         confidence=suggestion.confidence)
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return suggestion
     
     def _generate_new_suggestion(
@@ -235,6 +241,9 @@ class AIMarketplaceMonitoringService:
             reasoning = "No automatic suggestion available"
             confidence = 0.30
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return AISuggestion(
             issue_type=issue_type,
             issue_description=issue["description"],
@@ -253,6 +262,7 @@ class AIMarketplaceMonitoringService:
         """
         Process human decision and update knowledge base.
         """
+        try:
         self.logger.info("Processing human decision",
                         decision_type=decision.human_decision,
                         pattern_id=str(pattern_id))
@@ -273,6 +283,9 @@ class AIMarketplaceMonitoringService:
                            pattern_id=str(pattern_id),
                            confidence=new_confidence)
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return {
             "status": "processed",
             "new_confidence": new_confidence,
@@ -311,6 +324,9 @@ class AIMarketplaceMonitoringService:
                         "confidence": rule.confidence_threshold
                     }
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return None
     
     def _get_required_fields(self, marketplace_name: str, data_type: str) -> List[str]:
@@ -335,6 +351,9 @@ class AIMarketplaceMonitoringService:
             }
         }
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return required_fields_map.get(marketplace_name, {}).get(data_type, [])
     
     def _validate_formats(
@@ -368,6 +387,9 @@ class AIMarketplaceMonitoringService:
                     "severity": "medium"
                 })
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return issues
     
     def _validate_business_rules(
@@ -401,6 +423,9 @@ class AIMarketplaceMonitoringService:
                     "severity": "high"
                 })
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return issues
     
     def _create_pattern_signature(
@@ -409,6 +434,9 @@ class AIMarketplaceMonitoringService:
         issue: Dict[str, Any]
     ) -> str:
         """Create unique signature for issue pattern."""
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return f"{marketplace_name}:{issue['issue_type']}:{issue.get('field', 'unknown')}"
     
     def _check_knowledge_base(self, pattern_signature: str) -> Optional[Dict[str, Any]]:
@@ -418,6 +446,9 @@ class AIMarketplaceMonitoringService:
             # Return learned solution if exists
             # (In production, query from database)
             return None
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return None
     
     def _calculate_confidence(
@@ -455,6 +486,9 @@ class AIMarketplaceMonitoringService:
     def _matches_pattern(self, pattern_signature: str, pattern_id: UUID) -> bool:
         """Check if pattern signature matches pattern ID."""
         # Simplified matching (in production, query from database)
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return pattern_signature in self.knowledge_base
     
     def _apply_correction(
@@ -470,6 +504,9 @@ class AIMarketplaceMonitoringService:
         for field, value in correction_logic.items():
             corrected_data[field] = value
         
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return corrected_data
 
 
@@ -522,6 +559,9 @@ async def auto_correct(
     """Attempt auto-correction."""
     result = await service.auto_correct(marketplace_name, issue, data)
     if result:
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            raise
         return result
     else:
         raise HTTPException(status_code=404, detail="No auto-correction rule found")

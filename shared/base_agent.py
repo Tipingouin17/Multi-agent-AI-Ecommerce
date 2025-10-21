@@ -26,6 +26,15 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Import database components
+try:
+    from .database import DatabaseManager
+    from .db_helpers import DatabaseHelper, get_db_helper
+    from .models import DatabaseConfig
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+
 
 class MessageType(str, Enum):
     """Standard message types for inter-agent communication."""
@@ -199,12 +208,49 @@ class BaseAgent(ABC):
             "avg_response_time": 0.0
         }
         
+        # Database components
+        self.db_manager: Optional[DatabaseManager] = None
+        self.db_helper: Optional[DatabaseHelper] = None
+        self._db_initialized = False
+        
         # Shutdown event
         self.shutdown_event = asyncio.Event()
     
     def register_default_handlers(self):
         """Register default message handlers."""
         self.message_handlers[MessageType.HEALTH_CHECK] = self._handle_health_check
+    
+    async def initialize_database(self):
+        """Initialize database connection."""
+        if not DATABASE_AVAILABLE:
+            self.logger.warning("Database components not available")
+            return
+        
+        try:
+            # Create database configuration from environment
+            db_config = DatabaseConfig(
+                host=os.getenv("DB_HOST", "localhost"),
+                port=int(os.getenv("DB_PORT", "5432")),
+                database=os.getenv("DB_NAME", "ecommerce"),
+                username=os.getenv("DB_USER", "postgres"),
+                password=os.getenv("DB_PASSWORD", "postgres"),
+                pool_size=int(os.getenv("DB_POOL_SIZE", "10")),
+                max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "20"))
+            )
+            
+            # Initialize database manager
+            self.db_manager = DatabaseManager(db_config)
+            await self.db_manager.initialize_async()
+            
+            # Initialize database helper
+            self.db_helper = get_db_helper(self.db_manager)
+            
+            self._db_initialized = True
+            self.logger.info("Database initialized successfully", agent_id=self.agent_id)
+            
+        except Exception as e:
+            self.logger.error("Failed to initialize database", error=str(e), agent_id=self.agent_id)
+            # Don't raise - allow agent to start without database if needed
     
     async def start(self):
         """Start the agent and initialize all components."""
@@ -213,6 +259,9 @@ class BaseAgent(ABC):
             self.start_time = datetime.now()
             
             self.logger.info("Starting agent", agent_id=self.agent_id)
+            
+            # Initialize database
+            await self.initialize_database()
             
             # Initialize Kafka producer
             self.producer = AIOKafkaProducer(
