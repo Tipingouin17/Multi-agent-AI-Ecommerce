@@ -1,0 +1,38 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements_document_generation.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements_document_generation.txt
+
+# Copy agent code
+COPY document_generation_agent.py .
+
+# Create storage directory
+RUN mkdir -p /app/storage/documents
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV DB_HOST=postgres
+ENV DB_PORT=5432
+ENV DB_NAME=ecommerce
+ENV KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+ENV DOCUMENT_STORAGE_PATH=/app/storage/documents
+
+# Expose port for health checks (optional)
+EXPOSE 8080
+
+# Run the agent
+CMD ["python", "document_generation_agent.py"]
+
