@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: multi_agent_ecommerce
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -40,7 +40,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
 
   # Zookeeper (required for Kafka)
   zookeeper:

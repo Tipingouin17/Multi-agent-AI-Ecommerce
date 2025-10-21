@@ -6,6 +6,10 @@ These workflows demonstrate the Saga pattern in action.
 """
 
 from typing import Dict, Any
+
+import structlog
+
+logger = structlog.get_logger(__name__)
 from agents.saga_orchestrator import SagaDefinition, SagaStep
 
 

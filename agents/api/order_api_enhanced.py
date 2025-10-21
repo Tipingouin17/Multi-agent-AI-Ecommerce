@@ -6,6 +6,10 @@ including modifications, splits, partial shipments, fulfillment, and cancellatio
 """
 
 from datetime import datetime
+
+import structlog
+
+logger = structlog.get_logger(__name__)
 from decimal import Decimal
 from typing import Dict, List, Optional
 

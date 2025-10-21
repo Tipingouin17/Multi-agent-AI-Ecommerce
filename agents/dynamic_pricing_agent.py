@@ -34,25 +34,25 @@ project_root = os.path.dirname(current_dir)
 # Add the project root to the Python path
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-    print(f"Added {project_root} to Python path")
+    logger.info(f"Added {project_root} to Python path")
 
 # Now try the import
 try:
     from shared.openai_helper import chat_completion
     from shared.base_agent import BaseAgent, MessageType, AgentMessage
-    print("Successfully imported shared.base_agent")
+    logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
-    print(f"Import error: {e}")
-    print(f"Current sys.path: {sys.path}")
+    logger.error(f"Import error: {e}")
+    logger.info(f"Current sys.path: {sys.path}")
     
     # List files in the shared directory to verify it exists
     shared_dir = os.path.join(project_root, "shared")
     if os.path.exists(shared_dir):
-        print(f"Contents of {shared_dir}:")
+        logger.info(f"Contents of {shared_dir}:")
         for item in os.listdir(shared_dir):
-            print(f"  - {item}")
+            logger.info(f"  - {item}")
     else:
-        print(f"Directory not found: {shared_dir}")
+        logger.info(f"Directory not found: {shared_dir}")
 
 from shared.base_agent import BaseAgent, MessageType, AgentMessage
 from shared.models import APIResponse
@@ -1324,7 +1324,9 @@ if __name__ == "__main__":
         port=int(os.getenv("POSTGRES_PORT", "5432")),
         database=os.getenv("POSTGRES_DB", "multi_agent_ecommerce"),
         username=os.getenv("POSTGRES_USER", "postgres"),
-        password=os.getenv("POSTGRES_PASSWORD", "postgres123")
+        password=os.getenv("POSTGRES_PASSWORD")
+        if not password:
+            raise ValueError("Database password must be set in environment variables")
     )
     initialize_database_manager(db_config)
     

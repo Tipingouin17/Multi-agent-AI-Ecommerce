@@ -20,7 +20,9 @@ DB_CONFIG = {
     "port": 5432,
     "database": "multi_agent_ecommerce",
     "user": "postgres",
-    "password": os.environ.get('DATABASE_PASSWORD', 'postgres123'),
+    "password": os.environ.get("DATABASE_PASSWORD"),
+    if not password:
+        raise ValueError("Database password must be set in environment variables")
 }
 
 app = FastAPI(title="Multi-Agent E-commerce API", version="1.0.0")
@@ -28,7 +30,7 @@ app = FastAPI(title="Multi-Agent E-commerce API", version="1.0.0")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(","),  # In production, specify exact origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

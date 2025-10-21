@@ -26,7 +26,7 @@ async def run_migration():
     db_port = int(os.getenv('POSTGRES_PORT', 5432))
     db_name = os.getenv('POSTGRES_DB', 'multi_agent_ecommerce')
     db_user = os.getenv('POSTGRES_USER', 'postgres')
-    db_password = os.getenv('POSTGRES_PASSWORD', 'postgres123')
+    db_password = os.getenv('POSTGRES_PASSWORD')
     
     print("=" * 70)
     print("Order Agent Enhancement - Database Migration")

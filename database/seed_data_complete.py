@@ -27,7 +27,7 @@ DB_CONFIG = {
     "port": 5432,
     "database": "multi_agent_ecommerce",
     "user": "postgres",
-    "password": os.environ.get('DATABASE_PASSWORD', 'postgres123'),
+    "password": os.environ.get('DATABASE_PASSWORD'),
 }
 
 class CompleteDatabaseSeeder:

@@ -62,7 +62,7 @@ DB_CONFIG = {
     "port": int(os.environ.get('DATABASE_PORT', 5432)),
     "database": os.environ.get('DATABASE_NAME', 'multi_agent_ecommerce'),
     "user": os.environ.get('DATABASE_USER', 'postgres'),
-    "password": os.environ.get('DATABASE_PASSWORD', 'postgres123'),
+    "password": os.environ.get('DATABASE_PASSWORD'),
 }
 
 class SystemSetup:
