@@ -12,6 +12,11 @@ from typing import Optional, Dict, List, Any
 from enum import Enum
 from pydantic import BaseModel, Field
 from decimal import Decimal
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+import os
+
 
 from shared.db_helpers import DatabaseHelper
 
@@ -697,3 +702,39 @@ if __name__ == "__main__":
     agent = AfterSalesAgent()
     asyncio.run(agent.run())
 
+
+
+# FastAPI Server Setup
+app = FastAPI(
+    title="After Sales Agent",
+    description="After Sales Agent - Multi-Agent E-commerce Platform",
+    version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "agent": "after_sales_agent"}
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "agent": "after_sales_agent",
+        "status": "running",
+        "version": "1.0.0"
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8011))
+    uvicorn.run(app, host="0.0.0.0", port=port)

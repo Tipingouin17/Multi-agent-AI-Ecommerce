@@ -16,6 +16,11 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 from typing import List, Dict
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+import os
+
 
 from shared.db_helpers import DatabaseHelper
 import psutil
@@ -306,3 +311,39 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# FastAPI Server Setup
+app = FastAPI(
+    title="Start Agents",
+    description="Start Agents - Multi-Agent E-commerce Platform",
+    version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "agent": "start_agents"}
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "agent": "start_agents",
+        "status": "running",
+        "version": "1.0.0"
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8016))
+    uvicorn.run(app, host="0.0.0.0", port=port)
