@@ -16,6 +16,8 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
@@ -451,7 +453,12 @@ class CarrierSelectionAgent(BaseAgent):
         try:
             # Check if carrier can deliver to destination
             if not self._can_deliver_to_destination(carrier, delivery_requirements.destination_country):
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
             
             # Calculate base cost
             base_cost = float(carrier.base_rate)
@@ -499,7 +506,12 @@ class CarrierSelectionAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to calculate carrier quote", error=str(e), carrier_id=carrier.id)
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
     
     def _can_deliver_to_destination(self, carrier: Carrier, destination_country: str) -> bool:
         """Check if carrier can deliver to the destination country."""
@@ -745,7 +757,12 @@ class CarrierSelectionAgent(BaseAgent):
         try:
             if not os.getenv("OPENAI_API_KEY"):
                 self.logger.warning("OpenAI API key not configured, skipping AI selection")
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
             
             response = await chat_completion(
                 model="gpt-3.5-turbo",
@@ -764,11 +781,21 @@ class CarrierSelectionAgent(BaseAgent):
                 return json.loads(content)
             except json.JSONDecodeError:
                 self.logger.error("Failed to parse AI response as JSON", response=content)
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
         
         except Exception as e:
             self.logger.error("OpenAI API call failed", error=str(e))
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
     
     def _rule_based_carrier_selection(self, quotes: List[CarrierQuote], delivery_requirements: DeliveryRequirements) -> CarrierQuote:
         """Fallback rule-based carrier selection."""

@@ -33,6 +33,8 @@ import json
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
+
+from shared.db_helpers import DatabaseHelper
 import requests
 from decimal import Decimal
 

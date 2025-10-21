@@ -18,6 +18,8 @@ from email.mime.multipart import MIMEMultipart
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, EmailStr
 import structlog

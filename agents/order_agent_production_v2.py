@@ -10,6 +10,8 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import sys
@@ -240,7 +242,12 @@ class OrderAgent(BaseAgent):
             List of orders
         """
         if not self._db_initialized:
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
         
         try:
             async with self.db_manager.get_session() as session:
@@ -256,7 +263,12 @@ class OrderAgent(BaseAgent):
                 
         except Exception as e:
             logger.error(f"Error getting orders: {e}")
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def get_order_by_id(self, order_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -269,7 +281,12 @@ class OrderAgent(BaseAgent):
             Order data or None
         """
         if not self._db_initialized:
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
         
         try:
             async with self.db_manager.get_session() as session:
@@ -277,11 +294,21 @@ class OrderAgent(BaseAgent):
                 
                 if order:
                     return self.db_helper.to_dict(order)
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
                 
         except Exception as e:
             logger.error(f"Error getting order {order_id}: {e}")
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
     
     async def update_status(self, order_id: str, status: str) -> bool:
         """

@@ -16,6 +16,8 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 from typing import List, Dict
+
+from shared.db_helpers import DatabaseHelper
 import psutil
 
 # Add the project root to the Python path

@@ -21,6 +21,8 @@ from uuid import uuid4
 from enum import Enum
 from decimal import Decimal
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
@@ -1264,7 +1266,12 @@ class D2CEcommerceAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to fetch D2C orders", error=str(e))
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def _fetch_shopify_orders(self, credentials: D2CCredentials) -> List[Dict[str, Any]]:
         """Fetch orders from Shopify API."""
@@ -1704,7 +1711,12 @@ class D2CEcommerceAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to process D2C customer", error=str(e))
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
     
     async def _process_webhook(self, webhook_data: Dict[str, Any]) -> Dict[str, Any]:
         """Process webhook from D2C platform."""

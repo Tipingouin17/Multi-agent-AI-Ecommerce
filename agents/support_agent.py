@@ -67,6 +67,8 @@ from typing import Dict, List, Optional, Any
 from uuid import uuid4, UUID
 from enum import Enum
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body
 from pydantic import BaseModel, Field
 import structlog
@@ -323,7 +325,12 @@ class SupportRepository:
         result = await self.db.fetch_one(query, ticket_id)
         
         if not result:
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
         
         now = datetime.utcnow()
         resolution_due = result['resolution_due']

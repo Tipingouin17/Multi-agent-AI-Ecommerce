@@ -14,6 +14,8 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import sys
@@ -145,7 +147,12 @@ class OrderAgent(BaseAgent):
     async def get_orders_from_db(self, skip: int, limit: int) -> List[Dict]:
         """Get orders from database"""
         logger.info(f"Getting orders: skip={skip}, limit={limit}")
-        return []
+        if not self._db_initialized:
+            return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def create_order_in_db(self, order: Order) -> str:
         """Create order in database"""

@@ -17,6 +17,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 from enum import Enum
+
+from shared.db_helpers import DatabaseHelper
 import base64
 import hmac
 import hashlib
@@ -863,7 +865,12 @@ class StandardMarketplaceAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to fetch marketplace orders", error=str(e))
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, MarketplaceOrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def _fetch_amazon_orders(self, credentials: MarketplaceCredentials) -> List[Dict[str, Any]]:
         """Fetch orders from Amazon SP-API."""
@@ -1230,7 +1237,12 @@ class StandardMarketplaceAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to get current inventory", error=str(e))
+            if not self._db_initialized:
             return {}
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, MarketplaceOrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else {}
     
     async def _update_marketplace_inventory(self, listing: ProductListing, new_quantity: int, credentials: MarketplaceCredentials) -> Dict[str, Any]:
         """Update inventory quantity on marketplace."""

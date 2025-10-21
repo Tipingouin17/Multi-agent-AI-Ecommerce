@@ -12,6 +12,8 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import structlog
@@ -347,7 +349,12 @@ class OrderAgent(BaseAgent):
             order = await self.repository.get_by_id(order_id)
             if order:
                 return order.__dict__
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
         
         except Exception as e:
             self.logger.error("Failed to get order", error=str(e), order_id=order_id)

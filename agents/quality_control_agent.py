@@ -13,6 +13,8 @@ from enum import Enum
 from pydantic import BaseModel, Field
 from decimal import Decimal
 
+from shared.db_helpers import DatabaseHelper
+
 # Add parent directory to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -486,7 +488,12 @@ class QualityControlAgent(BaseAgent):
             logger.error("Failed to analyze supplier quality",
                         error=str(e),
                         supplier_id=supplier_id)
+            if not self._db_initialized:
             return {}
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, QualityInspectionDB, record_id)
+            return self.db_helper.to_dict(record) if record else {}
     
     # Database helper methods
     async def _load_quality_standards(self):
@@ -531,7 +538,12 @@ class QualityControlAgent(BaseAgent):
     ) -> List[Dict[str, Any]]:
         """Get quality issues for supplier in period"""
         # Implementation would query database
-        return []
+        if not self._db_initialized:
+            return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, QualityInspectionDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def _get_supplier_received_quantity(
         self,

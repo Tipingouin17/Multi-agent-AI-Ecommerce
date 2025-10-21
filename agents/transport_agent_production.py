@@ -12,6 +12,8 @@ from typing import Optional, Dict, List, Any
 from enum import Enum
 from pydantic import BaseModel, Field
 from decimal import Decimal
+
+from shared.db_helpers import DatabaseHelper
 import pandas as pd
 import io
 

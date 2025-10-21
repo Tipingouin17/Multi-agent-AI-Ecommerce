@@ -9,6 +9,8 @@ from typing import Dict, List, Optional
 from uuid import uuid4, UUID
 from enum import Enum
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException, Depends, Body
 from pydantic import BaseModel
 import structlog

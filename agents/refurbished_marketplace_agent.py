@@ -18,6 +18,8 @@ from uuid import uuid4
 from enum import Enum
 from decimal import Decimal
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
@@ -1130,7 +1132,12 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to fetch refurbished orders", error=str(e))
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, MarketplaceOrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def _fetch_back_market_orders(self, credentials: RefurbishedCredentials) -> List[Dict[str, Any]]:
         """Fetch orders from Back Market API."""

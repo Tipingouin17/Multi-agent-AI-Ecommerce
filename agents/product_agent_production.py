@@ -16,6 +16,8 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import structlog
@@ -186,7 +188,12 @@ class ProductAgent(BaseAgent):
         # This would query the database
         # For now, return empty list
         logger.info(f"Getting products: skip={skip}, limit={limit}")
-        return []
+        if not self._db_initialized:
+            return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, ProductDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def create_product_in_db(self, product: Product) -> str:
         """Create product in database"""

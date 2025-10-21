@@ -12,6 +12,8 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import uuid4, UUID
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body
 from pydantic import BaseModel
 import structlog

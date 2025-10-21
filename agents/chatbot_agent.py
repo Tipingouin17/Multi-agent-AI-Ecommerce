@@ -69,6 +69,8 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from uuid import uuid4, UUID
 from enum import Enum
+
+from shared.db_helpers import DatabaseHelper
 import re
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body

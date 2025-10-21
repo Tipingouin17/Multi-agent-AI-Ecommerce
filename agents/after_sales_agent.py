@@ -13,6 +13,8 @@ from enum import Enum
 from pydantic import BaseModel, Field
 from decimal import Decimal
 
+from shared.db_helpers import DatabaseHelper
+
 # Add parent directory to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)

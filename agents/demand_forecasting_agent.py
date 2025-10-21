@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
@@ -823,11 +825,21 @@ class DemandForecastingAgent(BaseAgent):
                     for _, row in df.iterrows()
                 ]
             
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
         
         except Exception as e:
             self.logger.error("Failed to get historical sales data", error=str(e))
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def _get_recent_sales_data(self, product_id: str, warehouse_id: Optional[str], days: int = 7) -> List[Dict[str, Any]]:
         """Get recent sales data for a product."""
@@ -839,7 +851,12 @@ class DemandForecastingAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to get recent sales data", error=str(e))
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def _get_products_for_reorder_analysis(self, warehouse_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get products that need reorder analysis."""
@@ -878,7 +895,12 @@ class DemandForecastingAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to get products for reorder analysis", error=str(e))
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def _calculate_reorder_recommendation(
         self, 

@@ -15,6 +15,8 @@ from datetime import datetime, time
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog

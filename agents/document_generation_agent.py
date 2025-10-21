@@ -30,6 +30,8 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from io import BytesIO
+
+from shared.db_helpers import DatabaseHelper
 import base64
 
 # PDF generation

@@ -11,6 +11,8 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import structlog
@@ -408,7 +410,12 @@ class ProductAgent(BaseAgent):
             product = await self.repository.get_by_id(product_id)
             if product:
                 return product.__dict__
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, ProductDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
         
         except Exception as e:
             self.logger.error("Failed to get product", error=str(e), product_id=product_id)

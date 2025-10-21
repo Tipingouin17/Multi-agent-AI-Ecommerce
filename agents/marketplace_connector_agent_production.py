@@ -12,6 +12,8 @@ from typing import Optional, Dict, List, Any
 from pydantic import BaseModel
 from decimal import Decimal
 
+from shared.db_helpers import DatabaseHelper
+
 # Add parent directory to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)

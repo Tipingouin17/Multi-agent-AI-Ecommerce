@@ -14,6 +14,8 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import sys
@@ -117,7 +119,12 @@ class WarehouseAgent(BaseAgent):
     async def get_warehouses_from_db(self) -> List[Dict]:
         """Get warehouses from database"""
         logger.info("Getting warehouses from database")
-        return []
+        if not self._db_initialized:
+            return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, ProductDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def process_message(self, message: AgentMessage):
         """Process incoming messages"""

@@ -19,6 +19,8 @@ from uuid import uuid4
 from enum import Enum
 from dataclasses import dataclass
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
@@ -879,7 +881,12 @@ class RiskAnomalyDetectionAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("AI risk assessment failed", error=str(e))
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
     
     async def _rule_based_risk_assessment(self, risk_category: RiskCategory, context: Dict[str, Any]) -> Dict[str, Any]:
         """Rule-based risk assessment as fallback."""

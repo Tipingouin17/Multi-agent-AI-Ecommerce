@@ -22,6 +22,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
+
+from shared.db_helpers import DatabaseHelper
 import statistics
 import psutil
 import requests
@@ -646,7 +648,12 @@ class AIMonitoringAgent:
             )
             
             if not response:
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
             
             ai_response = json.loads(response["choices"][0]["message"]["content"])
             
@@ -709,7 +716,12 @@ class AIMonitoringAgent:
     async def generate_performance_insights(self) -> List[PerformanceInsight]:
         """Generate AI-powered performance optimization insights"""
         if len(self.system_metrics_history) < 100:
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
         
         try:
             # Analyze recent performance trends
@@ -766,7 +778,12 @@ class AIMonitoringAgent:
             
         except Exception as e:
             logger.error(f"Error generating performance insights: {e}")
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def create_performance_insight(self, category: str, title: str, 
                                        description: str, trend_data: List[float]) -> Optional[PerformanceInsight]:
@@ -798,7 +815,12 @@ class AIMonitoringAgent:
             )
             
             if not response:
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
             
             ai_response = json.loads(response["choices"][0]["message"]["content"])
             
@@ -817,7 +839,12 @@ class AIMonitoringAgent:
             
         except Exception as e:
             logger.error(f"Error creating performance insight: {e}")
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
     
     async def attempt_auto_recovery(self):
         """Attempt automatic recovery for resolvable issues"""

@@ -17,6 +17,8 @@ from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 from enum import Enum
 
+from shared.db_helpers import DatabaseHelper
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
@@ -870,13 +872,23 @@ class ReverseLogisticsAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to analyze resale market", error=str(e))
+            if not self._db_initialized:
             return {}
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else {}
     
     async def _ai_resale_recommendation(self, product_id: str, condition: ItemCondition, market_analysis: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Use AI to generate resale recommendation."""
         try:
             if not os.getenv("OPENAI_API_KEY"):
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
             
             prompt = f"""
             Generate an optimal resale recommendation for this returned product:
@@ -934,7 +946,12 @@ class ReverseLogisticsAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("AI resale recommendation failed", error=str(e))
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
     
     async def _rule_based_resale_recommendation(self, product_id: str, condition: ItemCondition, market_analysis: Dict[str, Any]) -> ResaleRecommendation:
         """Rule-based resale recommendation as fallback."""

@@ -9,6 +9,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import uuid4, UUID
 from enum import Enum
+
+from shared.db_helpers import DatabaseHelper
 import sys
 import os
 
