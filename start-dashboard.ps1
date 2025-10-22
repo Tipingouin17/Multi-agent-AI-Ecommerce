@@ -143,7 +143,8 @@ if (-not $allFilesExist) {
 
 # Check if backend agents are running
 Write-Info "Checking if backend agents are running..."
-$agentPorts = @(8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010, 8011, 8012, 8013, 8014)
+# All 15 production agent ports
+$agentPorts = @(8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010, 8011, 8012, 8013, 8020, 8021)
 $runningAgents = 0
 
 foreach ($port in $agentPorts) {
