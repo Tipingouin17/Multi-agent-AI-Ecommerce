@@ -245,8 +245,8 @@ services:
   # Document Generation Agent
   document-generation-agent:
     build:
-      context: ../agents
-      dockerfile: Dockerfile.document_generation
+      context: ..
+      dockerfile: agents/Dockerfile.document_generation
     container_name: multi-agent-document-generation
     env_file:
       - ../.env

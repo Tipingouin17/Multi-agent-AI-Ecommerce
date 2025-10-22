@@ -11,16 +11,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY requirements_document_generation.txt .
+COPY agents/requirements_document_generation.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements_document_generation.txt
 
 # Copy shared modules
-COPY ../shared /app/shared
+COPY shared /app/shared
 
 # Copy agent code
-COPY document_generation_agent.py .
+COPY agents/document_generation_agent.py .
 
 # Create storage directory
 RUN mkdir -p /app/storage/documents
