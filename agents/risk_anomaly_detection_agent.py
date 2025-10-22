@@ -64,7 +64,7 @@ except ImportError as e:
         # logger.info(f"Directory not found: {shared_dir}")
 
 from shared.base_agent import BaseAgent, MessageType, AgentMessage
-from shared.models import APIResponse, Status
+from shared.models import APIResponse
 from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
 

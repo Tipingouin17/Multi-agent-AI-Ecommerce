@@ -497,14 +497,9 @@ class FraudDetectionAgent(BaseAgent):
     This agent provides ML-based fraud detection, risk scoring, and anomaly detection
     for transactions, orders, and user behavior.
     """
-    def __init__(self, agent_id: str, agent_type: str):
-        """Initializes the FraudDetectionAgent.
-
-        Args:
-            agent_id (str): The unique identifier for the agent.
-            agent_type (str): The type of the agent.
-        """
-        super().__init__(agent_id)
+    def __init__(self):
+        """Initializes the FraudDetectionAgent."""
+        super().__init__(agent_id="fraud_detection_agent")
         self.db_manager = get_database_manager()
         self.db_helper = DatabaseHelper(self.db_manager)
         self.repository = FraudDetectionRepository(self.db_helper)
