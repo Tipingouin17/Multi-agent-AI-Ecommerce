@@ -210,7 +210,7 @@ class ReverseLogisticsAgent(BaseAgent):
         """Initialize the Reverse Logistics Agent, including database connection and background tasks."""
         self.logger.info("Initializing Reverse Logistics Agent")
         try:
-            await self.db_manager.connect()
+            await self.db_manager.initialize_async()
             self._db_initialized = True
             self.logger.info("Database connected successfully.")
 
@@ -231,7 +231,7 @@ class ReverseLogisticsAgent(BaseAgent):
         """Cleanup resources, including closing the database connection."""
         self.logger.info("Cleaning up Reverse Logistics Agent")
         try:
-            await self.db_manager.disconnect()
+            await self.db_manager.close()
             self.logger.info("Database disconnected successfully.")
         except Exception as e:
             self.logger.error(f"Error during database disconnection: {e}")

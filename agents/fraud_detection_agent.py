@@ -522,7 +522,7 @@ class FraudDetectionAgent(BaseAgent):
         """Initializes the agent, ensuring database connection and tables are ready."""
         await super().initialize()
         try:
-            await self.db_manager.connect()
+            await self.db_manager.initialize_async()
             # In a real scenario, you'd run migrations or check tables here.
             # For this example, we assume tables exist.
             logger.info("Database connected and initialized.")
@@ -539,7 +539,7 @@ class FraudDetectionAgent(BaseAgent):
     async def on_shutdown(self):
         """Handles agent shutdown tasks, such as disconnecting from the database."""
         logger.info("Fraud Detection Agent shutting down...")
-        await self.db_manager.disconnect()
+        await self.db_manager.close()
 
     def setup_routes(self):
         """Sets up FastAPI routes for the agent.
@@ -644,7 +644,7 @@ class FraudDetectionAgent(BaseAgent):
         """Cleanup agent resources"""
         try:
             if hasattr(self, 'db_manager') and self.db_manager:
-                await self.db_manager.disconnect()
+                await self.db_manager.close()
             await super().cleanup()
             logger.info(f"{self.agent_name} cleaned up successfully")
         except Exception as e:

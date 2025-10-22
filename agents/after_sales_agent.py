@@ -704,7 +704,7 @@ class AfterSalesAgent(BaseAgent):
             if self.kafka_consumer:
                 await self.kafka_consumer.stop()
             if self.db_manager:
-                await self.db_manager.disconnect()
+                await self.db_manager.close()
             await super().cleanup()
             logger.info(f"{self.agent_name} cleaned up successfully")
         except Exception as e:

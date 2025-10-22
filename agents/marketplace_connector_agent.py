@@ -481,7 +481,7 @@ class MarketplaceConnectorAgent(BaseAgent):
     async def _initialize_db(self):
         """Initializes the database manager connection."""
         if not self._db_initialized:
-            await self.db_manager.connect()
+            await self.db_manager.initialize_async()
             self._db_initialized = True
             self.logger.info("Database connection established for agent.")
 
@@ -498,7 +498,7 @@ class MarketplaceConnectorAgent(BaseAgent):
         @app.on_event("shutdown")
         async def shutdown_event():
             if self._db_initialized:
-                await self.db_manager.disconnect()
+                await self.db_manager.close()
                 self.logger.info("FastAPI shutdown event triggered. Database disconnected.")
 
         @app.get("/health", tags=["Monitoring"])

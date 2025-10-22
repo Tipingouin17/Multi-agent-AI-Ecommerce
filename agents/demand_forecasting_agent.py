@@ -205,7 +205,7 @@ class DemandForecastingAgent(BaseAgent):
         """
         self.logger.info("Cleaning up Demand Forecasting Agent")
         try:
-            await self.db_manager.disconnect()
+            await self.db_manager.close()
             self.logger.info("Database disconnected.")
         except Exception as e:
             self.logger.error(f"Error disconnecting from database: {e}")
@@ -216,7 +216,7 @@ class DemandForecastingAgent(BaseAgent):
         Ensures the database manager connects and sets the initialization flag.
         """
         try:
-            await self.db_manager.connect()
+            await self.db_manager.initialize_async()
             self._db_initialized = True
             self.logger.info("Database initialized successfully")
         except Exception as e:

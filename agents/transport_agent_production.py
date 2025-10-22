@@ -81,7 +81,7 @@ class TransportAgentProduction(BaseAgent):
             db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./transport_agent.db")
             self.db_manager = DatabaseManager(db_url)
             self.db_helper = DatabaseHelper(self.db_manager)
-            await self.db_manager.connect()
+            await self.db_manager.initialize_async()
             await self.db_manager.create_all()
             self._db_initialized = True
             logger.info("Database initialized successfully")
@@ -572,7 +572,7 @@ class TransportAgentProduction(BaseAgent):
             if self.kafka_consumer:
                 await self.kafka_consumer.stop()
             if self.db_manager:
-                await self.db_manager.disconnect()
+                await self.db_manager.close()
             await self.shutdown()
     
     async def cleanup(self):
@@ -583,7 +583,7 @@ class TransportAgentProduction(BaseAgent):
             if self.kafka_consumer:
                 await self.kafka_consumer.stop()
             if self.db_manager:
-                await self.db_manager.disconnect()
+                await self.db_manager.close()
             await super().cleanup()
             logger.info(f"{self.agent_name} cleaned up successfully")
         except Exception as e:

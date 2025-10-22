@@ -400,7 +400,7 @@ class ReturnsAgent(BaseAgent):
         """
         logger.info("ReturnsAgent setup initiated.")
         try:
-            await self.db_manager.connect()
+            await self.db_manager.initialize_async()
             self._db_initialized = True
             logger.info("ReturnsAgent database connected successfully.")
         except Exception as e:
@@ -468,7 +468,7 @@ class ReturnsAgent(BaseAgent):
         """
         logger.info("ReturnsAgent shutdown initiated.")
         try:
-            await self.db_manager.disconnect()
+            await self.db_manager.close()
             logger.info("ReturnsAgent database disconnected.")
         except Exception as e:
             logger.error("ReturnsAgent database disconnection failed", error=str(e))

@@ -96,7 +96,7 @@ class OrderAgent(BaseAgent):
         Initializes the database connection and sets the _db_initialized flag.
         """
         try:
-            await self.db_manager.connect()
+            await self.db_manager.initialize_async()
             self._db_initialized = True
             logger.info("Database connection established for Order Agent.")
         except Exception as e:
@@ -570,7 +570,7 @@ class OrderAgent(BaseAgent):
         """Cleanup agent resources"""
         try:
             if hasattr(self, 'db_manager') and self.db_manager:
-                await self.db_manager.disconnect()
+                await self.db_manager.close()
             await super().cleanup()
             logger.info(f"{self.agent_name} cleaned up successfully")
         except Exception as e:

@@ -646,7 +646,7 @@ class PaymentAgent(BaseAgent):
         This method connects to the database and sets the `_db_initialized` flag.
         """
         try:
-            await self.db_manager.connect()
+            await self.db_manager.initialize_async()
             self._db_initialized = True
             logger.info("PaymentAgent database connection established and initialized.")
         except Exception as e:
@@ -659,7 +659,7 @@ class PaymentAgent(BaseAgent):
         This method ensures proper resource management by disconnecting from the database.
         """
         try:
-            await self.db_manager.disconnect()
+            await self.db_manager.close()
             logger.info("PaymentAgent database connection closed.")
         except Exception as e:
             logger.error(f"Failed to close PaymentAgent database connection: {e}")
@@ -867,7 +867,7 @@ class PaymentAgent(BaseAgent):
         """Cleanup agent resources"""
         try:
             if hasattr(self, 'db_manager') and self.db_manager:
-                await self.db_manager.disconnect()
+                await self.db_manager.close()
             await super().cleanup()
             logger.info(f"{self.agent_name} cleaned up successfully")
         except Exception as e:
