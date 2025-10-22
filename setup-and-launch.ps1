@@ -239,11 +239,10 @@ function Initialize-Database {
         Write-Log "  Applying: $($migration.Name)" "INFO"
         
         $migrationPath = $migration.FullName
-        $migrationContent = Get-Content $migrationPath -Raw
         
-        # Execute migration
+        # Execute migration by piping file content to docker exec
         try {
-            $result = docker exec -i multi-agent-postgres psql -U postgres -d multi_agent_ecommerce -c "$migrationContent" 2>&1
+            $result = Get-Content $migrationPath -Raw | docker exec -i multi-agent-postgres psql -U postgres -d multi_agent_ecommerce 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 $migrationCount++
