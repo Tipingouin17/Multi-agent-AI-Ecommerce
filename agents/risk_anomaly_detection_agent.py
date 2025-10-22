@@ -217,7 +217,6 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
             self.db_manager: DatabaseManager = get_database_manager()
         except RuntimeError:
             from shared.models import DatabaseConfig
-from shared.health_checks import setup_health_endpoints
             db_config = DatabaseConfig()
             self.db_manager = DatabaseManager(db_config)
         self._db_initialized: bool = False

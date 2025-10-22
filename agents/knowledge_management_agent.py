@@ -28,7 +28,6 @@ if project_root not in sys.path:
 from shared.database import DatabaseManager, get_database_manager, Base  # Import Base for declarative models
 from shared.db_helpers import DatabaseHelper
 from shared.base_agent_v2 import BaseAgentV2, AgentMessage, MessageType # Import BaseAgent and messaging types
-from shared.health_checks import setup_health_endpoints
 from sqlalchemy import Column, String, DateTime, Integer, Text, ARRAY, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.future import select

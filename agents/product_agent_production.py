@@ -41,7 +41,6 @@ if project_root not in sys.path:
 # Import base agent
 try:
     from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
-from shared.health_checks import setup_health_endpoints
     logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
     logger.error(f"Import error: {e}")

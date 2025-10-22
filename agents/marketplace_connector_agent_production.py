@@ -26,7 +26,6 @@ from shared.base_agent_v2 import BaseAgentV2, AgentMessage, MessageType
 from shared.db_helpers import DatabaseHelper
 from shared.kafka_config import KafkaProducer, KafkaConsumer
 from shared.marketplace_apis import (
-from shared.health_checks import setup_health_endpoints
     get_marketplace_manager,
     MarketplaceOrderStatus,
     ProductListing,
