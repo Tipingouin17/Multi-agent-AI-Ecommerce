@@ -405,8 +405,6 @@ class WarehouseAgent(BaseAgent):
     async def initialize(self):
         """Initialize agent-specific components."""
         await super().initialize()
-        while not self._db_initialized:
-            await asyncio.sleep(0.1)
         logger.info(f"{self.agent_name} initialized successfully")
 
     async def cleanup(self):
