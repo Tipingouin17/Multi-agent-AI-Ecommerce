@@ -1267,6 +1267,7 @@ class D2CEcommerceAgent(BaseAgent):
         except Exception as e:
             self.logger.error("Failed to fetch D2C orders", error=str(e))
             if not self._db_initialized:
+                pass
             return []
         
         async with self.db_manager.get_session() as session:

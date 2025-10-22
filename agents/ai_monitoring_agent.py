@@ -649,6 +649,7 @@ class AIMonitoringAgent:
             
             if not response:
                 if not self._db_initialized:
+                    pass
             return None
         
         async with self.db_manager.get_session() as session:

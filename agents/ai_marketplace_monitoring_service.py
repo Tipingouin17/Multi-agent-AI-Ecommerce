@@ -147,6 +147,7 @@ class AIMarketplaceMonitoringService:
                         issue_count=len(issues))
         
         except Exception as e:
+            pass
             self.logger.error(f"Error: {e}")
             raise
         return issues
@@ -512,7 +513,7 @@ class AIMarketplaceMonitoringService:
 
 # FastAPI app
 app = FastAPI(title="AI Marketplace Monitoring Service")
-service = AIMarketplaceMonitoringService()
+service = AIMarketplaceMonitoringService(self.db_manager)
 
 
 @app.get("/health")
