@@ -29,7 +29,7 @@ if project_root not in sys.path:
 
 from shared.base_agent import AgentMessage, BaseAgent, MessageType
 from shared.db_helpers import DatabaseHelper
-from shared.database import DatabaseManager, DatabaseConfig, initialize_database_manager
+from shared.database import DatabaseManager, get_database_manager
 
 logger = structlog.get_logger(__name__)
 
@@ -215,10 +215,7 @@ class CustomerAgent(BaseAgent):
             logger.info("Database already initialized.")
             return
         try:
-            # Initialize database manager with config from environment
-            db_config = DatabaseConfig()
-            self.db_manager = initialize_database_manager(db_config)
-            await self.db_manager.initialize_async()
+            self.db_manager = await get_database_manager()
             self.db_helper_profile = DatabaseHelper(self.db_manager, "customer_profiles", CustomerProfile, "customer_id")
             self.db_helper_address = DatabaseHelper(self.db_manager, "customer_addresses", CustomerAddress, "address_id")
             self.db_helper_loyalty = DatabaseHelper(self.db_manager, "customer_loyalty", Loyalty, "loyalty_id")

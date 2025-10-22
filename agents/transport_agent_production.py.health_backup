@@ -49,7 +49,7 @@ class CarrierPriceUpload(BaseModel):
     uploaded_by: str
     upload_date: datetime = Field(default_factory=datetime.utcnow)
 
-class TransportAgentProduction(BaseAgentV2):
+class TransportAgentProduction(BaseAgent):
     """
     Transport Agent - Production Ready
     
