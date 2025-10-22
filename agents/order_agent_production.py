@@ -109,22 +109,22 @@ class OrderAgent(BaseAgent):
         """Initializes the OrderAgent, setting up database, services, and FastAPI app.
 
         Calls super().__init__() with agent_id and agent_type.
-        Initializes database connection and helper, enhanced services, and FastAPI application.
+        Database connection is deferred to initialize() method.
         """
         super().__init__(agent_id="order_agent")
 
+        # Store DB URL but don't create engine yet
         self.db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./order_agent.db")
-        self.engine = create_async_engine(self.db_url, echo=True)
-        self.async_session = sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
-        self.db_helper = DatabaseHelper(Base) # Assuming DatabaseHelper is compatible with SQLAlchemy 2.0 async
+        self.engine = None
+        self.async_session = None
+        self.db_helper = None
         self._db_initialized = False
-        pass  # DB init happens in initialize()
 
-        # Initialize enhanced services
-        self.cancellation_service = OrderCancellationService(self.db_manager) if OrderCancellationService else None
-        self.shipments_service = PartialShipmentsService(self.db_manager) if PartialShipmentsService else None
+        # Initialize enhanced services (will be set up in initialize())
+        self.cancellation_service = None
+        self.shipments_service = None
 
-        logger.info("Order Agent initialized with enhanced services")
+        logger.info("Order Agent constructor completed")
 
         # FastAPI app
         self.app = FastAPI(title="Order Agent API")
@@ -368,10 +368,26 @@ class OrderAgent(BaseAgent):
     async def initialize(self):
         """Initialize agent-specific components."""
         await super().initialize()
-        # Wait for database to be initialized
-        while not self._db_initialized:
-            await asyncio.sleep(0.1)
-        logger.info(f"{self.agent_name} initialized successfully")
+        
+        # Create database engine and session
+        try:
+            self.engine = create_async_engine(self.db_url, echo=True)
+            self.async_session = sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
+            self.db_helper = DatabaseHelper(Base)
+            
+            # Initialize database tables
+            await self._init_db()
+            
+            # Initialize enhanced services
+            if OrderCancellationService:
+                self.cancellation_service = OrderCancellationService(self.db_manager)
+            if PartialShipmentsService:
+                self.shipments_service = PartialShipmentsService(self.db_manager)
+            
+            logger.info(f"{self.agent_name} initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing OrderAgent: {e}")
+            raise
 
     async def cleanup(self):
         """Cleanup agent-specific resources."""
@@ -416,12 +432,23 @@ class OrderAgent(BaseAgent):
             return {"status": "error", "message": str(e)}
 
 
-# Create agent instance
-agent = OrderAgent()
-app = agent.app
+# Module-level app for ASGI servers (only create when running as main)
+app = None
 
 if __name__ == "__main__":
     import uvicorn
+    import asyncio
+    
+    # Create agent instance only when running as main
+    agent = OrderAgent()
+    app = agent.app
+    
+    # Initialize agent before starting server
+    async def startup():
+        await agent.initialize()
+    
+    asyncio.run(startup())
+    
     port = int(os.getenv("PORT", 8001))
     logger.info(f"Starting Order Agent on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)

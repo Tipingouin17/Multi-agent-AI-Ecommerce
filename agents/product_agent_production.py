@@ -251,11 +251,20 @@ class ProductAgent(BaseAgent):
             return {"status": "error", "message": str(e)}
 
 
-# Create agent instance
-agent = ProductAgent()
-app = agent.app
+# Module-level app for ASGI servers (only create when running as main)
+app = None
 
 if __name__ == "__main__":
+    # Create agent instance only when running as main
+    agent = ProductAgent()
+    app = agent.app
+    
+    # Initialize agent before starting server
+    import asyncio
+    async def startup():
+        await agent.initialize()
+    asyncio.run(startup())
+    
     import uvicorn
     logger.info("Starting Product Agent on port 8002")
     uvicorn.run(app, host="0.0.0.0", port=8002)

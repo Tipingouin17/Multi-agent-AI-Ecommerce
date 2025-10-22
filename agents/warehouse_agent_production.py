@@ -427,11 +427,20 @@ class WarehouseAgent(BaseAgent):
             return {"status": "error", "message": str(e)}
 
 
-# Create agent instance
-agent = WarehouseAgent()
-app = agent.app
+# Module-level app for ASGI servers (only create when running as main)
+app = None
 
 if __name__ == "__main__":
+    # Create agent instance only when running as main
+    agent = WarehouseAgent()
+    app = agent.app
+    
+    # Initialize agent before starting server
+    import asyncio
+    async def startup():
+        await agent.initialize()
+    asyncio.run(startup())
+    
     # Ensure environment variables are loaded if running directly
     from dotenv import load_dotenv
     load_dotenv()
