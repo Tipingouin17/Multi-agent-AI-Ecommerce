@@ -124,7 +124,7 @@ class BackofficeAgent(BaseAgent):
     """
     
     def __init__(self):
-        super().__init__("BackofficeAgent")
+        super().__init__(agent_id="BackofficeAgent")
         self.kafka_producer = None
         self.kafka_consumer = None
         self.fraud_threshold = 0.7  # Fraud score threshold

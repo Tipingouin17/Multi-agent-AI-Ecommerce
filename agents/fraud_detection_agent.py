@@ -504,7 +504,7 @@ class FraudDetectionAgent(BaseAgent):
             agent_id (str): The unique identifier for the agent.
             agent_type (str): The type of the agent.
         """
-        super().__init__(agent_id, agent_type)
+        super().__init__(agent_id)
         self.db_manager = get_database_manager()
         self.db_helper = DatabaseHelper(self.db_manager)
         self.repository = FraudDetectionRepository(self.db_helper)

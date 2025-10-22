@@ -53,9 +53,7 @@ class MarketplaceConnectorAgentProduction(BaseAgent):
         """
         Initializes the MarketplaceConnectorAgentProduction.
         """
-        agent_id = "MarketplaceConnectorAgentProduction"
-        agent_type = "MarketplaceConnector"
-        super().__init__(name="marketplace_connector_agent")
+        super().__init__(agent_id="marketplace_connector_agent")
         self.kafka_producer = None
         self.kafka_consumer = None
         self.marketplace_manager = get_marketplace_manager()

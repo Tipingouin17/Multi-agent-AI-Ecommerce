@@ -126,7 +126,7 @@ class AfterSalesAgent(BaseAgent):
     """
     
     def __init__(self):
-        super().__init__("AfterSalesAgent")
+        super().__init__(agent_id="AfterSalesAgent")
         self.kafka_producer = None
         self.kafka_consumer = None
         self.return_window_days = 30  # Standard return window

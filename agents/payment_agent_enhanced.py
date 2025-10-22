@@ -637,7 +637,7 @@ class PaymentAgent(BaseAgent):
             agent_type (str): The type of the agent (e.g., 'payment').
             db_manager (DatabaseManager): The database manager instance for database interactions.
         """
-        super().__init__(agent_id, agent_type)
+        super().__init__(agent_id)
         self.db_manager = db_manager
         self.repo = PaymentRepository(db_manager)
         self._db_initialized = False

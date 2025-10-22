@@ -470,7 +470,7 @@ class MarketplaceConnectorAgent(BaseAgent):
     """Marketplace Connector Agent for managing multi-marketplace integrations."""
     def __init__(self, agent_id: str, agent_type: str):
         """Initializes the MarketplaceConnectorAgent."""
-        super().__init__(agent_id, agent_type)
+        super().__init__(agent_id)
         self.db_manager = get_database_manager()
         self.repo = MarketplaceRepository(self.db_manager)
         self.service = MarketplaceService(self.repo)
@@ -515,8 +515,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.post("/api/v1/marketplaces/connections", response_model=MarketplaceConnection, tags=["Connections"])
         async def create_connection(
-            connection_data: Dict[str, Any] = Body(...),
-        ):
+            connection_data: Dict[str, Any] = Body(...)):
             """Creates a new marketplace connection."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -529,8 +528,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.get("/api/v1/marketplaces/connections", response_model=List[MarketplaceConnection], tags=["Connections"])
         async def get_connections(
-            active_only: bool = Query(True),
-        ):
+            active_only: bool = Query(True)):
             """Retrieves marketplace connections, optionally filtered by active status."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -543,8 +541,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.get("/api/v1/marketplaces/connections/{connection_id}", response_model=MarketplaceConnection, tags=["Connections"])
         async def get_connection_by_id(
-            connection_id: UUID = Path(..., description="The ID of the marketplace connection"),
-        ):
+            connection_id: UUID = Path(..., description="The ID of the marketplace connection")):
             """Retrieves a single marketplace connection by its ID."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -580,8 +577,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.delete("/api/v1/marketplaces/connections/{connection_id}", status_code=204, tags=["Connections"])
         async def delete_connection(
-            connection_id: UUID = Path(..., description="The ID of the marketplace connection to delete"),
-        ):
+            connection_id: UUID = Path(..., description="The ID of the marketplace connection to delete")):
             """Deletes a marketplace connection."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -598,8 +594,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.post("/api/v1/marketplaces/{connection_id}/sync-orders", response_model=SyncResult, tags=["Orders"])
         async def sync_orders(
-            connection_id: UUID = Path(..., description="The ID of the marketplace connection"),
-        ):
+            connection_id: UUID = Path(..., description="The ID of the marketplace connection")):
             """Triggers order synchronization for a specific marketplace connection."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -615,8 +610,7 @@ class MarketplaceConnectorAgent(BaseAgent):
         @app.get("/api/v1/marketplaces/{connection_id}/orders", response_model=List[MarketplaceOrder], tags=["Orders"])
         async def get_marketplace_orders(
             connection_id: UUID = Path(..., description="The ID of the marketplace connection"),
-            sync_status: Optional[SyncStatus] = Query(None, description="Filter orders by sync status"),
-        ):
+            sync_status: Optional[SyncStatus] = Query(None, description="Filter orders by sync status")):
             """Retrieves marketplace orders for a specific connection, optionally filtered by sync status."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -629,8 +623,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.post("/api/v1/marketplaces/sync-inventory", response_model=MarketplaceInventory, tags=["Inventory"])
         async def sync_inventory_endpoint(
-            inventory_data: InventorySyncRequest = Body(..., description="Inventory data to sync"),
-        ):
+            inventory_data: InventorySyncRequest = Body(..., description="Inventory data to sync")):
             """Synchronizes inventory data to a marketplace."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -645,8 +638,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.post("/api/v1/marketplaces/messages", response_model=MarketplaceMessage, tags=["Messages"])
         async def send_message_endpoint(
-            message_data: MessageCreate = Body(..., description="Message data to send"),
-        ):
+            message_data: MessageCreate = Body(..., description="Message data to send")):
             """Sends a message to a marketplace customer."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -661,8 +653,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.get("/api/v1/marketplaces/{connection_id}/messages/unread", response_model=List[MarketplaceMessage], tags=["Messages"])
         async def get_unread_messages_endpoint(
-            connection_id: UUID = Path(..., description="The ID of the marketplace connection"),
-        ):
+            connection_id: UUID = Path(..., description="The ID of the marketplace connection")):
             """Retrieves unread messages for a specific marketplace connection."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -675,8 +666,7 @@ class MarketplaceConnectorAgent(BaseAgent):
 
         @app.post("/api/v1/marketplaces/offers", response_model=MarketplaceOffer, tags=["Offers"])
         async def create_offer_endpoint(
-            offer_data: OfferCreate = Body(..., description="Offer data to create"),
-        ):
+            offer_data: OfferCreate = Body(..., description="Offer data to create")):
             """Creates a new offer on a marketplace."""
             try:
                 if not self._db_initialized: await self._initialize_db()
@@ -692,8 +682,7 @@ class MarketplaceConnectorAgent(BaseAgent):
         @app.get("/api/v1/marketplaces/{connection_id}/offers", response_model=List[MarketplaceOffer], tags=["Offers"])
         async def get_offers_endpoint(
             connection_id: UUID = Path(..., description="The ID of the marketplace connection"),
-            status: Optional[str] = Query(None, description="Filter offers by status (e.g., 'active', 'paused')"),
-        ):
+            status: Optional[str] = Query(None, description="Filter offers by status (e.g., 'active', 'paused')")):
             """Retrieves offers for a specific marketplace connection, optionally filtered by status."""
             try:
                 if not self._db_initialized: await self._initialize_db()

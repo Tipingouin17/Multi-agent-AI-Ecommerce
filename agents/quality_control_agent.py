@@ -133,7 +133,7 @@ class QualityControlAgent(BaseAgent):
     """
     
     def __init__(self):
-        super().__init__("QualityControlAgent")
+        super().__init__(agent_id="QualityControlAgent")
         self.kafka_producer = None
         self.kafka_consumer = None
         self.quality_standards = {}

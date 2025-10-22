@@ -468,7 +468,7 @@ class ComplianceAgent(BaseAgent):
             agent_id (str): The unique identifier for this agent instance.
             agent_type (str): The type of the agent (e.g., 'compliance').
         """
-        super().__init__(agent_id, agent_type)
+        super().__init__(agent_id)
         self.db_manager: Optional[DatabaseManager] = None
         self.db_helper: Optional[DatabaseHelper] = None
         self.repository: Optional[ComplianceRepository] = None
@@ -562,8 +562,7 @@ class ComplianceAgent(BaseAgent):
 
         @app.post("/api/v1/compliance/consent", summary="Update user consent", response_model=Dict[str, UUID], tags=["Consent Management"])
         async def update_consent_endpoint(
-            consent_data: ConsentUpdate = Body(..., description="Consent data to update."),
-        ):
+            consent_data: ConsentUpdate = Body(..., description="Consent data to update.")):
             """Updates or records user consent preferences.
 
             Args:
@@ -585,8 +584,7 @@ class ComplianceAgent(BaseAgent):
 
         @app.post("/api/v1/compliance/data-access-request", summary="Create a GDPR data access request", response_model=DataAccessRequestResponse, tags=["Data Access Requests"])
         async def create_data_access_request_endpoint(
-            request_data: DataAccessRequest = Body(..., description="Data for the access request."),
-        ):
+            request_data: DataAccessRequest = Body(..., description="Data for the access request.")):
             """Creates a new GDPR data access request (e.g., access, erasure, portability).
 
             Args:
@@ -608,8 +606,7 @@ class ComplianceAgent(BaseAgent):
 
         @app.post("/api/v1/compliance/audit-log", summary="Create an audit log entry", response_model=AuditLogResponse, tags=["Audit Logging"])
         async def create_audit_log_endpoint(
-            log_data: AuditLogCreate = Body(..., description="Data for the audit log entry."),
-        ):
+            log_data: AuditLogCreate = Body(..., description="Data for the audit log entry.")):
             """Records an audit trail of significant actions within the system.
 
             Args:
@@ -635,8 +632,7 @@ class ComplianceAgent(BaseAgent):
         async def get_audit_logs_endpoint(
             entity_type: Optional[str] = Query(None, description="Filter logs by entity type."),
             entity_id: Optional[str] = Query(None, description="Filter logs by entity ID."),
-            limit: int = Query(100, le=1000, description="Maximum number of logs to return."),
-        ):
+            limit: int = Query(100, le=1000, description="Maximum number of logs to return.")):
             """Retrieves a list of audit logs, with optional filtering.
 
             Args:

@@ -344,7 +344,7 @@ class SupplierAgent(BaseAgent):
             db_manager: Manager for database connections.
             kafka_manager: Manager for Kafka messaging.
         """
-        super().__init__(agent_id, agent_type, db_manager, kafka_manager)
+        super().__init__(agent_id, db_manager, kafka_manager)
         self.db_helper_suppliers = DatabaseHelper(db_manager, "suppliers")
         self.db_helper_supplier_products = DatabaseHelper(db_manager, "supplier_products")
         self.db_helper_purchase_orders = DatabaseHelper(db_manager, "purchase_orders")
@@ -501,8 +501,7 @@ class SupplierAgent(BaseAgent):
                     sender_id=self.agent_id,
                     receiver_id=message.sender_id,
                     type=MessageType.RESPONSE_BEST_SUPPLIER,
-                    data={"best_supplier": best_supplier},
-                )
+                    data={"best_supplier": best_supplier})
                 if self.kafka_manager:
                     await self.send_message(response_message)
                 else:
