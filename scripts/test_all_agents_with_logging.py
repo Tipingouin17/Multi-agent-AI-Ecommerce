@@ -216,6 +216,7 @@ class AgentTester:
                 error_msg = f"Import failed: {str(e)}\n{traceback.format_exc()}"
                 self.logger.error(error_msg)
                 self.results["errors"].append(error_msg)
+                self.results["status"] = "❌ FAIL"
                 return self.results
             
             # Step 2: Instantiate agent
@@ -228,6 +229,7 @@ class AgentTester:
                 error_msg = f"Instantiation failed: {str(e)}\n{traceback.format_exc()}"
                 self.logger.error(error_msg)
                 self.results["errors"].append(error_msg)
+                self.results["status"] = "❌ FAIL"
                 return self.results
             
             # Step 3: Check for required methods
