@@ -119,13 +119,13 @@ class AgentMonitor:
         msg_lower = message.lower()
         if "error" in msg_lower or "exception" in msg_lower or "failed" in msg_lower or "crashed" in msg_lower or "traceback" in msg_lower or is_error:
             msg_color = ERROR_COLOR  # Red for errors
-            prefix = "✗"
+            prefix = "[X]"
         elif "warning" in msg_lower or "warn" in msg_lower or "deprecated" in msg_lower:
             msg_color = WARNING_COLOR  # Yellow for warnings
-            prefix = "⚠"
+            prefix = "[!]"
         elif "success" in msg_lower or "started" in msg_lower or "ready" in msg_lower or "complete" in msg_lower or "running" in msg_lower:
             msg_color = SUCCESS_COLOR  # Green for success
-            prefix = "✓"
+            prefix = "[OK]"
         else:
             msg_color = INFO_COLOR  # Cyan for info
             prefix = "•"
@@ -292,10 +292,10 @@ class AgentMonitor:
                     uptime = int(time.time() - self.start_time.get(agent_name, time.time()))
                     errors = self.error_count.get(agent_name, 0)
                     error_str = f"{ERROR_COLOR}{errors} errors{RESET}" if errors > 0 else f"{SUCCESS_COLOR}No errors{RESET}"
-                    print(f"{color}{BOLD}{display_name:15}{RESET} {SUCCESS_COLOR}✓ Running{RESET}  Port: {port:5}  PID: {process.pid:6}  Uptime: {uptime:4}s  {error_str}")
+                    print(f"{color}{BOLD}{display_name:15}{RESET} {SUCCESS_COLOR}[OK] Running{RESET}  Port: {port:5}  PID: {process.pid:6}  Uptime: {uptime:4}s  {error_str}")
                     running += 1
                 else:
-                    print(f"{color}{BOLD}{display_name:15}{RESET} {ERROR_COLOR}✗ Crashed{RESET}  (exit code: {process.returncode})")
+                    print(f"{color}{BOLD}{display_name:15}{RESET} {ERROR_COLOR}[X] Crashed{RESET}  (exit code: {process.returncode})")
                     stopped += 1
             else:
                 print(f"{color}{BOLD}{display_name:15}{RESET} {WARNING_COLOR}○ Not started{RESET}")
