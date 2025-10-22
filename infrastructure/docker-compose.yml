@@ -40,7 +40,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    command: redis-server --appendonly yes
 
   # Zookeeper (required for Kafka)
   zookeeper:
