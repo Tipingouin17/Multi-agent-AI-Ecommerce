@@ -325,11 +325,12 @@ function Start-Agents {
     Write-Log "Launching agent monitor..." "INFO"
     
     $agentMonitorLog = Join-Path $LogDir "agents_$Timestamp.log"
+    $agentMonitorErrorLog = Join-Path $LogDir "agents_$Timestamp.error.log"
     
     Start-Process python -ArgumentList "start-agents-monitor.py" `
         -WorkingDirectory $ProjectRoot `
         -RedirectStandardOutput $agentMonitorLog `
-        -RedirectStandardError $agentMonitorLog `
+        -RedirectStandardError $agentMonitorErrorLog `
         -WindowStyle Hidden
     
     Write-Log "[OK] Agent monitor started (logging to $agentMonitorLog)" "SUCCESS"
@@ -380,11 +381,12 @@ function Start-Dashboard {
     Write-Log "Launching dashboard on http://localhost:5173..." "INFO"
     
     $dashboardLog = Join-Path $LogDir "dashboard_$Timestamp.log"
+    $dashboardErrorLog = Join-Path $LogDir "dashboard_$Timestamp.error.log"
     
     Start-Process npm -ArgumentList "run dev" `
         -WorkingDirectory (Join-Path $ProjectRoot "multi-agent-dashboard") `
         -RedirectStandardOutput $dashboardLog `
-        -RedirectStandardError $dashboardLog `
+        -RedirectStandardError $dashboardErrorLog `
         -WindowStyle Normal
     
     Set-Location $ProjectRoot
