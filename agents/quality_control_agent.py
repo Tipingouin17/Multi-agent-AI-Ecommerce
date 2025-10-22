@@ -489,7 +489,7 @@ class QualityControlAgent(BaseAgent):
                         error=str(e),
                         supplier_id=supplier_id)
             if not self._db_initialized:
-            return {}
+                return {}
         
         async with self.db_manager.get_session() as session:
             record = await self.db_helper.get_by_id(session, QualityInspectionDB, record_id)

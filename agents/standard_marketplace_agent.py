@@ -866,7 +866,7 @@ class StandardMarketplaceAgent(BaseAgent):
         except Exception as e:
             self.logger.error("Failed to fetch marketplace orders", error=str(e))
             if not self._db_initialized:
-            return []
+                return []
         
         async with self.db_manager.get_session() as session:
             records = await self.db_helper.get_all(session, MarketplaceOrderDB, limit=100)
