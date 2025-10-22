@@ -133,8 +133,7 @@ class BackofficeAgent(BaseAgent):
         """Initialize agent"""
         await super().initialize()
         self.kafka_producer = KafkaProducer()
-        self.kafka_consumer = KafkaConsumer(
-            topics=[
+        self.kafka_consumer = KafkaConsumer(*[
                 "merchant_application_submitted",
                 "merchant_documents_uploaded",
                 "merchant_update_requested"

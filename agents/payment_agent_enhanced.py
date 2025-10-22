@@ -629,19 +629,16 @@ class PaymentAgent(BaseAgent):
     It interacts with the database for persistence and processes messages for inter-agent communication.
     """
 
-    def __init__(self, agent_id: str, agent_type: str, db_manager: DatabaseManager):
+    def __init__(self):
         """Initializes the PaymentAgent.
-
-        Args:
-            agent_id (str): The unique identifier for this agent instance.
-            agent_type (str): The type of the agent (e.g., 'payment').
-            db_manager (DatabaseManager): The database manager instance for database interactions.
+        
+        Database manager will be initialized in the initialize() method.
         """
-        super().__init__(agent_id)
-        self.db_manager = db_manager
-        self.repo = PaymentRepository(db_manager)
+        super().__init__(agent_id="payment_agent")
+        self.db_manager = None
+        self.repo = None
         self._db_initialized = False
-        logger.info(f"PaymentAgent initialized with ID: {self.agent_id}, Type: {self.agent_type}")
+        logger.info(f"PaymentAgent initialized with ID: {self.agent_id}")
 
     async def setup(self):
         """Initializes the database connection and sets up necessary components for the agent.
@@ -844,7 +841,16 @@ class PaymentAgent(BaseAgent):
     async def initialize(self):
         """Initialize agent-specific components"""
         await super().initialize()
-        logger.info(f"{self.agent_name} initialized successfully")
+        try:
+            # Initialize database manager
+            self.db_manager = get_database_manager()
+            self.repo = PaymentRepository(self.db_manager)
+            await self.db_manager.connect()
+            self._db_initialized = True
+            logger.info(f"{self.agent_name} initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing {self.agent_name}: {e}")
+            raise
     
     async def cleanup(self):
         """Cleanup agent resources"""

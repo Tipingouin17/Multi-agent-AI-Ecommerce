@@ -136,8 +136,7 @@ class AfterSalesAgent(BaseAgent):
         """Initialize agent"""
         await super().initialize()
         self.kafka_producer = KafkaProducer()
-        self.kafka_consumer = KafkaConsumer(
-            topics=[
+        self.kafka_consumer = KafkaConsumer(*[
                 "order_delivered",
                 "return_request_submitted",
                 "return_shipped",

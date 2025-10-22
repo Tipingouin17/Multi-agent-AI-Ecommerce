@@ -66,8 +66,7 @@ class MarketplaceConnectorAgentProduction(BaseAgent):
         await super().initialize()
         try:
             self.kafka_producer = KafkaProducer()
-            self.kafka_consumer = KafkaConsumer(
-                topics=[
+            self.kafka_consumer = KafkaConsumer(*[
                     "marketplace_order_status_update",
                     "inventory_updated",
                     "price_updated",

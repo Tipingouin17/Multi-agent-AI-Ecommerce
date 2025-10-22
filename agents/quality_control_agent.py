@@ -147,8 +147,7 @@ class QualityControlAgent(BaseAgent):
         """Initialize agent"""
         await super().initialize()
         self.kafka_producer = KafkaProducer()
-        self.kafka_consumer = KafkaConsumer(
-            topics=[
+        self.kafka_consumer = KafkaConsumer(*[
                 "inventory_received",
                 "order_ready_to_ship",
                 "return_received",

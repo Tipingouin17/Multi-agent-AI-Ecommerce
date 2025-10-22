@@ -91,8 +91,7 @@ class TransportAgentProduction(BaseAgent):
 
         try:
             self.kafka_producer = KafkaProducer()
-            self.kafka_consumer = KafkaConsumer(
-                topics=[
+            self.kafka_consumer = KafkaConsumer(*[
                     "shipment_requested",
                     "carrier_rate_requested",
                     "carrier_pricelist_uploaded",
