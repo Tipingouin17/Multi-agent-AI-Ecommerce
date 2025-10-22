@@ -15,14 +15,17 @@ import os
 import uvicorn
 
 # Database configuration
+# Get password first and validate
+DB_PASSWORD = os.environ.get("DATABASE_PASSWORD")
+if not DB_PASSWORD:
+    raise ValueError("DATABASE_PASSWORD must be set in environment variables")
+
 DB_CONFIG = {
     "host": os.environ.get('DATABASE_HOST', 'localhost'),
     "port": 5432,
     "database": "multi_agent_ecommerce",
     "user": "postgres",
-    "password": os.environ.get("DATABASE_PASSWORD"),
-    if not password:
-        raise ValueError("Database password must be set in environment variables")
+    "password": DB_PASSWORD,
 }
 
 app = FastAPI(title="Multi-Agent E-commerce API", version="1.0.0")
