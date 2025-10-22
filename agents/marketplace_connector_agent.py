@@ -100,6 +100,18 @@ class MarketplaceName(str, Enum):
     REFURBED = "refurbed"
     EBAY = "ebay"
     MIRAKL = "mirakl"
+    async def initialize(self):
+        """Initialize agent."""
+        await super().initialize()
+        
+    async def cleanup(self):
+        """Cleanup agent."""
+        await super().cleanup()
+        
+    async def process_business_logic(self, data):
+        """Process business logic."""
+        return {"status": "success"}
+
 
 class SyncStatus(str, Enum):
     """Enum for order synchronization statuses."""

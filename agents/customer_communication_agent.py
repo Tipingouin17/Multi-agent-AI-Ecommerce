@@ -1213,6 +1213,26 @@ if __name__ == "__main__":
         username=os.getenv("POSTGRES_USER", "postgres"),
         password=os.getenv("POSTGRES_PASSWORD")
         if not password:
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
             pass
             raise ValueError("Database password must be set in environment variables")
     )

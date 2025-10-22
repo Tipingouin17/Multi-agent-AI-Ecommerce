@@ -42,6 +42,18 @@ class SyncStatus(str, Enum):
     SYNCING = "syncing"
     COMPLETED = "completed"
     FAILED = "failed"
+    async def initialize(self):
+        """Initialize agent."""
+        await super().initialize()
+        
+    async def cleanup(self):
+        """Cleanup agent."""
+        await super().cleanup()
+        
+    async def process_business_logic(self, data):
+        """Process business logic."""
+        return {"status": "success"}
+
 
 class SyncRequest(BaseModel):
     """Pydantic model for a data synchronization request."""

@@ -1713,6 +1713,7 @@ class D2CEcommerceAgent(BaseAgent):
         except Exception as e:
             self.logger.error("Failed to process D2C customer", error=str(e))
             if not self._db_initialized:
+                pass
             return None
         
         async with self.db_manager.get_session() as session:
@@ -2410,6 +2411,25 @@ if __name__ == "__main__":
         username=os.getenv("POSTGRES_USER", "postgres"),
         password=os.getenv("POSTGRES_PASSWORD")
         if not password:
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
             raise ValueError("Database password must be set in environment variables")
     )
     initialize_database_manager(db_config)

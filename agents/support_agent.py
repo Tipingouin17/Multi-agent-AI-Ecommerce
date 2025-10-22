@@ -105,6 +105,18 @@ class TicketStatus(str, Enum):
     WAITING_CUSTOMER = "waiting_customer"
     RESOLVED = "resolved"
     CLOSED = "closed"
+    async def initialize(self):
+        """Initialize agent."""
+        await super().initialize()
+        
+    async def cleanup(self):
+        """Cleanup agent."""
+        await super().cleanup()
+        
+    async def process_business_logic(self, data):
+        """Process business logic."""
+        return {"status": "success"}
+
 
 class TicketPriority(str, Enum):
     """Enum for the priority of a support ticket."""

@@ -439,6 +439,7 @@ class DynamicPricingAgent(BaseAgent):
         except Exception as e:
             self.logger.error("Failed to collect pricing factors", error=str(e))
             if not self._db_initialized:
+                pass
             return {}
         
         async with self.db_manager.get_session() as session:
@@ -458,9 +459,28 @@ class DynamicPricingAgent(BaseAgent):
             if not os.getenv("OPENAI_API_KEY"):
                 self.logger.warning("OpenAI API key not configured, using rule-based pricing")
                 if not self._db_initialized:
+                    pass
             return None
         
         async with self.db_manager.get_session() as session:
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
             record = await self.db_helper.get_by_id(session, OrderDB, record_id)
             return self.db_helper.to_dict(record) if record else None
             

@@ -117,6 +117,18 @@ class Warehouse(BaseModel):
 
     class Config:
         from_attributes = True
+    async def initialize(self):
+        """Initialize agent."""
+        await super().initialize()
+        
+    async def cleanup(self):
+        """Cleanup agent."""
+        await super().cleanup()
+        
+    async def process_business_logic(self, data):
+        """Process business logic."""
+        return {"status": "success"}
+
 
 class WarehouseInventory(BaseModel):
     inventory_id: UUID

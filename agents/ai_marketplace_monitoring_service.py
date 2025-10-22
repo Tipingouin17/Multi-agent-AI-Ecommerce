@@ -147,6 +147,26 @@ class AIMarketplaceMonitoringService:
                         issue_count=len(issues))
         
         except Exception as e:
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
             pass
             self.logger.error(f"Error: {e}")
             raise

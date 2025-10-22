@@ -44,6 +44,18 @@ class NotificationChannel(str, Enum):
     PUSH = "push"
     IN_APP = "in_app"
 
+    async def initialize(self):
+        """Initialize agent."""
+        await super().initialize()
+        
+    async def cleanup(self):
+        """Cleanup agent."""
+        await super().cleanup()
+        
+    async def process_business_logic(self, data):
+        """Process business logic."""
+        return {"status": "success"}
+
 
 class NotificationStatus(str, Enum):
     PENDING = "pending"

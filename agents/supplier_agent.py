@@ -58,6 +58,18 @@ class Supplier(BaseModel):
     class Config:
         from_attributes = True
 
+    async def initialize(self):
+        """Initialize agent."""
+        await super().initialize()
+        
+    async def cleanup(self):
+        """Cleanup agent."""
+        await super().cleanup()
+        
+    async def process_business_logic(self, data):
+        """Process business logic."""
+        return {"status": "success"}
+
 
 class SupplierProduct(BaseModel):
     """Represents a product offered by a supplier, including cost, MOQ, and lead time."""
