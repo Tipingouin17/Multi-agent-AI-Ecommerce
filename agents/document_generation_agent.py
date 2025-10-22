@@ -747,7 +747,7 @@ async def startup_event():
     global agent_instance
     logger.info("FastAPI startup event triggered. Initializing agent...")
     try:
-        agent_instance = DocumentGenerationAgent(agent_id=AGENT_ID, agent_type=AGENT_TYPE)
+        agent_instance = DocumentGenerationAgent()
         await agent_instance.initialize_agent() # Ensure async initialization is awaited
         # Start Kafka consumer in a background task
         asyncio.create_task(agent_instance.start_kafka_consumer(KAFKA_DOCUMENT_TOPIC, agent_instance.process_message))
