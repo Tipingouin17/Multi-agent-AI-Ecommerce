@@ -292,7 +292,15 @@ class InventoryAgent(BaseAgent):
         self.logger.info("Initializing Inventory Agent")
         
         # Initialize database repositories
-        db_manager = get_database_manager()
+        try:
+            db_manager = get_database_manager()
+        except RuntimeError:
+            # Create our own database manager
+            from shared.models import DatabaseConfig
+            db_config = DatabaseConfig()
+            db_manager = DatabaseManager(db_config)
+            await db_manager.connect()
+        
         await db_manager.create_all()
         self.repository = InventoryRepository(db_manager)
         self.movement_repository = StockMovementRepository(db_manager)

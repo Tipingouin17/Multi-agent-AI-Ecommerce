@@ -842,8 +842,15 @@ class PaymentAgent(BaseAgent):
         """Initialize agent-specific components"""
         await super().initialize()
         try:
-            # Initialize database manager
-            self.db_manager = get_database_manager()
+            # Create database manager if not available globally
+            try:
+                self.db_manager = get_database_manager()
+            except RuntimeError:
+                # Create our own database manager
+                from shared.models import DatabaseConfig
+                db_config = DatabaseConfig()
+                self.db_manager = DatabaseManager(db_config)
+            
             self.repo = PaymentRepository(self.db_manager)
             await self.db_manager.connect()
             self._db_initialized = True

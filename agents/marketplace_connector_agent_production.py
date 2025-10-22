@@ -75,7 +75,6 @@ class MarketplaceConnectorAgentProduction(BaseAgent):
                 ],
                 group_id="marketplace_connector_production"
             )
-            await self.db_helper.initialize()
             self._db_initialized = True
             logger.info("Marketplace Connector Agent (Production) initialized")
         except Exception as e:
