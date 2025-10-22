@@ -195,6 +195,9 @@ class AgentMonitor:
                 env['KAFKA_BOOTSTRAP_SERVERS'] = 'localhost:9092'
             if 'DATABASE_PASSWORD' not in env:
                 env['DATABASE_PASSWORD'] = 'postgres'  # Default for local dev
+            if 'DATABASE_URL' not in env:
+                # Some agents expect full DATABASE_URL
+                env['DATABASE_URL'] = 'postgresql+asyncpg://postgres:postgres@localhost:5432/multi_agent_ecommerce'
             
             # Start process with environment
             process = subprocess.Popen(

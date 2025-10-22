@@ -1246,17 +1246,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
 
 if __name__ == "__main__":
     """Main entry point for the Risk Anomaly Detection Agent."""
-    agent = RiskAnomalyDetectionAgent(
-        agent_id="risk_anomaly_detection_agent",
-        agent_type="risk_anomaly_detection",
-        kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
-        listen_topics=[
-            "system_metrics",
-            "performance_data",
-            "error_events",
-            "external_events"
-        ]
-    )
+    agent = RiskAnomalyDetectionAgent()
 
     async def run_agent_and_server():
         await agent.initialize()
