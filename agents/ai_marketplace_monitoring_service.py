@@ -120,57 +120,36 @@ class AIMarketplaceMonitoringService:
         """
         Detect issues in marketplace data.
         """
-        issues = []
+        try:
+            issues = []
+            
+            # Check required fields
+            required_fields = self._get_required_fields(marketplace_name, data_type)
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    issues.append({
+                        "issue_type": IssueType.MISSING_REQUIRED_FIELD,
+                        "field": field,
+                        "description": f"Missing required field: {field}",
+                        "severity": "high"
+                    })
+            
+            # Check format validation
+            format_issues = self._validate_formats(marketplace_name, data_type, data)
+            issues.extend(format_issues)
+            
+            # Check business rules
+            business_rule_issues = self._validate_business_rules(marketplace_name, data_type, data)
+            issues.extend(business_rule_issues)
         
-        # Check required fields
-        required_fields = self._get_required_fields(marketplace_name, data_type)
-        for field in required_fields:
-            if field not in data or not data[field]:
-                issues.append({
-                    "issue_type": IssueType.MISSING_REQUIRED_FIELD,
-                    "field": field,
-                    "description": f"Missing required field: {field}",
-                    "severity": "high"
-                })
-        
-        # Check format validation
-        format_issues = self._validate_formats(marketplace_name, data_type, data)
-        issues.extend(format_issues)
-        
-        # Check business rules
-        business_rule_issues = self._validate_business_rules(marketplace_name, data_type, data)
-        issues.extend(business_rule_issues)
-        
-        self.logger.info("Issues detected", 
-                        marketplace=marketplace_name,
-                        data_type=data_type,
-                        issue_count=len(issues))
-        
+            self.logger.info("Issues detected", 
+                            marketplace=marketplace_name,
+                            data_type=data_type,
+                            issue_count=len(issues))
+            return issues
         except Exception as e:
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-            pass
-            self.logger.error(f"Error: {e}")
+            self.logger.error(f"Error in detect_issues: {e}")
             raise
-        return issues
     
     async def generate_ai_suggestion(
         self,
@@ -207,9 +186,6 @@ class AIMarketplaceMonitoringService:
                         issue_type=issue_type,
                         confidence=suggestion.confidence)
         
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return suggestion
     
     def _generate_new_suggestion(
@@ -262,9 +238,6 @@ class AIMarketplaceMonitoringService:
             reasoning = "No automatic suggestion available"
             confidence = 0.30
         
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return AISuggestion(
             issue_type=issue_type,
             issue_description=issue["description"],
@@ -284,26 +257,25 @@ class AIMarketplaceMonitoringService:
         Process human decision and update knowledge base.
         """
         try:
-        self.logger.info("Processing human decision",
-                        decision_type=decision.human_decision,
-                        pattern_id=str(pattern_id))
-        
-        # Update pattern occurrence
-        if str(pattern_id) in self.knowledge_base:
-            pattern = self.knowledge_base[str(pattern_id)]
-            pattern.occurrence_count += 1
-            pattern.last_seen_at = datetime.now()
-        
-        # Calculate new confidence
-        new_confidence = self._calculate_confidence(pattern_id, decision)
-        
-        # Check if should create/update auto-correction rule
-        if new_confidence >= 0.80:
-            self._create_auto_correction_rule(pattern_id, decision, new_confidence)
-            self.logger.info("Created auto-correction rule",
-                           pattern_id=str(pattern_id),
-                           confidence=new_confidence)
-        
+            self.logger.info("Processing human decision",
+                            decision_type=decision.human_decision,
+                            pattern_id=str(pattern_id))
+            
+            # Update pattern occurrence
+            if str(pattern_id) in self.knowledge_base:
+                pattern = self.knowledge_base[str(pattern_id)]
+                pattern.occurrence_count += 1
+                pattern.last_seen_at = datetime.now()
+            
+            # Calculate new confidence
+            new_confidence = self._calculate_confidence(pattern_id, decision)
+            
+            # Check if should create/update auto-correction rule
+            if new_confidence >= 0.80:
+                self._create_auto_correction_rule(pattern_id, decision, new_confidence)
+                self.logger.info("Created auto-correction rule",
+                               pattern_id=str(pattern_id),
+                               confidence=new_confidence)
         except Exception as e:
             self.logger.error(f"Error: {e}")
             raise
@@ -345,9 +317,6 @@ class AIMarketplaceMonitoringService:
                         "confidence": rule.confidence_threshold
                     }
         
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return None
     
     def _get_required_fields(self, marketplace_name: str, data_type: str) -> List[str]:
@@ -372,9 +341,6 @@ class AIMarketplaceMonitoringService:
             }
         }
         
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return required_fields_map.get(marketplace_name, {}).get(data_type, [])
     
     def _validate_formats(
@@ -408,9 +374,6 @@ class AIMarketplaceMonitoringService:
                     "severity": "medium"
                 })
         
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return issues
     
     def _validate_business_rules(
@@ -444,9 +407,6 @@ class AIMarketplaceMonitoringService:
                     "severity": "high"
                 })
         
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return issues
     
     def _create_pattern_signature(
@@ -455,9 +415,6 @@ class AIMarketplaceMonitoringService:
         issue: Dict[str, Any]
     ) -> str:
         """Create unique signature for issue pattern."""
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return f"{marketplace_name}:{issue['issue_type']}:{issue.get('field', 'unknown')}"
     
     def _check_knowledge_base(self, pattern_signature: str) -> Optional[Dict[str, Any]]:
@@ -467,9 +424,6 @@ class AIMarketplaceMonitoringService:
             # Return learned solution if exists
             # (In production, query from database)
             return None
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return None
     
     def _calculate_confidence(
@@ -507,9 +461,6 @@ class AIMarketplaceMonitoringService:
     def _matches_pattern(self, pattern_signature: str, pattern_id: UUID) -> bool:
         """Check if pattern signature matches pattern ID."""
         # Simplified matching (in production, query from database)
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return pattern_signature in self.knowledge_base
     
     def _apply_correction(
@@ -525,15 +476,12 @@ class AIMarketplaceMonitoringService:
         for field, value in correction_logic.items():
             corrected_data[field] = value
         
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return corrected_data
 
 
 # FastAPI app
 app = FastAPI(title="AI Marketplace Monitoring Service")
-service = AIMarketplaceMonitoringService(self.db_manager)
+service = AIMarketplaceMonitoringService()
 
 
 @app.get("/health")
@@ -580,9 +528,6 @@ async def auto_correct(
     """Attempt auto-correction."""
     result = await service.auto_correct(marketplace_name, issue, data)
     if result:
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
-            raise
         return result
     else:
         raise HTTPException(status_code=404, detail="No auto-correction rule found")
