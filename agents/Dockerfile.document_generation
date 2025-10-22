@@ -16,6 +16,9 @@ COPY requirements_document_generation.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements_document_generation.txt
 
+# Copy shared modules
+COPY ../shared /app/shared
+
 # Copy agent code
 COPY document_generation_agent.py .
 
