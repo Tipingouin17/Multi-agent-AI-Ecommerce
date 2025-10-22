@@ -140,7 +140,7 @@ class ProductBase(BaseModel):
 
 class Product(ProductBase):
     """Complete product model."""
-    id: str
+    id: UUID
     created_at: datetime
     updated_at: datetime
     
@@ -150,7 +150,7 @@ class Product(ProductBase):
 
 class OrderItemBase(BaseModel):
     """Base order item model."""
-    product_id: str
+    product_id: UUID
     quantity: int
     unit_price: Decimal
     total_price: Decimal
@@ -294,7 +294,7 @@ class CustomerDB(Base):
     """Customer database model."""
     __tablename__ = "customers"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     email = Column(String, unique=True, nullable=False)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
@@ -312,7 +312,7 @@ class ProductDB(Base):
     """Product database model."""
     __tablename__ = "products"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String, nullable=False)
     description = Column(Text)
     category = Column(String, nullable=False)
@@ -336,7 +336,7 @@ class WarehouseDB(Base):
     """Warehouse database model."""
     __tablename__ = "warehouses"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String, nullable=False)
     address = Column(JSONB, nullable=False)
     capacity = Column(Integer, nullable=False)
@@ -354,9 +354,9 @@ class InventoryDB(Base):
     """Inventory database model."""
     __tablename__ = "inventory"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
-    product_id = Column(String, ForeignKey("products.id"), nullable=False)
-    warehouse_id = Column(String, ForeignKey("warehouses.id"), nullable=False)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    product_id = Column(PGUUID(as_uuid=True), ForeignKey("products.id"), nullable=False)
+    warehouse_id = Column(PGUUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
     quantity = Column(Integer, nullable=False, default=0)
     reserved_quantity = Column(Integer, nullable=False, default=0)
     reorder_point = Column(Integer, nullable=False)
@@ -372,8 +372,8 @@ class OrderDB(Base):
     """Order database model."""
     __tablename__ = "orders"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
-    customer_id = Column(String, ForeignKey("customers.id"), nullable=False)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    customer_id = Column(PGUUID(as_uuid=True), ForeignKey("customers.id"), nullable=False)
     channel = Column(String, nullable=False)
     channel_order_id = Column(String, nullable=False)
     status = Column(String, nullable=False)
@@ -397,9 +397,9 @@ class OrderItemDB(Base):
     """Order item database model."""
     __tablename__ = "order_items"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
-    order_id = Column(String, ForeignKey("orders.id"), nullable=False)
-    product_id = Column(String, ForeignKey("products.id"), nullable=False)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    order_id = Column(PGUUID(as_uuid=True), ForeignKey("orders.id"), nullable=False)
+    product_id = Column(PGUUID(as_uuid=True), ForeignKey("products.id"), nullable=False)
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Numeric(10, 2), nullable=False)
     total_price = Column(Numeric(10, 2), nullable=False)
@@ -413,7 +413,7 @@ class CarrierDB(Base):
     """Carrier database model."""
     __tablename__ = "carriers"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String, nullable=False)
     carrier_type = Column(String, nullable=False)
     api_endpoint = Column(String)
@@ -435,9 +435,9 @@ class ShipmentDB(Base):
     """Shipment database model."""
     __tablename__ = "shipments"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
-    order_id = Column(String, ForeignKey("orders.id"), nullable=False)
-    carrier_id = Column(String, ForeignKey("carriers.id"), nullable=False)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    order_id = Column(PGUUID(as_uuid=True), ForeignKey("orders.id"), nullable=False)
+    carrier_id = Column(PGUUID(as_uuid=True), ForeignKey("carriers.id"), nullable=False)
     tracking_number = Column(String, unique=True, nullable=False)
     status = Column(String, nullable=False)
     estimated_delivery = Column(DateTime)
@@ -457,7 +457,7 @@ class AgentMetricsDB(Base):
     """Agent metrics database model."""
     __tablename__ = "agent_metrics"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     agent_name = Column(String, nullable=False)
     metric_name = Column(String, nullable=False)
     metric_value = Column(Numeric(15, 4), nullable=False)
@@ -468,7 +468,7 @@ class SystemEventDB(Base):
     """System event database model."""
     __tablename__ = "system_events"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     event_type = Column(String, nullable=False)
     event_data = Column(JSONB, nullable=False)
     agent_name = Column(String)
