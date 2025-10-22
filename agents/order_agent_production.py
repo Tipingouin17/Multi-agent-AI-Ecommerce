@@ -111,10 +111,7 @@ class OrderAgent(BaseAgent):
         Calls super().__init__() with agent_id and agent_type.
         Initializes database connection and helper, enhanced services, and FastAPI application.
         """
-        super().__init__(
-            agent_id="order_agent",
-            agent_type="order_management"
-        )
+        super().__init__(agent_id="order_agent")
 
         self.db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./order_agent.db")
         self.engine = create_async_engine(self.db_url, echo=True)
@@ -366,6 +363,57 @@ class OrderAgent(BaseAgent):
             # Further business logic for handling updated order
         except Exception as e:
             logger.error(f"Error handling order updated event for payload {payload}: {e}")
+
+    # Required abstract methods from BaseAgent
+    async def initialize(self):
+        """Initialize agent-specific components."""
+        await super().initialize()
+        # Wait for database to be initialized
+        while not self._db_initialized:
+            await asyncio.sleep(0.1)
+        logger.info(f"{self.agent_name} initialized successfully")
+
+    async def cleanup(self):
+        """Cleanup agent-specific resources."""
+        if self.engine:
+            await self.engine.dispose()
+        await super().cleanup()
+        logger.info(f"{self.agent_name} cleaned up successfully")
+
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process order-specific business logic.
+        
+        Args:
+            data: Dictionary containing order data and operation type
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "create_order")
+            
+            if operation == "create_order":
+                order_data = data.get("order_data")
+                order_id = await self.create_order_in_db(order_data)
+                return {"status": "success", "order_id": order_id}
+            
+            elif operation == "get_order":
+                order_id = data.get("order_id")
+                order = await self.get_order_by_id(order_id)
+                return {"status": "success", "order": order}
+            
+            elif operation == "update_order":
+                order_id = data.get("order_id")
+                updates = data.get("updates")
+                updated = await self.update_order_status(order_id, updates.get("status"))
+                return {"status": "success", "updated": updated}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # Create agent instance
