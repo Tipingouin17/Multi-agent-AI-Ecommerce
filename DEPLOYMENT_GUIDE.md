@@ -1,409 +1,412 @@
-# Deployment and Testing Guide
+# Multi-Agent AI E-commerce Platform - Deployment Guide
 
-This guide will help you deploy and test the improved Multi-Agent E-commerce System in your environment.
+**Version:** 1.0  
+**Date:** October 22, 2025  
+**Latest Commit:** e344fad
 
-## Prerequisites
-
-### Required Software
-- Python 3.11 or higher
-- PostgreSQL 12 or higher
-- Apache Kafka 3.x
-- Redis 6.x or higher
-- Docker and Docker Compose (for containerized deployment)
-- Node.js 18+ (for dashboard)
-
-### System Requirements
-- Minimum 4GB RAM
-- 10GB free disk space
-- Ubuntu 20.04+ / macOS / Windows with WSL2
+---
 
 ## Quick Start
 
-### 1. Clone the Repository
+### Prerequisites
+- Docker Desktop installed and running
+- Git installed
+- 8GB+ RAM available
+- 20GB+ disk space
+
+### One-Command Deployment
+
+```bash
+# Clone and deploy
+git clone https://github.com/Tipingouin17/Multi-agent-AI-Ecommerce.git
+cd Multi-agent-AI-Ecommerce/infrastructure
+docker-compose up -d
+```
+
+That's it! The platform will start with all services.
+
+---
+
+## Detailed Deployment Steps
+
+### Step 1: Clone Repository
 
 ```bash
 git clone https://github.com/Tipingouin17/Multi-agent-AI-Ecommerce.git
 cd Multi-agent-AI-Ecommerce
 ```
 
-### 2. Set Up Environment Variables
+### Step 2: Configure Environment
+
+The repository includes a `.env` file with default configurations. For production, review and update:
 
 ```bash
-# Copy the example environment file
-cp .env.example .env
+# Database credentials
+DB_PASSWORD=your_secure_password
 
-# Edit .env with your configuration
-nano .env  # or use your preferred editor
+# API Keys (if using real services)
+STRIPE_API_KEY=your_stripe_key
+AMAZON_API_KEY=your_amazon_key
+# ... etc
 ```
 
-**Important:** Update these critical values in `.env`:
-- `DATABASE_PASSWORD` - Your PostgreSQL password
-- `OPENAI_API_KEY` - Your OpenAI API key (if using AI features)
-- `SECRET_KEY` - Generate with: `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`
-- `JWT_SECRET` - Generate with: `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`
-
-### 3. Install Python Dependencies
-
-```bash
-# Create virtual environment
-python3.11 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 4. Set Up Database
-
-```bash
-# Create database
-createdb multi_agent_ecommerce
-
-# Run migrations (if using Alembic)
-alembic upgrade head
-
-# Or use the setup script (Windows)
-# setup-database.bat
-```
-
-### 5. Start Infrastructure Services
-
-#### Option A: Using Docker Compose (Recommended)
+### Step 3: Build Docker Images
 
 ```bash
 cd infrastructure
+docker-compose build
+```
+
+This will build all agent images and download required base images.
+
+### Step 4: Start Services
+
+```bash
 docker-compose up -d
 ```
 
-This starts:
-- PostgreSQL
-- Kafka + Zookeeper
-- Redis
-- Prometheus
-- Grafana
-- Loki
+Services will start in this order:
+1. PostgreSQL database
+2. Kafka broker
+3. Redis cache
+4. All 15 agent services
+5. API gateway
 
-#### Option B: Manual Setup
-
-Start each service individually:
-```bash
-# PostgreSQL (if not already running)
-sudo systemctl start postgresql
-
-# Kafka
-bin/kafka-server-start.sh config/server.properties
-
-# Redis
-redis-server
-```
-
-### 6. Run Tests
+### Step 5: Verify Deployment
 
 ```bash
-# Run all tests
-pytest
+# Check all services are running
+docker-compose ps
 
-# Run with coverage
-pytest --cov=shared --cov=agents --cov-report=html
+# View logs
+docker-compose logs -f
 
-# View coverage report
-open htmlcov/index.html  # On macOS
-# or
-xdg-open htmlcov/index.html  # On Linux
+# Check specific agent
+docker-compose logs -f document-generation-agent
 ```
 
-### 7. Start the Agents
+### Step 6: Access Services
+
+- **API Gateway:** http://localhost:8000
+- **Health Check:** http://localhost:8000/health
+- **PostgreSQL:** localhost:5432
+- **Kafka:** localhost:9092
+- **Redis:** localhost:6379
+
+---
+
+## Service Architecture
+
+### Core Infrastructure
+- **PostgreSQL** - Primary database for all agents
+- **Kafka** - Message broker for inter-agent communication
+- **Redis** - Caching and session management
+
+### Agent Services (15 Total)
+
+#### Critical Business Agents
+1. **OrderAgent** (Port 8001) - Order processing
+2. **InventoryAgent** (Port 8002) - Stock management
+3. **ProductAgent** (Port 8003) - Product catalog
+4. **PaymentAgent** (Port 8004) - Payment processing
+
+#### Logistics & Fulfillment
+5. **WarehouseAgent** (Port 8005) - Warehouse operations
+6. **TransportAgent** (Port 8006) - Shipping coordination
+7. **MarketplaceConnector** (Port 8007) - Multi-marketplace sync
+
+#### Customer Service
+8. **CustomerAgent** (Port 8008) - Customer management
+9. **AfterSalesAgent** (Port 8009) - Returns & support
+10. **DocumentGenerationAgent** (Port 8013) - Invoice/label generation
+
+#### Quality & Compliance
+11. **QualityControlAgent** (Port 8010) - Product quality
+12. **BackofficeAgent** (Port 8011) - Admin operations
+13. **KnowledgeManagementAgent** (Port 8020) - Knowledge base
+
+#### Security & Monitoring
+14. **FraudDetectionAgent** (Port 8012) - Fraud prevention
+15. **RiskAnomalyDetectionAgent** (Port 8021) - Risk monitoring
+
+---
+
+## Testing Deployment
+
+### 1. Health Check All Agents
 
 ```bash
-# Start all agents
-python start-agents-direct.py
-
-# Or start individual agents
-python -m agents.order_agent
-python -m agents.inventory_agent
-python -m agents.carrier_selection_agent
+# Test all agent health endpoints
+for port in 8001 8002 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8013 8020 8021; do
+    echo "Testing port $port..."
+    curl -s http://localhost:$port/health | jq
+done
 ```
 
-### 8. Start the Dashboard
+### 2. Database Verification
 
 ```bash
-cd multi-agent-dashboard
-npm install
-npm run dev
+# Connect to PostgreSQL
+docker-compose exec postgres psql -U postgres -d ecommerce
+
+# Check tables
+\dt
+
+# Verify data
+SELECT COUNT(*) FROM carriers;
+SELECT COUNT(*) FROM marketplaces;
 ```
 
-Access the dashboard at: http://localhost:5173
-
-## Testing in Your Environment
-
-### 1. Verify Infrastructure
+### 3. Kafka Verification
 
 ```bash
-# Check PostgreSQL
-psql -U postgres -d multi_agent_ecommerce -c "SELECT version();"
+# List Kafka topics
+docker-compose exec kafka kafka-topics --list --bootstrap-server localhost:9092
 
-# Check Kafka
-kafka-topics.sh --list --bootstrap-server localhost:9092
-
-# Check Redis
-redis-cli ping
+# Monitor messages
+docker-compose exec kafka kafka-console-consumer \
+  --bootstrap-server localhost:9092 \
+  --topic order_events \
+  --from-beginning
 ```
 
-### 2. Test Agent Communication
+### 4. End-to-End Workflow Test
 
 ```bash
-# Use the CLI to test agent interactions
-python run_cli.py
-
-# Or use the demo script
-python start-demo.bat  # On Windows
+# Create a test order
+curl -X POST http://localhost:8001/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "test-customer-001",
+    "items": [
+      {
+        "product_id": "prod-001",
+        "quantity": 2,
+        "price": 29.99
+      }
+    ],
+    "shipping_address": {
+      "street": "123 Test St",
+      "city": "Paris",
+      "postal_code": "75001",
+      "country": "FR"
+    }
+  }'
 ```
 
-### 3. Monitor System Health
+---
 
-- **Grafana**: http://localhost:3000 (admin/admin123)
-- **Prometheus**: http://localhost:9090
-- **Agent Health**: Check logs in `logs/` directory
+## Monitoring & Logs
 
-### 4. Run Integration Tests
-
+### View All Logs
 ```bash
-# Test order flow
-pytest tests/integration/test_order_flow.py -v
-
-# Test inventory management
-pytest tests/integration/test_inventory.py -v
+docker-compose logs -f
 ```
 
-## Configuration Validation
-
-### Test Configuration Loading
-
-```python
-from shared.config import get_config
-
-config = get_config()
-print(f"Database: {config.database_name}")
-print(f"Kafka: {config.kafka_bootstrap_servers}")
-print(f"Environment: {config.environment}")
+### View Specific Agent
+```bash
+docker-compose logs -f order-agent
+docker-compose logs -f payment-agent
 ```
 
-### Test Security Features
+### Log Locations
+Logs are stored in:
+- Container: `/app/logs/`
+- Host: `./logs/` (if volume mounted)
 
-```python
-from shared.security import get_secret_manager, TokenGenerator
-
-# Test encryption
-secret_mgr = get_secret_manager()
-encrypted = secret_mgr.encrypt("test_data")
-decrypted = secret_mgr.decrypt(encrypted)
-assert decrypted == "test_data"
-
-# Test token generation
-token = TokenGenerator.generate_token()
-api_key = TokenGenerator.generate_api_key()
-print(f"Generated API Key: {api_key}")
+### Metrics
+Each agent exposes metrics at `/metrics` endpoint:
+```bash
+curl http://localhost:8001/metrics
 ```
 
-### Test Message Validation
-
-```python
-from shared.message_schemas import validate_message_payload
-from datetime import datetime
-from decimal import Decimal
-
-# Test order creation message
-payload = validate_message_payload("order_created", {
-    "order_id": "test-123",
-    "customer_id": "cust-456",
-    "channel": "shopify",
-    "total_amount": Decimal("99.99"),
-    "items_count": 2,
-    "created_at": datetime.now()
-})
-
-print(f"Validated payload: {payload}")
-```
+---
 
 ## Troubleshooting
 
-### Common Issues
+### Agent Not Starting
 
-#### 1. Database Connection Error
+1. Check logs:
 ```bash
-# Check if PostgreSQL is running
-sudo systemctl status postgresql
-
-# Check connection
-psql -U postgres -c "SELECT 1;"
-
-# Verify credentials in .env
-cat .env | grep DATABASE
+docker-compose logs agent-name
 ```
 
-#### 2. Kafka Connection Error
+2. Verify dependencies:
 ```bash
-# Check if Kafka is running
-docker ps | grep kafka
+# Check if PostgreSQL is ready
+docker-compose exec postgres pg_isready
 
-# Test Kafka connectivity
-kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+# Check if Kafka is ready
+docker-compose exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092
 ```
 
-#### 3. Import Errors
+3. Restart specific agent:
 ```bash
-# Ensure you're in the virtual environment
-which python
-
-# Reinstall dependencies
-pip install -r requirements.txt --force-reinstall
+docker-compose restart agent-name
 ```
 
-#### 4. Test Failures
+### Database Connection Issues
+
 ```bash
-# Run tests with verbose output
-pytest -vv
+# Check PostgreSQL status
+docker-compose ps postgres
 
-# Run specific test
-pytest tests/test_base_agent.py::TestBaseAgent::test_agent_initialization -vv
+# Verify connection
+docker-compose exec postgres psql -U postgres -c "SELECT version();"
 
-# Clear pytest cache
-pytest --cache-clear
+# Check environment variables
+docker-compose exec order-agent env | grep DB_
 ```
 
-### Logs Location
+### Kafka Connection Issues
 
-- Agent logs: `logs/agents/`
-- System logs: `logs/system/`
-- Error logs: `logs/errors/`
-
-### Debug Mode
-
-Enable debug mode in `.env`:
 ```bash
-DEBUG=true
-LOG_LEVEL=DEBUG
+# Check Kafka status
+docker-compose ps kafka
+
+# Verify broker
+docker-compose exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092
+
+# Check topics
+docker-compose exec kafka kafka-topics --list --bootstrap-server localhost:9092
 ```
 
-## Performance Testing
+### Memory Issues
 
-### Load Testing
+If agents are crashing due to memory:
 
+1. Increase Docker memory limit (Docker Desktop > Settings > Resources)
+2. Reduce number of concurrent agents
+3. Adjust agent memory limits in docker-compose.yml
+
+---
+
+## Scaling
+
+### Horizontal Scaling
+
+Scale specific agents:
 ```bash
-# Install locust
-pip install locust
-
-# Run load tests
-locust -f tests/load/locustfile.py
+docker-compose up -d --scale order-agent=3
+docker-compose up -d --scale inventory-agent=2
 ```
 
-### Benchmarking
+### Load Balancing
 
-```bash
-# Benchmark message processing
-python tests/benchmarks/message_throughput.py
-
-# Benchmark database operations
-python tests/benchmarks/database_performance.py
+For production, add nginx or traefik:
+```yaml
+# Add to docker-compose.yml
+nginx:
+  image: nginx:alpine
+  ports:
+    - "80:80"
+  volumes:
+    - ./nginx.conf:/etc/nginx/nginx.conf
 ```
 
-## Production Deployment
+---
 
-### Security Checklist
+## Maintenance
 
-- [ ] All secrets in environment variables
-- [ ] `.env` file not committed to git
-- [ ] Strong passwords for all services
-- [ ] HTTPS/TLS enabled
-- [ ] Firewall configured
-- [ ] Rate limiting enabled
-- [ ] Monitoring and alerting configured
-- [ ] Backup strategy in place
-- [ ] Log rotation configured
-
-### Docker Production Deployment
+### Update Agents
 
 ```bash
-# Build production images
-docker-compose -f infrastructure/docker-compose.prod.yml build
-
-# Start production stack
-docker-compose -f infrastructure/docker-compose.prod.yml up -d
-
-# Check status
-docker-compose -f infrastructure/docker-compose.prod.yml ps
-```
-
-### Kubernetes Deployment
-
-```bash
-# Apply configurations
-kubectl apply -f infrastructure/k8s/
-
-# Check deployments
-kubectl get deployments
-kubectl get services
-kubectl get pods
-
-# View logs
-kubectl logs -f deployment/order-agent
-```
-
-## Monitoring and Maintenance
-
-### Health Checks
-
-```bash
-# Check agent health
-curl http://localhost:8000/health
-
-# Check system metrics
-curl http://localhost:9090/metrics
-```
-
-### Backup Database
-
-```bash
-# Backup
-pg_dump -U postgres multi_agent_ecommerce > backup_$(date +%Y%m%d).sql
-
-# Restore
-psql -U postgres multi_agent_ecommerce < backup_20241019.sql
-```
-
-### Update System
-
-```bash
-# Pull latest changes
+# Pull latest code
 git pull origin main
 
-# Update dependencies
-pip install -r requirements.txt --upgrade
-
-# Run migrations
-alembic upgrade head
-
-# Restart agents
-./restart-agents.sh
+# Rebuild and restart
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
 ```
 
-## Support and Documentation
+### Database Backup
 
-- **Architecture**: See `SYSTEM_ARCHITECTURE.md`
-- **Improvements**: See `IMPROVEMENTS.md`
-- **API Docs**: http://localhost:8000/docs (when running)
-- **Issues**: https://github.com/Tipingouin17/Multi-agent-AI-Ecommerce/issues
+```bash
+# Backup database
+docker-compose exec postgres pg_dump -U postgres ecommerce > backup.sql
 
-## Next Steps
+# Restore database
+docker-compose exec -T postgres psql -U postgres ecommerce < backup.sql
+```
 
-1. Review the `IMPROVEMENTS.md` for detailed information on new features
-2. Check the `CHANGELOG.md` for all changes
-3. Read the security best practices in `IMPROVEMENTS.md`
-4. Set up monitoring dashboards in Grafana
-5. Configure alerting rules in Prometheus
-6. Implement CI/CD pipeline for automated testing and deployment
+### Clean Up
 
-## Contact
+```bash
+# Stop all services
+docker-compose down
 
-For questions or support, please open an issue on GitHub or contact the development team.
+# Remove volumes (WARNING: deletes data)
+docker-compose down -v
+
+# Remove images
+docker-compose down --rmi all
+```
+
+---
+
+## Production Considerations
+
+### Security
+
+1. **Change default passwords** in `.env`
+2. **Enable SSL/TLS** for all services
+3. **Use secrets management** (Docker Secrets, Vault)
+4. **Enable firewall** rules
+5. **Regular security updates**
+
+### Performance
+
+1. **Database tuning** - Adjust PostgreSQL settings
+2. **Kafka optimization** - Configure retention and partitions
+3. **Redis configuration** - Set memory limits and eviction policies
+4. **Agent resources** - Allocate appropriate CPU/memory
+
+### Monitoring
+
+1. **Prometheus** - Metrics collection
+2. **Grafana** - Dashboards
+3. **Loki** - Log aggregation
+4. **Jaeger** - Distributed tracing
+5. **Alertmanager** - Alert notifications
+
+### Backup Strategy
+
+1. **Database** - Daily automated backups
+2. **Configuration** - Version control
+3. **Logs** - Centralized storage
+4. **Disaster recovery** - Tested restore procedures
+
+---
+
+## Support & Documentation
+
+### Additional Resources
+- **README.md** - Project overview
+- **PRODUCTION_READINESS_STATUS.md** - Current status
+- **API Documentation** - Available at `/docs` endpoint
+- **GitHub Issues** - Bug reports and features
+
+### Getting Help
+1. Check logs: `docker-compose logs -f`
+2. Review documentation
+3. GitHub Issues: https://github.com/Tipingouin17/Multi-agent-AI-Ecommerce/issues
+
+---
+
+## Version History
+
+### v1.0 (October 22, 2025)
+- ✅ All 15 agents implemented
+- ✅ Complete Docker deployment
+- ✅ Security features (JWT, RBAC, rate limiting)
+- ✅ 12 API integrations (carriers + marketplaces)
+- ✅ Database-driven configuration
+- ✅ Production-ready code
+
+---
+
+**Last Updated:** October 22, 2025  
+**Maintainer:** Multi-Agent AI E-commerce Team  
+**License:** Proprietary
 
