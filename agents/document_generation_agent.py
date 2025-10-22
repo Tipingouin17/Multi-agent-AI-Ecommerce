@@ -119,8 +119,11 @@ class DocumentGenerationAgent(BaseAgent):
         """
         if not self._db_initialized: return []
         try:
-            async with self.db_helper.get_session() as session:
-                templates_data = await self.db_helper.get_all(session, "document_templates")
+            async with self.db_manager.get_async_session() as session:
+                # Query document templates from database
+                from sqlalchemy import select, text
+                result = await session.execute(text("SELECT * FROM document_templates WHERE enabled = true"))
+                templates_data = [dict(row._mapping) for row in result.fetchall()]
                 for template in templates_data:
                     if template.get('enabled'):
                         self.templates[template['name']] = template
@@ -748,9 +751,9 @@ async def startup_event():
     try:
         agent_instance = DocumentGenerationAgent()
         await agent_instance.initialize_agent() # Ensure async initialization is awaited
-        # Start Kafka consumer in a background task
-        asyncio.create_task(agent_instance.start_kafka_consumer(KAFKA_DOCUMENT_TOPIC, agent_instance.process_message))
-        logger.info("DocumentGenerationAgent initialized and Kafka consumer started.")
+        # BaseAgent handles Kafka consumer initialization in its start() method
+        # No need to manually start Kafka consumer - it's handled by the base class
+        logger.info("DocumentGenerationAgent initialized successfully.")
     except Exception as e:
         logger.error(f"Failed to initialize DocumentGenerationAgent during startup: {e}", exc_info=True)
         # Depending on criticality, you might want to exit or disable endpoints
