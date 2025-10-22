@@ -299,7 +299,7 @@ class InventoryAgent(BaseAgent):
             from shared.models import DatabaseConfig
             db_config = DatabaseConfig()
             db_manager = DatabaseManager(db_config)
-            await db_manager.connect()
+            await db_manager.initialize_async()
         
         await db_manager.create_all()
         self.repository = InventoryRepository(db_manager)

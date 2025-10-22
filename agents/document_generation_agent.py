@@ -83,19 +83,14 @@ class DocumentGenerationAgent(BaseAgent):
     for data retrieval and Kafka for inter-agent communication.
     """
     
-    def __init__(self, agent_id: str, agent_type: str):
+    def __init__(self):
         """
         Initializes the DocumentGenerationAgent.
-
-        Args:
-            agent_id (str): The unique identifier for this agent instance.
-            agent_type (str): The type of the agent, e.g., 'document_generation'.
         """
-        super().__init__(agent_id=agent_id, kafka_bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
-        self.db_helper = DatabaseHelper(DATABASE_URL)
+        super().__init__(agent_id="document_generation_agent")
+        self.db_helper = None
         self.templates = {}
         self._db_initialized = False
-        self.initialize_agent()
 
     async def initialize_agent(self):
         """

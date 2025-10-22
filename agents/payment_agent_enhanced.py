@@ -850,9 +850,13 @@ class PaymentAgent(BaseAgent):
                 from shared.models import DatabaseConfig
                 db_config = DatabaseConfig()
                 self.db_manager = DatabaseManager(db_config)
+                await self.db_manager.initialize_async()
             
-            self.repo = PaymentRepository(self.db_manager)
-            await self.db_manager.connect()
+            # PaymentRepository expects db_manager.engine, but we have async_engine
+            # Create a temporary wrapper or use DatabaseHelper directly
+            from shared.db_helpers import DatabaseHelper
+            if hasattr(self.db_manager, 'async_engine'):
+                self.db_helper = DatabaseHelper(self.db_manager.async_engine)
             self._db_initialized = True
             logger.info(f"{self.agent_name} initialized successfully")
         except Exception as e:
