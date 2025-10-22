@@ -220,7 +220,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
             db_config = DatabaseConfig()
             self.db_manager = DatabaseManager(db_config)
         self._db_initialized: bool = False
-        self.db_helper = DatabaseHelper(self.db_manager, self.logger)
+        self.db_helper = DatabaseHelper(self.db_manager)
 
         # ML models for anomaly detection
         self.isolation_forests: Dict[str, IsolationForest] = {}
@@ -240,7 +240,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
         """Initializes the database connection and sets up the helper."""
         try:
             await self.db_manager.initialize()
-            self.db_helper = DatabaseHelper(self.db_manager, self.logger)
+            self.db_helper = DatabaseHelper(self.db_manager)
             self._db_initialized = True
             self.logger.info("Database initialized for Risk Anomaly Detection Agent.")
         except Exception as e:
