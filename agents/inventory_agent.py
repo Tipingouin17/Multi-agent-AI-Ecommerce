@@ -301,7 +301,7 @@ class InventoryAgent(BaseAgent):
             db_manager = DatabaseManager(db_config)
             await db_manager.initialize_async()
         
-        await db_manager.create_all()
+        await db_manager.create_tables()
         self.repository = InventoryRepository(db_manager)
         self.movement_repository = StockMovementRepository(db_manager)
         
