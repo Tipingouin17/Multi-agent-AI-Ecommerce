@@ -1,4 +1,3 @@
-
 """
 Customer Communication Agent - Multi-Agent E-commerce System
 
@@ -21,7 +20,7 @@ from uuid import uuid4
 
 from shared.db_helpers import DatabaseHelper
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, EmailStr
 import structlog
 import sys
@@ -39,31 +38,18 @@ project_root = os.path.dirname(current_dir)
 # Add the project root to the Python path
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
+    logger.info(f"Added {project_root} to Python path")
 
-# Configure structlog
-structlog.configure(
-    processors=[
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
-        structlog.dev.ConsoleRenderer()
-    ],
-    wrapper_class=structlog.stdlib.BoundLogger,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    cache_logger_on_first_use=False,
-)
-
-logger = structlog.get_logger(__name__)
-
+# Now try the import
 try:
     from shared.openai_helper import chat_completion
     from shared.base_agent import BaseAgent, MessageType, AgentMessage
-    from shared.models import APIResponse
-    from shared.database import DatabaseManager, get_database_manager
-    logger.info("Successfully imported shared modules")
+    logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
     logger.error(f"Import error: {e}")
     logger.info(f"Current sys.path: {sys.path}")
+    
+    # List files in the shared directory to verify it exists
     shared_dir = os.path.join(project_root, "shared")
     if os.path.exists(shared_dir):
         logger.info(f"Contents of {shared_dir}:")
@@ -71,7 +57,13 @@ except ImportError as e:
             logger.info(f"  - {item}")
     else:
         logger.info(f"Directory not found: {shared_dir}")
-    sys.exit(1)
+
+from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.models import APIResponse
+from shared.database import DatabaseManager, get_database_manager
+
+
+logger = structlog.get_logger(__name__)
 
 
 class ChatMessage(BaseModel):
@@ -147,131 +139,83 @@ class CustomerCommunicationAgent(BaseAgent):
     - Personalized customer messaging
     """
     
-    def __init__(self, agent_id: str = "customer_communication_agent", **kwargs):
-        super().__init__(agent_id=agent_id, agent_type="customer_communication", **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(agent_id="customer_communication_agent", **kwargs)
         self.app = FastAPI(title="Customer Communication Agent API", version="1.0.0")
         self.setup_routes()
-        
-        self._db_initialized = False
-        self.db_manager: Optional[DatabaseManager] = None
-        self.db_helper: Optional[DatabaseHelper] = None
-
-        # Communication data (will be replaced by DB operations)
+        # OpenAI client is initialized in openai_helper
+        # Communication data
         self.active_chat_sessions: Dict[str, Dict[str, Any]] = {}
+        self.email_templates: Dict[str, EmailTemplate] = {}
+        self.active_campaigns: Dict[str, EmailCampaign] = {}
+        self.customer_interactions: Dict[str, CustomerInteraction] = {}
+        
+        # WebSocket connections for real-time chat
         self.websocket_connections: Dict[str, WebSocket] = {}
         
         # Register message handlers
         self.register_handler(MessageType.ORDER_CREATED, self._handle_order_created)
         self.register_handler(MessageType.ORDER_UPDATED, self._handle_order_updated)
         self.register_handler(MessageType.RETURN_REQUESTED, self._handle_return_requested)
-
-        # Load environment variables
-        self.smtp_server = os.getenv("SMTP_SERVER", "smtp.example.com")
-        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        self.smtp_username = os.getenv("SMTP_USERNAME", "user@example.com")
-        self.smtp_password = os.getenv("SMTP_PASSWORD", "password")
-        self.sender_email = os.getenv("SENDER_EMAIL", "no-reply@example.com")
-        self.database_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
-
-
+    
     async def initialize(self):
-        """Initialize the Customer Communication Agent, including database and other resources."""
+        """Initialize the Customer Communication Agent."""
         self.logger.info("Initializing Customer Communication Agent")
-        try:
-            self.db_manager = get_database_manager(self.database_url)
-            await self.db_manager.connect()
-            self.db_helper = DatabaseHelper(self.db_manager)
-            self._db_initialized = True
-            self.logger.info("Database initialized successfully")
-
-            await self._initialize_email_templates()
-            await self._initialize_chatbot_knowledge()
-
-            asyncio.create_task(self._process_email_campaigns())
-            asyncio.create_task(self._monitor_interaction_metrics())
-            asyncio.create_task(self._cleanup_old_sessions())
-            
-            self.logger.info("Customer Communication Agent initialized successfully")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize Customer Communication Agent: {e}", error=str(e))
-            raise
-
+        
+        # Initialize email templates
+        await self._initialize_email_templates()
+        
+        # Initialize chatbot knowledge base
+        await self._initialize_chatbot_knowledge()
+        
+        # Start background tasks
+        asyncio.create_task(self._process_email_campaigns())
+        asyncio.create_task(self._monitor_interaction_metrics())
+        asyncio.create_task(self._cleanup_old_sessions())
+        
+        self.logger.info("Customer Communication Agent initialized successfully")
+    
     async def cleanup(self):
-        """Cleanup resources, including closing database connection and WebSockets."""
+        """Cleanup resources."""
         self.logger.info("Cleaning up Customer Communication Agent")
-        try:
-            if self.db_manager:
-                await self.db_manager.disconnect()
-                self.logger.info("Database disconnected successfully")
-            for session_id, websocket in self.websocket_connections.items():
-                try:
-                    await websocket.close()
-                except Exception as e:
-                    self.logger.warning(f"Error closing WebSocket for session {session_id}: {e}")
-            self.logger.info("Customer Communication Agent cleanup complete")
-        except Exception as e:
-            self.logger.error(f"Error during cleanup: {e}", error=str(e))
-
+        
+        # Close all WebSocket connections
+        for session_id, websocket in self.websocket_connections.items():
+            try:
+                await websocket.close()
+            except:
+                pass
+    
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process customer communication business logic based on the action provided."""
-        if not self._db_initialized: 
-            self.logger.warning("Database not initialized. Cannot process business logic.")
-            return {"status": "error", "message": "Database not initialized"}
-
+        """Process customer communication business logic."""
         action = data.get("action")
-        try:
-            if action == "send_chat_message":
-                return await self._process_chat_message(data["message"], data["session_id"])
-            elif action == "send_email":
-                return await self._send_email(data["email_data"])
-            elif action == "create_campaign":
-                return await self._create_email_campaign(data["campaign_data"])
-            elif action == "get_customer_interactions":
-                return await self._get_customer_interactions(data.get("customer_id"))
-            elif action == "escalate_interaction":
-                return await self._escalate_interaction(data["interaction_id"])
-            else:
-                raise ValueError(f"Unknown action: {action}")
-        except Exception as e:
-            self.logger.error(f"Error processing business logic for action {action}: {e}", error=str(e))
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
+        
+        if action == "send_chat_message":
+            return await self._process_chat_message(data["message"], data["session_id"])
+        elif action == "send_email":
+            return await self._send_email(data["email_data"])
+        elif action == "create_campaign":
+            return await self._create_email_campaign(data["campaign_data"])
+        elif action == "get_customer_interactions":
+            return await self._get_customer_interactions(data.get("customer_id"))
+        elif action == "escalate_interaction":
+            return await self._escalate_interaction(data["interaction_id"])
+        else:
+            raise ValueError(f"Unknown action: {action}")
+    
     def setup_routes(self):
-        """Setup FastAPI routes for the Customer Communication Agent.
-
-        Includes WebSocket endpoint for real-time chat and REST API endpoints
-        for various communication functionalities.
-        """
-        @self.app.get("/health", response_model=APIResponse)
-        async def health_check():
-            """Health check endpoint to verify agent status."""
-            return APIResponse(success=True, message="Customer Communication Agent is healthy")
-
-        @self.app.get("/", response_model=APIResponse)
-        async def root_endpoint():
-            """Root endpoint providing basic agent information."""
-            return APIResponse(success=True, message="Welcome to Customer Communication Agent API")
-
+        """Setup FastAPI routes for the Customer Communication Agent."""
+        
         @self.app.websocket("/chat/{session_id}")
         async def websocket_chat(websocket: WebSocket, session_id: str):
-            """WebSocket endpoint for real-time chat.
-
-            Args:
-                websocket (WebSocket): The WebSocket connection object.
-                session_id (str): The ID of the chat session.
-            """
+            """WebSocket endpoint for real-time chat."""
             await websocket.accept()
             self.websocket_connections[session_id] = websocket
             
             try:
-                if not self._db_initialized: 
-                    await websocket.send_text(json.dumps({"status": "error", "message": "Database not initialized"}))
-                    return
-
-                # Initialize chat session (or retrieve from DB)
-                chat_session = await self._get_chat_session(session_id)
-                if not chat_session:
-                    chat_session = {
+                # Initialize chat session
+                if session_id not in self.active_chat_sessions:
+                    self.active_chat_sessions[session_id] = {
                         "session_id": session_id,
                         "customer_id": None,
                         "messages": [],
@@ -279,22 +223,24 @@ class CustomerCommunicationAgent(BaseAgent):
                         "created_at": datetime.utcnow(),
                         "last_activity": datetime.utcnow()
                     }
-                    await self._create_chat_session(chat_session)
                 
                 # Send welcome message
                 welcome_response = await self._generate_welcome_message(session_id)
                 await websocket.send_text(json.dumps(welcome_response))
                 
                 while True:
+                    # Receive message from client
                     data = await websocket.receive_text()
                     message_data = json.loads(data)
                     
+                    # Process the message
                     response = await self._process_chat_message(
                         message_data["message"], 
                         session_id,
                         message_data.get("customer_id")
                     )
                     
+                    # Send response back to client
                     await websocket.send_text(json.dumps(response))
             
             except WebSocketDisconnect:
@@ -302,23 +248,13 @@ class CustomerCommunicationAgent(BaseAgent):
             except Exception as e:
                 self.logger.error("WebSocket error", error=str(e), session_id=session_id)
             finally:
+                # Cleanup
                 if session_id in self.websocket_connections:
                     del self.websocket_connections[session_id]
         
         @self.app.post("/chat/message", response_model=APIResponse)
-        async def send_chat_message_rest(message: str, session_id: str, customer_id: Optional[str] = None):
-            """Send a chat message (REST API alternative to WebSocket).
-
-            Args:
-                message (str): The content of the message.
-                session_id (str): The ID of the chat session.
-                customer_id (Optional[str]): The ID of the customer, if available.
-
-            Returns:
-                APIResponse: The response from processing the chat message.
-            """
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
+        async def send_chat_message(message: str, session_id: str, customer_id: Optional[str] = None):
+            """Send a chat message (REST API alternative to WebSocket)."""
             try:
                 result = await self._process_chat_message(message, session_id, customer_id)
                 
@@ -330,354 +266,110 @@ class CustomerCommunicationAgent(BaseAgent):
             
             except Exception as e:
                 self.logger.error("Failed to process chat message", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
+                raise HTTPException(status_code=500, detail=str(e))
+        
         @self.app.post("/email/send", response_model=APIResponse)
-        async def send_email_rest(email_data: Dict[str, Any]):
-            """Send an email using predefined templates or custom content.
-
-            Args:
-                email_data (Dict[str, Any]): Dictionary containing email details.
-
-            Returns:
-                APIResponse: The response from the email sending operation.
-            """
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
+        async def send_email(email_data: Dict[str, Any]):
+            """Send an email."""
             try:
                 result = await self._send_email(email_data)
-                return APIResponse(success=True, message="Email sent successfully", data=result)
+                
+                return APIResponse(
+                    success=True,
+                    message="Email sent successfully",
+                    data=result
+                )
+            
             except Exception as e:
-                self.logger.error(f"Failed to send email: {e}", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-        @self.app.post("/campaigns/create", response_model=APIResponse)
-        async def create_email_campaign_rest(campaign_data: EmailCampaign):
-            """Create a new email campaign.
-
-            Args:
-                campaign_data (EmailCampaign): The data for the email campaign.
-
-            Returns:
-                APIResponse: The response from the campaign creation operation.
-            """
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
+                self.logger.error("Failed to send email", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.post("/campaigns", response_model=APIResponse)
+        async def create_campaign(campaign_data: EmailCampaign):
+            """Create an email campaign."""
             try:
                 result = await self._create_email_campaign(campaign_data.dict())
-                return APIResponse(success=True, message="Email campaign created successfully", data=result)
+                
+                return APIResponse(
+                    success=True,
+                    message="Email campaign created successfully",
+                    data=result
+                )
+            
             except Exception as e:
-                self.logger.error(f"Failed to create email campaign: {e}", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-        @self.app.get("/interactions/{customer_id}", response_model=APIResponse)
-        async def get_customer_interactions_rest(customer_id: str):
-            """Retrieve all interactions for a given customer.
-
-            Args:
-                customer_id (str): The ID of the customer.
-
-            Returns:
-                APIResponse: A list of customer interactions.
-            """
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
+                self.logger.error("Failed to create email campaign", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/interactions", response_model=APIResponse)
+        async def get_customer_interactions(customer_id: Optional[str] = None):
+            """Get customer interactions."""
             try:
-                interactions = await self._get_customer_interactions(customer_id)
-                return APIResponse(success=True, message="Customer interactions retrieved", data=interactions)
+                result = await self._get_customer_interactions(customer_id)
+                
+                return APIResponse(
+                    success=True,
+                    message="Customer interactions retrieved successfully",
+                    data=result
+                )
+            
             except Exception as e:
-                self.logger.error(f"Failed to retrieve customer interactions for {customer_id}: {e}", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
+                self.logger.error("Failed to get customer interactions", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+        
         @self.app.post("/interactions/{interaction_id}/escalate", response_model=APIResponse)
-        async def escalate_interaction_rest(interaction_id: str):
-            """Escalate a customer interaction.
-
-            Args:
-                interaction_id (str): The ID of the interaction to escalate.
-
-            Returns:
-                APIResponse: The response from the escalation operation.
-            """
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
+        async def escalate_interaction(interaction_id: str):
+            """Escalate an interaction to human agent."""
             try:
                 result = await self._escalate_interaction(interaction_id)
-                return APIResponse(success=True, message="Interaction escalated successfully", data=result)
+                
+                return APIResponse(
+                    success=True,
+                    message="Interaction escalated successfully",
+                    data=result
+                )
+            
             except Exception as e:
-                self.logger.error(f"Failed to escalate interaction {interaction_id}: {e}", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-        @self.app.post("/templates", response_model=APIResponse)
-        async def create_email_template_rest(template: EmailTemplate):
-            """Create a new email template."
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
+                self.logger.error("Failed to escalate interaction", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/templates", response_model=APIResponse)
+        async def list_email_templates():
+            """List all email templates."""
             try:
-                created_template = await self._create_email_template(template)
-                return APIResponse(success=True, message="Email template created successfully", data=created_template)
+                templates = [template.dict() for template in self.email_templates.values()]
+                
+                return APIResponse(
+                    success=True,
+                    message="Email templates retrieved successfully",
+                    data={"templates": templates}
+                )
+            
             except Exception as e:
-                self.logger.error(f"Failed to create email template: {e}", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-        @self.app.get("/templates/{template_id}", response_model=APIResponse)
-        async def get_email_template_rest(template_id: str):
-            """Get an email template by ID."
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
+                self.logger.error("Failed to list email templates", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/campaigns", response_model=APIResponse)
+        async def list_campaigns():
+            """List all email campaigns."""
             try:
-                template = await self._get_email_template(template_id)
-                if template:
-                    return APIResponse(success=True, message="Email template retrieved successfully", data=template)
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
+                campaigns = [campaign.dict() for campaign in self.active_campaigns.values()]
+                
+                return APIResponse(
+                    success=True,
+                    message="Email campaigns retrieved successfully",
+                    data={"campaigns": campaigns}
+                )
+            
             except Exception as e:
-                self.logger.error(f"Failed to get email template {template_id}: {e}", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-        @self.app.put("/templates/{template_id}", response_model=APIResponse)
-        async def update_email_template_rest(template_id: str, template: EmailTemplate):
-            """Update an existing email template."
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
-            try:
-                updated_template = await self._update_email_template(template_id, template)
-                if updated_template:
-                    return APIResponse(success=True, message="Email template updated successfully", data=updated_template)
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
-            except Exception as e:
-                self.logger.error(f"Failed to update email template {template_id}: {e}", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-        @self.app.delete("/templates/{template_id}", response_model=APIResponse)
-        async def delete_email_template_rest(template_id: str):
-            """Delete an email template."
-            if not self._db_initialized: 
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not initialized")
-            try:
-                success = await self._delete_email_template(template_id)
-                if success:
-                    return APIResponse(success=True, message="Email template deleted successfully")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
-            except Exception as e:
-                self.logger.error(f"Failed to delete email template {template_id}: {e}", error=str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
-    async def _get_chat_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieves a chat session from the database.
-
-        Args:
-            session_id (str): The ID of the chat session.
-
-        Returns:
-            Optional[Dict[str, Any]]: The chat session data if found, otherwise None.
-        """
-        if not self._db_initialized: return None
+                self.logger.error("Failed to list email campaigns", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+    
+    async def _process_chat_message(self, message: str, session_id: str, customer_id: Optional[str] = None) -> Dict[str, Any]:
+        """Process incoming chat message and generate response."""
         try:
-            async with self.db_manager.get_session() as session:
-                # Assuming ChatMessage is stored as JSON or a similar structure
-                # This is a simplified example, actual implementation might need a dedicated ChatSession model
-                result = await self.db_helper.get_by_id(session, "chat_sessions", session_id)
-                return result.to_dict() if result else None
-        except Exception as e:
-            self.logger.error(f"Error retrieving chat session {session_id}: {e}", error=str(e))
-            return None
-
-    async def _create_chat_session(self, session_data: Dict[str, Any]):
-        """Creates a new chat session in the database.
-
-        Args:
-            session_data (Dict[str, Any]): The data for the new chat session.
-        """
-        if not self._db_initialized: return
-        try:
-            async with self.db_manager.get_session() as session:
-                await self.db_helper.create(session, "chat_sessions", session_data)
-                self.logger.info(f"Chat session {session_data['session_id']} created in DB.")
-        except Exception as e:
-            self.logger.error(f"Error creating chat session {session_data.get('session_id')}: {e}", error=str(e))
-
-    async def _update_chat_session(self, session_id: str, updates: Dict[str, Any]):
-        """Updates an existing chat session in the database.
-
-        Args:
-            session_id (str): The ID of the chat session to update.
-            updates (Dict[str, Any]): A dictionary of fields to update.
-        """
-        if not self._db_initialized: return
-        try:
-            async with self.db_manager.get_session() as session:
-                await self.db_helper.update(session, "chat_sessions", session_id, updates)
-                self.logger.info(f"Chat session {session_id} updated in DB.")
-        except Exception as e:
-            self.logger.error(f"Error updating chat session {session_id}: {e}", error=str(e))
-
-    async def _delete_chat_session(self, session_id: str):
-        """Deletes a chat session from the database.
-
-        Args:
-            session_id (str): The ID of the chat session to delete.
-        """
-        if not self._db_initialized: return
-        try:
-            async with self.db_manager.get_session() as session:
-                await self.db_helper.delete(session, "chat_sessions", session_id)
-                self.logger.info(f"Chat session {session_id} deleted from DB.")
-        except Exception as e:
-            self.logger.error(f"Error deleting chat session {session_id}: {e}", error=str(e))
-
-    async def _initialize_email_templates(self):
-        """Initializes email templates from the database or creates defaults if none exist."""
-        if not self._db_initialized: return
-        self.logger.info("Initializing email templates...")
-        try:
-            async with self.db_manager.get_session() as session:
-                templates = await self.db_helper.get_all(session, "email_templates")
-                if not templates:
-                    self.logger.info("No email templates found, creating defaults.")
-                    default_template_data = {
-                        "template_id": "welcome_email",
-                        "name": "Welcome Email",
-                        "subject": "Welcome to Our Service!",
-                        "html_content": "<p>Dear {{customer_name}}, welcome!</p>",
-                        "text_content": "Dear {{customer_name}}, welcome!",
-                        "template_type": "transactional",
-                        "variables": ["customer_name"],
-                        "active": True
-                    }
-                    default_template = EmailTemplate(**default_template_data)
-                    await self._create_email_template(default_template)
-                    self.email_templates[default_template.template_id] = default_template
-                else:
-                    for template_data in templates:
-                        template = EmailTemplate(**template_data.to_dict())
-                        self.email_templates[template.template_id] = template
-                self.logger.info(f"Loaded {len(self.email_templates)} email templates.")
-        except Exception as e:
-            self.logger.error(f"Error initializing email templates: {e}", error=str(e))
-
-    async def _create_email_template(self, template: EmailTemplate) -> Optional[EmailTemplate]:
-        """Creates a new email template in the database.
-
-        Args:
-            template (EmailTemplate): The email template to create.
-
-        Returns:
-            Optional[EmailTemplate]: The created email template if successful, otherwise None.
-        """
-        if not self._db_initialized: return None
-        try:
-            async with self.db_manager.get_session() as session:
-                await self.db_helper.create(session, "email_templates", template.dict())
-                self.email_templates[template.template_id] = template
-                self.logger.info(f"Email template {template.template_id} created.")
-                return template
-        except Exception as e:
-            self.logger.error(f"Error creating email template {template.template_id}: {e}", error=str(e))
-            return None
-
-    async def _get_email_template(self, template_id: str) -> Optional[EmailTemplate]:
-        """Retrieves an email template by its ID.
-
-        Args:
-            template_id (str): The ID of the email template.
-
-        Returns:
-            Optional[EmailTemplate]: The email template if found, otherwise None.
-        """
-        if not self._db_initialized: return None
-        if template_id in self.email_templates: # Check cache first
-            return self.email_templates[template_id]
-        try:
-            async with self.db_manager.get_session() as session:
-                result = await self.db_helper.get_by_id(session, "email_templates", template_id)
-                if result:
-                    template = EmailTemplate(**result.to_dict())
-                    self.email_templates[template_id] = template # Cache it
-                    return template
-                return None
-        except Exception as e:
-            self.logger.error(f"Error retrieving email template {template_id}: {e}", error=str(e))
-            return None
-
-    async def _update_email_template(self, template_id: str, updates: EmailTemplate) -> Optional[EmailTemplate]:
-        """Updates an existing email template in the database.
-
-        Args:
-            template_id (str): The ID of the email template to update.
-            updates (EmailTemplate): The updated email template data.
-
-        Returns:
-            Optional[EmailTemplate]: The updated email template if successful, otherwise None.
-        """
-        if not self._db_initialized: return None
-        try:
-            async with self.db_manager.get_session() as session:
-                success = await self.db_helper.update(session, "email_templates", template_id, updates.dict(exclude_unset=True))
-                if success:
-                    # Refresh cache
-                    self.email_templates[template_id] = updates
-                    self.logger.info(f"Email template {template_id} updated.")
-                    return updates
-                return None
-        except Exception as e:
-            self.logger.error(f"Error updating email template {template_id}: {e}", error=str(e))
-            return None
-
-    async def _delete_email_template(self, template_id: str) -> bool:
-        """Deletes an email template from the database.
-
-        Args:
-            template_id (str): The ID of the email template to delete.
-
-        Returns:
-            bool: True if deletion was successful, False otherwise.
-        """
-        if not self._db_initialized: return False
-        try:
-            async with self.db_manager.get_session() as session:
-                success = await self.db_helper.delete(session, "email_templates", template_id)
-                if success and template_id in self.email_templates:
-                    del self.email_templates[template_id]
-                    self.logger.info(f"Email template {template_id} deleted.")
-                return success
-        except Exception as e:
-            self.logger.error(f"Error deleting email template {template_id}: {e}", error=str(e))
-            return False
-
-    async def _initialize_chatbot_knowledge(self):
-        """Initializes the chatbot's knowledge base, potentially from a database or external source."""
-        if not self._db_initialized: return
-        self.logger.info("Initializing chatbot knowledge base...")
-        # In a real scenario, this would load FAQs, common responses, etc. from DB
-        # For now, it's a placeholder
-        self.chatbot_knowledge = {
-            "greeting": "Hello! How can I assist you today?",
-            "order_status_query": "Please provide your order number to check its status."
-        }
-        self.logger.info("Chatbot knowledge base initialized.")
-
-    async def _process_chat_message(self, message: str, session_id: str, customer_id: Optional[str] = None) -> ChatbotResponse:
-        """Processes a customer chat message, generates a response, and stores the interaction.
-
-        Args:
-            message (str): The customer's message.
-            session_id (str): The ID of the chat session.
-            customer_id (Optional[str]): The ID of the customer.
-
-        Returns:
-            ChatbotResponse: The chatbot's response.
-        """
-        if not self._db_initialized: 
-            return ChatbotResponse(
-                response="System temporarily unavailable. Please try again later.",
-                intent="system_error", confidence=1.0, suggested_actions=[], escalate_to_human=True, context_data={}
-            )
-        try:
-            # Retrieve or create session
-            chat_session = await self._get_chat_session(session_id)
-            if not chat_session:
-                chat_session = {
+            # Update session
+            if session_id not in self.active_chat_sessions:
+                self.active_chat_sessions[session_id] = {
                     "session_id": session_id,
                     "customer_id": customer_id,
                     "messages": [],
@@ -685,9 +377,14 @@ class CustomerCommunicationAgent(BaseAgent):
                     "created_at": datetime.utcnow(),
                     "last_activity": datetime.utcnow()
                 }
-                await self._create_chat_session(chat_session)
             
-            # Update session with new message
+            session = self.active_chat_sessions[session_id]
+            session["last_activity"] = datetime.utcnow()
+            
+            if customer_id:
+                session["customer_id"] = customer_id
+            
+            # Create message record
             chat_message = ChatMessage(
                 message_id=str(uuid4()),
                 session_id=session_id,
@@ -696,495 +393,835 @@ class CustomerCommunicationAgent(BaseAgent):
                 sender="customer",
                 timestamp=datetime.utcnow()
             )
-            chat_session["messages"].append(chat_message.dict())
-            chat_session["last_activity"] = datetime.utcnow()
-            await self._update_chat_session(session_id, {"messages": chat_session["messages"], "last_activity": chat_session["last_activity"]})
-
-            # Simulate AI processing (replace with actual LLM call)
-            ai_response_text = await chat_completion(prompt=f"Customer message: {message}. Provide a concise and helpful response.")
             
-            # Simulate sentiment and intent analysis
-            sentiment = "neutral" # Placeholder
-            intent = "general_query" # Placeholder
-            escalate = False
-            suggested_actions = []
-
-            if "order status" in message.lower():
-                intent = "order_status"
-                ai_response_text = self.chatbot_knowledge.get("order_status_query", ai_response_text)
-            elif "hello" in message.lower() or "hi" in message.lower():
-                intent = "greeting"
-                ai_response_text = self.chatbot_knowledge.get("greeting", ai_response_text)
-            elif "speak to human" in message.lower() or "escalate" in message.lower():
-                escalate = True
-                ai_response_text = "I'm escalating your request to a human agent. Please wait a moment."
-                suggested_actions.append("notify_human_agent")
+            # Analyze message sentiment and intent
+            sentiment, intent = await self._analyze_message(message)
+            chat_message.sentiment = sentiment
+            chat_message.intent = intent
             
+            # Add to session history
+            session["messages"].append(chat_message.dict())
+            
+            # Generate AI response
+            bot_response = await self._generate_chatbot_response(message, session, intent)
+            
+            # Create response message
             response_message = ChatMessage(
                 message_id=str(uuid4()),
                 session_id=session_id,
                 customer_id=customer_id,
-                message=ai_response_text,
+                message=bot_response.response,
                 sender="bot",
                 timestamp=datetime.utcnow(),
-                sentiment=sentiment,
-                intent=intent,
-                resolved=not escalate
+                intent=bot_response.intent
             )
-            chat_session["messages"].append(response_message.dict())
-            await self._update_chat_session(session_id, {"messages": chat_session["messages"]})
-
-            self.logger.info("Chat message processed", session_id=session_id, customer_id=customer_id, intent=intent)
-            return ChatbotResponse(
-                response=ai_response_text,
-                intent=intent,
-                confidence=0.9, # Placeholder
-                suggested_actions=suggested_actions,
-                escalate_to_human=escalate,
-                context_data={}
-            )
-        except Exception as e:
-            self.logger.error(f"Error processing chat message for session {session_id}: {e}", error=str(e))
-            return ChatbotResponse(
-                response="An error occurred while processing your request. Please try again.",
-                intent="error", confidence=1.0, suggested_actions=[], escalate_to_human=True, context_data={}
-            )
-
-    async def _generate_welcome_message(self, session_id: str) -> Dict[str, Any]:
-        """Generates a welcome message for a new chat session.
-
-        Args:
-            session_id (str): The ID of the chat session.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the welcome message.
-        """
-        if not self._db_initialized: return {"message": "Welcome! System temporarily unavailable.", "sender": "bot"}
-        try:
-            # This could be more dynamic, e.g., based on customer history
-            welcome_text = self.chatbot_knowledge.get("greeting", "Hello! How can I help you today?")
-            return {"message": welcome_text, "sender": "bot"}
-        except Exception as e:
-            self.logger.error(f"Error generating welcome message for session {session_id}: {e}", error=str(e))
-            return {"message": "Hello! An error occurred.", "sender": "bot"}
-
-    async def _send_email(self, email_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Sends an email using SMTP.
-
-        Args:
-            email_data (Dict[str, Any]): Dictionary containing recipient, subject, body, and optional template_id.
-
-        Returns:
-            Dict[str, Any]: Status of the email sending operation.
-        """
-        if not self._db_initialized: return {"status": "error", "message": "Database not initialized. Email not sent."}
-        try:
-            recipient_email = email_data["recipient_email"]
-            subject = email_data.get("subject")
-            body = email_data.get("body")
-            template_id = email_data.get("template_id")
-            template_vars = email_data.get("template_vars", {})
-
-            msg = MIMEMultipart("alternative")
-            msg["From"] = self.sender_email
-            msg["To"] = recipient_email
-
-            if template_id:
-                template = await self._get_email_template(template_id)
-                if not template:
-                    raise ValueError(f"Email template {template_id} not found.")
-                subject = template.subject
-                html_body = template.html_content
-                text_body = template.text_content
-
-                for key, value in template_vars.items():
-                    html_body = html_body.replace(f"{{{{{key}}}}}", str(value))
-                    text_body = text_body.replace(f"{{{{{key}}}}}", str(value))
-            else:
-                html_body = body
-                text_body = body
             
-            msg["Subject"] = subject
-
-            part1 = MIMEText(text_body, "plain")
-            part2 = MIMEText(html_body, "html")
-
-            msg.attach(part1)
-            msg.attach(part2)
-
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.smtp_username, self.smtp_password)
-                server.sendmail(self.sender_email, recipient_email, msg.as_string())
-
-            self.logger.info("Email sent successfully", recipient=recipient_email, subject=subject)
-            return {"status": "success", "message": "Email sent successfully"}
+            session["messages"].append(response_message.dict())
+            
+            # Check if escalation is needed
+            if bot_response.escalate_to_human or sentiment == "negative":
+                await self._create_interaction_for_escalation(session_id, customer_id, message, intent)
+            
+            # Update context
+            session["context"].update(bot_response.context_data)
+            
+            return {
+                "message_id": response_message.message_id,
+                "response": bot_response.response,
+                "intent": bot_response.intent,
+                "confidence": bot_response.confidence,
+                "suggested_actions": bot_response.suggested_actions,
+                "escalated": bot_response.escalate_to_human,
+                "sentiment": sentiment,
+                "timestamp": response_message.timestamp.isoformat()
+            }
+        
         except Exception as e:
-            self.logger.error(f"Failed to send email to {email_data.get('recipient_email')}: {e}", error=str(e))
+            self.logger.error("Failed to process chat message", error=str(e), session_id=session_id)
+            
+            # Return error response
+            return {
+                "message_id": str(uuid4()),
+                "response": "I apologize, but I'm experiencing technical difficulties. Please try again or contact our support team.",
+                "intent": "error",
+                "confidence": 0.0,
+                "suggested_actions": ["contact_support"],
+                "escalated": True,
+                "sentiment": "neutral",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+    
+    async def _analyze_message(self, message: str) -> Tuple[str, str]:
+        """Analyze message sentiment and intent."""
+        try:
+            if not os.getenv("OPENAI_API_KEY"):
+                # Fallback analysis
+                return self._simple_sentiment_analysis(message), self._simple_intent_detection(message)
+            
+            # Use AI for analysis
+            prompt = f"""
+            Analyze the following customer message for sentiment and intent:
+            
+            Message: "{message}"
+            
+            Respond with JSON format:
+            {{
+                "sentiment": "positive|neutral|negative",
+                "intent": "order_status|return|complaint|product_info|shipping|payment|general"
+            }}
+            """
+            
+            response = await chat_completion(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an expert customer service analyst."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.1,
+                max_tokens=100
+            )
+            
+            content = response["choices"][0]["message"]["content"]
+            analysis = json.loads(content)
+            
+            return analysis.get("sentiment", "neutral"), analysis.get("intent", "general")
+        
+        except Exception as e:
+            self.logger.error("Failed to analyze message", error=str(e))
+            return "neutral", "general"
+    
+    def _simple_sentiment_analysis(self, message: str) -> str:
+        """Simple rule-based sentiment analysis."""
+        message_lower = message.lower()
+        
+        negative_words = ["angry", "frustrated", "terrible", "awful", "hate", "worst", "problem", "issue", "broken", "defective"]
+        positive_words = ["great", "excellent", "love", "amazing", "perfect", "thank", "happy", "satisfied"]
+        
+        negative_count = sum(1 for word in negative_words if word in message_lower)
+        positive_count = sum(1 for word in positive_words if word in message_lower)
+        
+        if negative_count > positive_count:
+            return "negative"
+        elif positive_count > negative_count:
+            return "positive"
+        else:
+            return "neutral"
+    
+    def _simple_intent_detection(self, message: str) -> str:
+        """Simple rule-based intent detection."""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["order", "status", "tracking", "delivery"]):
+            return "order_status"
+        elif any(word in message_lower for word in ["return", "refund", "exchange"]):
+            return "return"
+        elif any(word in message_lower for word in ["complaint", "problem", "issue", "wrong"]):
+            return "complaint"
+        elif any(word in message_lower for word in ["product", "item", "specification", "feature"]):
+            return "product_info"
+        elif any(word in message_lower for word in ["shipping", "delivery", "carrier"]):
+            return "shipping"
+        elif any(word in message_lower for word in ["payment", "billing", "charge", "card"]):
+            return "payment"
+        else:
+            return "general"
+    
+    async def _generate_chatbot_response(self, message: str, session: Dict[str, Any], intent: str) -> ChatbotResponse:
+        """Generate AI-powered chatbot response."""
+        try:
+            if not os.getenv("OPENAI_API_KEY"):
+                return self._generate_rule_based_response(message, intent)
+            
+            # Prepare context from session history
+            context = self._prepare_conversation_context(session)
+            
+            # Create AI prompt
+            prompt = f"""
+            You are a helpful customer service chatbot for an e-commerce platform. Respond to the customer's message professionally and helpfully.
+            
+            Customer Intent: {intent}
+            Conversation Context: {context}
+            Customer Message: "{message}"
+            
+            Guidelines:
+            - Be friendly, professional, and helpful
+            - Provide specific information when possible
+            - If you cannot help, suggest escalation to human agent
+            - Keep responses concise but informative
+            - Suggest relevant actions the customer can take
+            
+            Respond in JSON format:
+            {{
+                "response": "Your helpful response here",
+                "confidence": 0.85,
+                "suggested_actions": ["action1", "action2"],
+                "escalate_to_human": false,
+                "context_data": {{"key": "value"}}
+            }}
+            """
+            
+            response = await chat_completion(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a professional customer service chatbot."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=300
+            )
+            
+            content = response["choices"][0]["message"]["content"]
+            ai_response = json.loads(content)
+            
+            return ChatbotResponse(
+                response=ai_response.get("response", "I'm here to help! How can I assist you today?"),
+                intent=intent,
+                confidence=ai_response.get("confidence", 0.7),
+                suggested_actions=ai_response.get("suggested_actions", []),
+                escalate_to_human=ai_response.get("escalate_to_human", False),
+                context_data=ai_response.get("context_data", {})
+            )
+        
+        except Exception as e:
+            self.logger.error("Failed to generate AI chatbot response", error=str(e))
+            return self._generate_rule_based_response(message, intent)
+    
+    def _generate_rule_based_response(self, message: str, intent: str) -> ChatbotResponse:
+        """Generate rule-based chatbot response as fallback."""
+        responses = {
+            "order_status": {
+                "response": "I can help you check your order status. Could you please provide your order number?",
+                "actions": ["provide_order_number", "check_email"]
+            },
+            "return": {
+                "response": "I'd be happy to help you with your return. What item would you like to return and what's the reason?",
+                "actions": ["start_return_process", "check_return_policy"]
+            },
+            "complaint": {
+                "response": "I'm sorry to hear you're experiencing an issue. Let me connect you with a specialist who can help resolve this.",
+                "actions": ["escalate_to_human", "provide_details"]
+            },
+            "product_info": {
+                "response": "I can help you find product information. What specific details are you looking for?",
+                "actions": ["search_products", "view_specifications"]
+            },
+            "shipping": {
+                "response": "I can help with shipping questions. Are you asking about delivery times, tracking, or shipping options?",
+                "actions": ["track_shipment", "view_shipping_options"]
+            },
+            "payment": {
+                "response": "I can assist with payment-related questions. Are you having trouble with a payment or need billing information?",
+                "actions": ["check_payment_status", "update_payment_method"]
+            },
+            "general": {
+                "response": "Hello! I'm here to help you with any questions about your orders, returns, or our products. How can I assist you today?",
+                "actions": ["browse_help", "contact_support"]
+            }
+        }
+        
+        response_data = responses.get(intent, responses["general"])
+        
+        return ChatbotResponse(
+            response=response_data["response"],
+            intent=intent,
+            confidence=0.6,
+            suggested_actions=response_data["actions"],
+            escalate_to_human=intent == "complaint",
+            context_data={"intent": intent}
+        )
+    
+    def _prepare_conversation_context(self, session: Dict[str, Any]) -> str:
+        """Prepare conversation context for AI."""
+        messages = session.get("messages", [])
+        context_messages = messages[-5:]  # Last 5 messages for context
+        
+        context_parts = []
+        for msg in context_messages:
+            sender = msg["sender"]
+            content = msg["message"]
+            context_parts.append(f"{sender}: {content}")
+        
+        return " | ".join(context_parts) if context_parts else "No previous context"
+    
+    async def _generate_welcome_message(self, session_id: str) -> Dict[str, Any]:
+        """Generate welcome message for new chat sessions."""
+        return {
+            "message_id": str(uuid4()),
+            "response": "Hello! Welcome to our customer support. I'm here to help you with any questions about your orders, returns, or products. How can I assist you today?",
+            "intent": "welcome",
+            "confidence": 1.0,
+            "suggested_actions": ["check_order_status", "start_return", "browse_products", "contact_human"],
+            "escalated": False,
+            "sentiment": "positive",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    
+    async def _create_interaction_for_escalation(self, session_id: str, customer_id: Optional[str], message: str, intent: str):
+        """Create customer interaction record for escalation."""
+        try:
+            interaction = CustomerInteraction(
+                interaction_id=str(uuid4()),
+                customer_id=customer_id or f"session_{session_id}",
+                channel="chat",
+                interaction_type="support",
+                subject=f"Chat escalation - {intent}",
+                status="open",
+                priority="medium" if intent != "complaint" else "high",
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            
+            self.customer_interactions[interaction.interaction_id] = interaction
+            
+            # Send escalation notification
+            await self.send_message(
+                recipient_agent="monitoring_agent",
+                message_type=MessageType.ESCALATION_REQUIRED,
+                payload={
+                    "interaction_id": interaction.interaction_id,
+                    "customer_id": customer_id,
+                    "session_id": session_id,
+                    "intent": intent,
+                    "message": message,
+                    "priority": interaction.priority
+                }
+            )
+        
+        except Exception as e:
+            self.logger.error("Failed to create interaction for escalation", error=str(e))
+    
+    async def _send_email(self, email_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Send an email using template or custom content."""
+        try:
+            recipient = email_data["recipient"]
+            subject = email_data.get("subject", "")
+            template_id = email_data.get("template_id")
+            custom_content = email_data.get("content")
+            variables = email_data.get("variables", {})
+            
+            # Prepare email content
+            if template_id and template_id in self.email_templates:
+                template = self.email_templates[template_id]
+                subject = template.subject
+                html_content = template.html_content
+                text_content = template.text_content
+                
+                # Replace template variables
+                for var, value in variables.items():
+                    placeholder = f"{{{{{var}}}}}"
+                    subject = subject.replace(placeholder, str(value))
+                    html_content = html_content.replace(placeholder, str(value))
+                    text_content = text_content.replace(placeholder, str(value))
+            
+            elif custom_content:
+                html_content = custom_content.get("html", "")
+                text_content = custom_content.get("text", "")
+            
+            else:
+                raise ValueError("Either template_id or custom_content must be provided")
+            
+            # Send email (simulated - in production, use actual email service)
+            email_id = str(uuid4())
+            
+            # In production, this would use services like SendGrid, AWS SES, etc.
+            self.logger.info("Email sent", 
+                           email_id=email_id,
+                           recipient=recipient,
+                           subject=subject,
+                           template_id=template_id)
+            
+            return {
+                "email_id": email_id,
+                "recipient": recipient,
+                "subject": subject,
+                "status": "sent",
+                "sent_at": datetime.utcnow().isoformat()
+            }
+        
+        except Exception as e:
+            self.logger.error("Failed to send email", error=str(e))
             raise
-
-    async def _create_email_campaign(self, campaign_data: Dict[str, Any]) -> Optional[EmailCampaign]:
-        """Creates a new email campaign in the database.
-
-        Args:
-            campaign_data (Dict[str, Any]): The data for the email campaign.
-
-        Returns:
-            Optional[EmailCampaign]: The created email campaign if successful, otherwise None.
-        """
-        if not self._db_initialized: return None
+    
+    async def _create_email_campaign(self, campaign_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create and manage email campaigns."""
         try:
             campaign = EmailCampaign(
                 campaign_id=str(uuid4()),
-                created_at=datetime.utcnow(),
-                **campaign_data
+                name=campaign_data["name"],
+                template_id=campaign_data["template_id"],
+                target_audience=campaign_data.get("target_audience", {}),
+                schedule_type=campaign_data.get("schedule_type", "immediate"),
+                scheduled_time=datetime.fromisoformat(campaign_data["scheduled_time"]) if campaign_data.get("scheduled_time") else None,
+                trigger_event=campaign_data.get("trigger_event"),
+                status="active" if campaign_data.get("schedule_type") == "immediate" else "scheduled",
+                created_at=datetime.utcnow()
             )
-            async with self.db_manager.get_session() as session:
-                await self.db_helper.create(session, "email_campaigns", campaign.dict())
-                self.active_campaigns[campaign.campaign_id] = campaign
-                self.logger.info(f"Email campaign {campaign.campaign_id} created.")
-                return campaign
-        except Exception as e:
-            self.logger.error(f"Error creating email campaign: {e}", error=str(e))
-            return None
-
-    async def _get_email_campaign(self, campaign_id: str) -> Optional[EmailCampaign]:
-        """Retrieves an email campaign by its ID."
-        if not self._db_initialized: return None
-        try:
-            async with self.db_manager.get_session() as session:
-                result = await self.db_helper.get_by_id(session, "email_campaigns", campaign_id)
-                return EmailCampaign(**result.to_dict()) if result else None
-        except Exception as e:
-            self.logger.error(f"Error retrieving email campaign {campaign_id}: {e}", error=str(e))
-            return None
-
-    async def _update_email_campaign(self, campaign_id: str, updates: Dict[str, Any]) -> Optional[EmailCampaign]:
-        """Updates an existing email campaign."
-        if not self._db_initialized: return None
-        try:
-            async with self.db_manager.get_session() as session:
-                success = await self.db_helper.update(session, "email_campaigns", campaign_id, updates)
-                if success:
-                    # Optionally refresh local cache if needed
-                    self.logger.info(f"Email campaign {campaign_id} updated.")
-                    return await self._get_email_campaign(campaign_id)
-                return None
-        except Exception as e:
-            self.logger.error(f"Error updating email campaign {campaign_id}: {e}", error=str(e))
-            return None
-
-    async def _delete_email_campaign(self, campaign_id: str) -> bool:
-        """Deletes an email campaign."
-        if not self._db_initialized: return False
-        try:
-            async with self.db_manager.get_session() as session:
-                success = await self.db_helper.delete(session, "email_campaigns", campaign_id)
-                if success and campaign_id in self.active_campaigns:
-                    del self.active_campaigns[campaign_id]
-                    self.logger.info(f"Email campaign {campaign_id} deleted.")
-                return success
-        except Exception as e:
-            self.logger.error(f"Error deleting email campaign {campaign_id}: {e}", error=str(e))
-            return False
-
-    async def _get_customer_interactions(self, customer_id: Optional[str] = None) -> List[CustomerInteraction]:
-        """Retrieves customer interactions, optionally filtered by customer ID.
-
-        Args:
-            customer_id (Optional[str]): The ID of the customer to filter interactions.
-
-        Returns:
-            List[CustomerInteraction]: A list of customer interactions.
-        """
-        if not self._db_initialized: return []
-        try:
-            async with self.db_manager.get_session() as session:
-                if customer_id:
-                    # Assuming db_helper.get_all can take filters
-                    results = await self.db_helper.get_all(session, "customer_interactions", filter_by={"customer_id": customer_id})
-                else:
-                    results = await self.db_helper.get_all(session, "customer_interactions")
-                return [CustomerInteraction(**r.to_dict()) for r in results]
-        except Exception as e:
-            self.logger.error(f"Error retrieving customer interactions for customer {customer_id}: {e}", error=str(e))
-            return []
-
-    async def _create_customer_interaction(self, interaction: CustomerInteraction) -> Optional[CustomerInteraction]:
-        """Creates a new customer interaction in the database."
-        if not self._db_initialized: return None
-        try:
-            async with self.db_manager.get_session() as session:
-                await self.db_helper.create(session, "customer_interactions", interaction.dict())
-                self.logger.info(f"Customer interaction {interaction.interaction_id} created.")
-                return interaction
-        except Exception as e:
-            self.logger.error(f"Error creating customer interaction {interaction.interaction_id}: {e}", error=str(e))
-            return None
-
-    async def _update_customer_interaction(self, interaction_id: str, updates: Dict[str, Any]) -> Optional[CustomerInteraction]:
-        """Updates an existing customer interaction."
-        if not self._db_initialized: return None
-        try:
-            async with self.db_manager.get_session() as session:
-                success = await self.db_helper.update(session, "customer_interactions", interaction_id, updates)
-                if success:
-                    self.logger.info(f"Customer interaction {interaction_id} updated.")
-                    return await self._get_customer_interaction_by_id(interaction_id)
-                return None
-        except Exception as e:
-            self.logger.error(f"Error updating customer interaction {interaction_id}: {e}", error=str(e))
-            return None
-
-    async def _get_customer_interaction_by_id(self, interaction_id: str) -> Optional[CustomerInteraction]:
-        """Retrieves a single customer interaction by its ID."
-        if not self._db_initialized: return None
-        try:
-            async with self.db_manager.get_session() as session:
-                result = await self.db_helper.get_by_id(session, "customer_interactions", interaction_id)
-                return CustomerInteraction(**result.to_dict()) if result else None
-        except Exception as e:
-            self.logger.error(f"Error retrieving customer interaction {interaction_id}: {e}", error=str(e))
-            return None
-
-    async def _escalate_interaction(self, interaction_id: str) -> Dict[str, Any]:
-        """Escalates a customer interaction, updating its status in the database and notifying relevant agents.
-
-        Args:
-            interaction_id (str): The ID of the interaction to escalate.
-
-        Returns:
-            Dict[str, Any]: Status of the escalation operation.
-        """
-        if not self._db_initialized: return {"status": "error", "message": "Database not initialized. Cannot escalate interaction."}
-        try:
-            interaction = await self._get_customer_interaction_by_id(interaction_id)
-            if not interaction:
-                raise ValueError(f"Interaction with ID {interaction_id} not found.")
             
-            # Update interaction status to escalated
-            updates = {"status": "escalated", "updated_at": datetime.utcnow(), "priority": "urgent"}
-            await self._update_customer_interaction(interaction_id, updates)
-
-            # Send a message to a human agent or another agent for escalation
-            escalation_message = AgentMessage(
-                sender_id=self.agent_id,
-                receiver_id="human_agent_or_escalation_agent", # Placeholder
-                message_type=MessageType.CUSTOMER_ESCALATION,
-                payload={"interaction_id": interaction_id, "customer_id": interaction.customer_id, "subject": interaction.subject}
-            )
-            await self.send_message(escalation_message)
-
-            self.logger.info("Interaction escalated", interaction_id=interaction_id)
-            return {"status": "success", "message": "Interaction escalated successfully"}
+            self.active_campaigns[campaign.campaign_id] = campaign
+            
+            # If immediate campaign, start sending
+            if campaign.schedule_type == "immediate":
+                asyncio.create_task(self._execute_campaign(campaign.campaign_id))
+            
+            return campaign.dict()
+        
         except Exception as e:
-            self.logger.error(f"Failed to escalate interaction {interaction_id}: {e}", error=str(e))
+            self.logger.error("Failed to create email campaign", error=str(e))
             raise
-
-    async def _process_email_campaigns(self):
-        """Background task to process and send scheduled email campaigns."""
-        if not self._db_initialized: return
-        self.logger.info("Starting email campaign processing background task.")
-        while True:
-            try:
-                async with self.db_manager.get_session() as session:
-                    # Retrieve active and scheduled campaigns
-                    # Assuming get_all can filter by status and schedule_type
-                    campaigns_data = await self.db_helper.get_all(session, "email_campaigns", 
-                                                                 filter_by={"status": "active", "schedule_type": "scheduled"})
+    
+    async def _execute_campaign(self, campaign_id: str):
+        """Execute an email campaign."""
+        try:
+            campaign = self.active_campaigns.get(campaign_id)
+            if not campaign:
+                return
+            
+            # Get target audience (simulated)
+            target_customers = await self._get_campaign_audience(campaign.target_audience)
+            
+            sent_count = 0
+            failed_count = 0
+            
+            for customer in target_customers:
+                try:
+                    # Send email to customer
+                    email_data = {
+                        "recipient": customer["email"],
+                        "template_id": campaign.template_id,
+                        "variables": {
+                            "customer_name": customer.get("name", "Valued Customer"),
+                            "customer_id": customer["id"]
+                        }
+                    }
                     
-                    now = datetime.utcnow()
-                    for campaign_data in campaigns_data:
-                        campaign = EmailCampaign(**campaign_data.to_dict())
-                        if campaign.scheduled_time and campaign.scheduled_time <= now:
-                            self.logger.info(f"Processing scheduled campaign: {campaign.name}")
-                            # Simulate sending emails to target audience
-                            # In a real system, this would involve fetching customer lists and sending personalized emails
-                            await self._send_email({
-                                "recipient_email": "customer@example.com", # Placeholder
-                                "template_id": campaign.template_id,
-                                "template_vars": {"customer_name": "Valued Customer"}
-                            })
-                            # Update campaign status to completed or sent
-                            await self._update_email_campaign(campaign.campaign_id, {"status": "completed", "updated_at": now})
-
-                await asyncio.sleep(60) # Check every minute
+                    await self._send_email(email_data)
+                    sent_count += 1
+                
+                except Exception as e:
+                    self.logger.error("Failed to send campaign email", error=str(e), customer_id=customer["id"])
+                    failed_count += 1
+            
+            # Update campaign status
+            campaign.status = "completed"
+            
+            self.logger.info("Campaign executed", 
+                           campaign_id=campaign_id,
+                           sent_count=sent_count,
+                           failed_count=failed_count)
+        
+        except Exception as e:
+            self.logger.error("Failed to execute campaign", error=str(e), campaign_id=campaign_id)
+    
+    async def _get_campaign_audience(self, target_criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Get target audience for campaign based on criteria."""
+        # In production, this would query customer database with filters
+        # For now, return sample customers
+        
+        sample_customers = [
+            {"id": "customer_1", "email": "customer1@example.com", "name": "John Doe"},
+            {"id": "customer_2", "email": "customer2@example.com", "name": "Jane Smith"},
+            {"id": "customer_3", "email": "customer3@example.com", "name": "Bob Johnson"}
+        ]
+        
+        return sample_customers
+    
+    async def _get_customer_interactions(self, customer_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get customer interactions."""
+        try:
+            if customer_id:
+                # Filter interactions for specific customer
+                customer_interactions = [
+                    interaction.dict() for interaction in self.customer_interactions.values()
+                    if interaction.customer_id == customer_id
+                ]
+            else:
+                # Get all interactions
+                customer_interactions = [interaction.dict() for interaction in self.customer_interactions.values()]
+            
+            # Calculate metrics
+            total_interactions = len(customer_interactions)
+            open_interactions = len([i for i in customer_interactions if i["status"] == "open"])
+            resolved_interactions = len([i for i in customer_interactions if i["status"] == "resolved"])
+            
+            return {
+                "interactions": customer_interactions,
+                "metrics": {
+                    "total": total_interactions,
+                    "open": open_interactions,
+                    "resolved": resolved_interactions,
+                    "resolution_rate": (resolved_interactions / total_interactions * 100) if total_interactions > 0 else 0
+                }
+            }
+        
+        except Exception as e:
+            self.logger.error("Failed to get customer interactions", error=str(e))
+            raise
+    
+    async def _escalate_interaction(self, interaction_id: str) -> Dict[str, Any]:
+        """Escalate interaction to human agent."""
+        try:
+            interaction = self.customer_interactions.get(interaction_id)
+            if not interaction:
+                raise ValueError(f"Interaction {interaction_id} not found")
+            
+            # Update interaction status
+            interaction.status = "escalated"
+            interaction.priority = "high"
+            interaction.updated_at = datetime.utcnow()
+            
+            # Send escalation notification
+            await self.send_message(
+                recipient_agent="monitoring_agent",
+                message_type=MessageType.ESCALATION_REQUIRED,
+                payload={
+                    "interaction_id": interaction_id,
+                    "customer_id": interaction.customer_id,
+                    "priority": interaction.priority,
+                    "escalation_reason": "manual_escalation"
+                }
+            )
+            
+            return {
+                "interaction_id": interaction_id,
+                "status": "escalated",
+                "escalated_at": datetime.utcnow().isoformat()
+            }
+        
+        except Exception as e:
+            self.logger.error("Failed to escalate interaction", error=str(e))
+            raise
+    
+    async def _initialize_email_templates(self):
+        """Initialize default email templates."""
+        try:
+            templates = [
+                EmailTemplate(
+                    template_id="order_confirmation",
+                    name="Order Confirmation",
+                    subject="Order Confirmation - #{order_number}",
+                    html_content="""
+                    <h2>Thank you for your order, {{customer_name}}!</h2>
+                    <p>Your order #{order_number} has been confirmed and is being processed.</p>
+                    <p>Order Total: €{{order_total}}</p>
+                    <p>Estimated Delivery: {{delivery_date}}</p>
+                    """,
+                    text_content="""
+                    Thank you for your order, {{customer_name}}!
+                    Your order #{order_number} has been confirmed and is being processed.
+                    Order Total: €{{order_total}}
+                    Estimated Delivery: {{delivery_date}}
+                    """,
+                    template_type="transactional",
+                    variables=["customer_name", "order_number", "order_total", "delivery_date"]
+                ),
+                EmailTemplate(
+                    template_id="shipping_notification",
+                    name="Shipping Notification",
+                    subject="Your order is on its way! - #{order_number}",
+                    html_content="""
+                    <h2>Your order has shipped, {{customer_name}}!</h2>
+                    <p>Order #{order_number} is now on its way to you.</p>
+                    <p>Tracking Number: {{tracking_number}}</p>
+                    <p>Carrier: {{carrier_name}}</p>
+                    <p>Estimated Delivery: {{delivery_date}}</p>
+                    """,
+                    text_content="""
+                    Your order has shipped, {{customer_name}}!
+                    Order #{order_number} is now on its way to you.
+                    Tracking Number: {{tracking_number}}
+                    Carrier: {{carrier_name}}
+                    Estimated Delivery: {{delivery_date}}
+                    """,
+                    template_type="transactional",
+                    variables=["customer_name", "order_number", "tracking_number", "carrier_name", "delivery_date"]
+                ),
+                EmailTemplate(
+                    template_id="return_confirmation",
+                    name="Return Confirmation",
+                    subject="Return Request Confirmed - #{return_number}",
+                    html_content="""
+                    <h2>Return request confirmed, {{customer_name}}</h2>
+                    <p>Your return request #{return_number} has been approved.</p>
+                    <p>Return Label: Please print the attached return label</p>
+                    <p>Expected Refund: €{{refund_amount}}</p>
+                    """,
+                    text_content="""
+                    Return request confirmed, {{customer_name}}
+                    Your return request #{return_number} has been approved.
+                    Return Label: Please print the attached return label
+                    Expected Refund: €{{refund_amount}}
+                    """,
+                    template_type="transactional",
+                    variables=["customer_name", "return_number", "refund_amount"]
+                ),
+                EmailTemplate(
+                    template_id="promotional_offer",
+                    name="Promotional Offer",
+                    subject="Special Offer Just for You, {{customer_name}}!",
+                    html_content="""
+                    <h2>Exclusive Offer for {{customer_name}}</h2>
+                    <p>Get {{discount_percent}}% off your next order!</p>
+                    <p>Use code: {{promo_code}}</p>
+                    <p>Valid until: {{expiry_date}}</p>
+                    """,
+                    text_content="""
+                    Exclusive Offer for {{customer_name}}
+                    Get {{discount_percent}}% off your next order!
+                    Use code: {{promo_code}}
+                    Valid until: {{expiry_date}}
+                    """,
+                    template_type="marketing",
+                    variables=["customer_name", "discount_percent", "promo_code", "expiry_date"]
+                )
+            ]
+            
+            for template in templates:
+                self.email_templates[template.template_id] = template
+            
+            self.logger.info("Email templates initialized", count=len(templates))
+        
+        except Exception as e:
+            self.logger.error("Failed to initialize email templates", error=str(e))
+    
+    async def _initialize_chatbot_knowledge(self):
+        """Initialize chatbot knowledge base."""
+        try:
+            # In production, this would load from a knowledge base or training data
+            # For now, we rely on the AI model's general knowledge and rule-based fallbacks
+            
+            self.logger.info("Chatbot knowledge base initialized")
+        
+        except Exception as e:
+            self.logger.error("Failed to initialize chatbot knowledge", error=str(e))
+    
+    async def _handle_order_created(self, message: AgentMessage):
+        """Handle order created events to send confirmation emails."""
+        payload = message.payload
+        order_id = payload.get("order_id")
+        customer_email = payload.get("customer_email")
+        customer_name = payload.get("customer_name", "Valued Customer")
+        order_total = payload.get("total_amount", 0)
+        
+        if order_id and customer_email:
+            try:
+                # Send order confirmation email
+                email_data = {
+                    "recipient": customer_email,
+                    "template_id": "order_confirmation",
+                    "variables": {
+                        "customer_name": customer_name,
+                        "order_number": order_id,
+                        "order_total": f"{order_total:.2f}",
+                        "delivery_date": (datetime.utcnow() + timedelta(days=3)).strftime("%Y-%m-%d")
+                    }
+                }
+                
+                await self._send_email(email_data)
+                
             except Exception as e:
-                self.logger.error(f"Error in email campaign processing task: {e}", error=str(e))
-                await asyncio.sleep(60) # Wait before retrying
-
+                self.logger.error("Failed to send order confirmation email", error=str(e), order_id=order_id)
+    
+    async def _handle_order_updated(self, message: AgentMessage):
+        """Handle order status updates to send notifications."""
+        payload = message.payload
+        order_id = payload.get("order_id")
+        new_status = payload.get("new_status")
+        customer_email = payload.get("customer_email")
+        customer_name = payload.get("customer_name", "Valued Customer")
+        
+        if order_id and new_status and customer_email:
+            try:
+                if new_status == "shipped":
+                    # Send shipping notification
+                    email_data = {
+                        "recipient": customer_email,
+                        "template_id": "shipping_notification",
+                        "variables": {
+                            "customer_name": customer_name,
+                            "order_number": order_id,
+                            "tracking_number": payload.get("tracking_number", "TRK123456789"),
+                            "carrier_name": payload.get("carrier_name", "Standard Carrier"),
+                            "delivery_date": (datetime.utcnow() + timedelta(days=2)).strftime("%Y-%m-%d")
+                        }
+                    }
+                    
+                    await self._send_email(email_data)
+                
+            except Exception as e:
+                self.logger.error("Failed to send order update email", error=str(e), order_id=order_id)
+    
+    async def _handle_return_requested(self, message: AgentMessage):
+        """Handle return requests to send confirmation emails."""
+        payload = message.payload
+        return_id = payload.get("return_id")
+        customer_email = payload.get("customer_email")
+        customer_name = payload.get("customer_name", "Valued Customer")
+        refund_amount = payload.get("refund_amount", 0)
+        
+        if return_id and customer_email:
+            try:
+                # Send return confirmation email
+                email_data = {
+                    "recipient": customer_email,
+                    "template_id": "return_confirmation",
+                    "variables": {
+                        "customer_name": customer_name,
+                        "return_number": return_id,
+                        "refund_amount": f"{refund_amount:.2f}"
+                    }
+                }
+                
+                await self._send_email(email_data)
+                
+            except Exception as e:
+                self.logger.error("Failed to send return confirmation email", error=str(e), return_id=return_id)
+    
+    async def _process_email_campaigns(self):
+        """Background task to process scheduled email campaigns."""
+        while not self.shutdown_event.is_set():
+            try:
+                current_time = datetime.utcnow()
+                
+                # Check for scheduled campaigns
+                for campaign_id, campaign in self.active_campaigns.items():
+                    if (campaign.status == "scheduled" and 
+                        campaign.scheduled_time and 
+                        campaign.scheduled_time <= current_time):
+                        
+                        campaign.status = "active"
+                        asyncio.create_task(self._execute_campaign(campaign_id))
+                
+                # Sleep for 1 minute before next check
+                await asyncio.sleep(60)
+            
+            except Exception as e:
+                self.logger.error("Error processing email campaigns", error=str(e))
+                await asyncio.sleep(300)  # Wait 5 minutes on error
+    
     async def _monitor_interaction_metrics(self):
-        """Background task to monitor customer interaction metrics."""
-        if not self._db_initialized: return
-        self.logger.info("Starting interaction metrics monitoring background task.")
-        while True:
+        """Background task to monitor interaction metrics."""
+        while not self.shutdown_event.is_set():
             try:
-                async with self.db_manager.get_session() as session:
-                    # Example: Count open interactions
-                    all_interactions = await self.db_helper.get_all(session, "customer_interactions")
-                    open_interactions = [i for i in all_interactions if i.to_dict().get("status") == "open"]
-                    self.logger.info(f"Currently {len(open_interactions)} open customer interactions.")
-                    # More sophisticated metrics, e.g., average resolution time, sentiment trends, etc.
-
-                await asyncio.sleep(300) # Check every 5 minutes
-            except Exception as e:
-                self.logger.error(f"Error in interaction metrics monitoring task: {e}", error=str(e))
-                await asyncio.sleep(300) # Wait before retrying
-
-    async def _cleanup_old_sessions(self):
-        """Background task to clean up old chat sessions from the database."""
-        if not self._db_initialized: return
-        self.logger.info("Starting old chat session cleanup background task.")
-        while True:
-            try:
-                async with self.db_manager.get_session() as session:
-                    # Define what 
-
-is considered 'old' - e.g., inactive for more than 24 hours
-                    threshold = datetime.utcnow() - timedelta(hours=24)
-                    # Assuming db_helper has a method to delete based on a condition
-                    # This would need to be implemented in DatabaseHelper
-                    # await self.db_helper.delete_many(session, "chat_sessions", filter_by={"last_activity_lt": threshold})
-                    self.logger.info("Cleaned up old chat sessions (placeholder).")
-
-                await asyncio.sleep(3600) # Check every hour
-            except Exception as e:
-                self.logger.error(f"Error in old chat session cleanup task: {e}", error=str(e))
-                await asyncio.sleep(3600) # Wait before retrying
-
-    async def process_message(self, message: AgentMessage):
-        """Processes incoming messages from the message broker (Kafka).
-
-        Args:
-            message (AgentMessage): The incoming message to process.
-        """
-        self.logger.info(f"Received message: {message.message_type} from {message.sender_id}")
-        try:
-            if message.message_type == MessageType.ORDER_CREATED:
-                await self._handle_order_created(message.payload)
-            elif message.message_type == MessageType.ORDER_UPDATED:
-                await self._handle_order_updated(message.payload)
-            elif message.message_type == MessageType.RETURN_REQUESTED:
-                await self._handle_return_requested(message.payload)
-            elif message.message_type == MessageType.CUSTOMER_QUERY:
-                # Example: process a customer query received via Kafka
-                session_id = message.payload.get("session_id", str(uuid4()))
-                customer_id = message.payload.get("customer_id")
-                query = message.payload.get("query")
-                if query:
-                    response = await self._process_chat_message(query, session_id, customer_id)
-                    # Send response back via Kafka or update a persistent chat log
-                    response_message = AgentMessage(
-                        sender_id=self.agent_id,
-                        receiver_id=message.sender_id, # Reply to the sender
-                        message_type=MessageType.CHAT_RESPONSE,
-                        payload=response.dict()
+                # Monitor metrics every 30 minutes
+                await asyncio.sleep(1800)
+                
+                if not self.shutdown_event.is_set():
+                    # Calculate metrics
+                    total_interactions = len(self.customer_interactions)
+                    open_interactions = len([i for i in self.customer_interactions.values() if i.status == "open"])
+                    escalated_interactions = len([i for i in self.customer_interactions.values() if i.status == "escalated"])
+                    
+                    # Send metrics to monitoring agent
+                    await self.send_message(
+                        recipient_agent="monitoring_agent",
+                        message_type=MessageType.RISK_ALERT,
+                        payload={
+                            "alert_type": "communication_metrics",
+                            "total_interactions": total_interactions,
+                            "open_interactions": open_interactions,
+                            "escalated_interactions": escalated_interactions,
+                            "active_chat_sessions": len(self.active_chat_sessions),
+                            "severity": "info"
+                        }
                     )
-                    await self.send_message(response_message)
-                else:
-                    self.logger.warning(f"Received CUSTOMER_QUERY with no query in payload: {message.payload}")
-            else:
-                self.logger.info(f"Unhandled message type: {message.message_type}")
-        except Exception as e:
-            self.logger.error(f"Error processing message of type {message.message_type}: {e}", error=str(e))
-
-    async def _handle_order_created(self, payload: Dict[str, Any]):
-        """Handles ORDER_CREATED messages by sending a confirmation email.
-
-        Args:
-            payload (Dict[str, Any]): The payload containing order details.
-        """
-        self.logger.info(f"Handling ORDER_CREATED for order {payload.get("order_id")}")
-        try:
-            customer_email = payload.get("customer_email")
-            order_id = payload.get("order_id")
-            if customer_email and order_id:
-                email_data = {
-                    "recipient_email": customer_email,
-                    "template_id": "order_confirmation", # Assuming this template exists
-                    "template_vars": {"customer_name": payload.get("customer_name", "Customer"), "order_id": order_id}
-                }
-                await self._send_email(email_data)
-                self.logger.info(f"Order confirmation email sent for order {order_id} to {customer_email}")
-            else:
-                self.logger.warning(f"Missing customer_email or order_id in ORDER_CREATED payload: {payload}")
-        except Exception as e:
-            self.logger.error(f"Error handling ORDER_CREATED for order {payload.get("order_id")}: {e}", error=str(e))
-
-    async def _handle_order_updated(self, payload: Dict[str, Any]):
-        """Handles ORDER_UPDATED messages by sending an update email.
-
-        Args:
-            payload (Dict[str, Any]): The payload containing updated order details.
-        """
-        self.logger.info(f"Handling ORDER_UPDATED for order {payload.get("order_id")}")
-        try:
-            customer_email = payload.get("customer_email")
-            order_id = payload.get("order_id")
-            new_status = payload.get("new_status")
-            if customer_email and order_id and new_status:
-                email_data = {
-                    "recipient_email": customer_email,
-                    "template_id": "order_status_update", # Assuming this template exists
-                    "template_vars": {"customer_name": payload.get("customer_name", "Customer"), "order_id": order_id, "new_status": new_status}
-                }
-                await self._send_email(email_data)
-                self.logger.info(f"Order status update email sent for order {order_id} to {customer_email} with status {new_status}")
-            else:
-                self.logger.warning(f"Missing customer_email, order_id or new_status in ORDER_UPDATED payload: {payload}")
-        except Exception as e:
-            self.logger.error(f"Error handling ORDER_UPDATED for order {payload.get("order_id")}: {e}", error=str(e))
-
-    async def _handle_return_requested(self, payload: Dict[str, Any]):
-        """Handles RETURN_REQUESTED messages by sending a confirmation email for the return.
-
-        Args:
-            payload (Dict[str, Any]): The payload containing return request details.
-        """
-        self.logger.info(f"Handling RETURN_REQUESTED for order {payload.get("order_id")}")
-        try:
-            customer_email = payload.get("customer_email")
-            order_id = payload.get("order_id")
-            return_id = payload.get("return_id")
-            if customer_email and order_id and return_id:
-                email_data = {
-                    "recipient_email": customer_email,
-                    "template_id": "return_confirmation", # Assuming this template exists
-                    "template_vars": {"customer_name": payload.get("customer_name", "Customer"), "order_id": order_id, "return_id": return_id}
-                }
-                await self._send_email(email_data)
-                self.logger.info(f"Return confirmation email sent for order {order_id} to {customer_email}")
-            else:
-                self.logger.warning(f"Missing customer_email, order_id or return_id in RETURN_REQUESTED payload: {payload}")
-        except Exception as e:
-            self.logger.error(f"Error handling RETURN_REQUESTED for order {payload.get("order_id")}: {e}", error=str(e))
-
-
-
-async def main():
-    """Main function to initialize and run the Customer Communication Agent."""
-    agent = CustomerCommunicationAgent()
-    await agent.initialize()
+            
+            except Exception as e:
+                self.logger.error("Error monitoring interaction metrics", error=str(e))
+                await asyncio.sleep(1800)  # Wait 30 minutes on error
     
-    # Start the FastAPI application using uvicorn
-    # This needs to be run in a separate process or managed by an ASGI server
-    # For demonstration, we'll run it directly if not already running
-    import uvicorn
-    config = uvicorn.Config(agent.app, host="0.0.0.0", port=int(os.getenv("AGENT_PORT", "8000")))
-    server = uvicorn.Server(config)
-    
-    # Run the uvicorn server in a separate task
-    api_task = asyncio.create_task(server.serve())
-    
-    # Keep the main agent running to process Kafka messages
-    await agent.run()
+    async def _cleanup_old_sessions(self):
+        """Background task to cleanup old chat sessions."""
+        while not self.shutdown_event.is_set():
+            try:
+                # Cleanup every hour
+                await asyncio.sleep(3600)
+                
+                if not self.shutdown_event.is_set():
+                    current_time = datetime.utcnow()
+                    cutoff_time = current_time - timedelta(hours=24)  # 24 hours old
+                    
+                    # Remove old sessions
+                    old_sessions = [
+                        session_id for session_id, session in self.active_chat_sessions.items()
+                        if session["last_activity"] < cutoff_time
+                    ]
+                    
+                    for session_id in old_sessions:
+                        del self.active_chat_sessions[session_id]
+                        if session_id in self.websocket_connections:
+                            try:
+                                await self.websocket_connections[session_id].close()
+                                del self.websocket_connections[session_id]
+                            except:
+                                pass
+                    
+                    if old_sessions:
+                        self.logger.info("Cleaned up old chat sessions", count=len(old_sessions))
+            
+            except Exception as e:
+                self.logger.error("Error cleaning up old sessions", error=str(e))
+                await asyncio.sleep(3600)  # Wait 1 hour on error
 
-    # Wait for the API task to complete (e.g., if it's shut down externally)
-    await api_task
+
+# FastAPI app instance for running the agent as a service
+app = FastAPI(title="Customer Communication Agent", version="1.0.0")
+
+# Global agent instance
+customer_communication_agent: Optional[CustomerCommunicationAgent] = None
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the Customer Communication Agent on startup."""
+    global customer_communication_agent
+    customer_communication_agent = CustomerCommunicationAgent()
+    await customer_communication_agent.start()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup the Customer Communication Agent on shutdown."""
+    global customer_communication_agent
+    if customer_communication_agent:
+        await customer_communication_agent.stop()
+
+
+# Include agent routes
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    if customer_communication_agent:
+        health_status = customer_communication_agent.get_health_status()
+        return {"status": "healthy", "agent_status": health_status.dict()}
+    return {"status": "unhealthy", "message": "Agent not initialized"}
+
+
+# Mount agent's FastAPI app
+app.mount("/api/v1", customer_communication_agent.app if customer_communication_agent else FastAPI())
 
 
 if __name__ == "__main__":
-    # This block is for direct execution and testing.
-    # In a production multi-agent system, agents might be managed by a central orchestrator.
-    asyncio.run(main())
-
+    import uvicorn
+    from shared.database import initialize_database_manager, DatabaseConfig
+    import os
+    
+    # Initialize database
+    db_config = DatabaseConfig(
+        host=os.getenv("POSTGRES_HOST", "localhost"),
+        port=int(os.getenv("POSTGRES_PORT", "5432")),
+        database=os.getenv("POSTGRES_DB", "multi_agent_ecommerce"),
+        username=os.getenv("POSTGRES_USER", "postgres"),
+        password=os.getenv("POSTGRES_PASSWORD")
+        if not password:
+            raise ValueError("Database password must be set in environment variables")
+    )
+    initialize_database_manager(db_config)
+    
+    # Run the agent
+    uvicorn.run(
+        "customer_communication_agent:app",
+        host="0.0.0.0",
+        port=8008,
+        reload=False,
+        log_level="info"
+    )

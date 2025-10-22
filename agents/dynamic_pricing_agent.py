@@ -23,7 +23,6 @@ from pydantic import BaseModel
 import structlog
 import sys
 import os
-import uvicorn
 
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
@@ -137,23 +136,14 @@ class DynamicPricingAgent(BaseAgent):
     """
     
     def __init__(self, **kwargs):
-        """
-        Initializes the DynamicPricingAgent.
-        
-        Args:
-            **kwargs: Arbitrary keyword arguments passed to the BaseAgent constructor.
-        """
-        super().__init__(agent_id="dynamic_pricing_agent", agent_type="DynamicPricingAgent", **kwargs)
-        self.db_manager = None
-        self.db_helper = None
-        self._db_initialized = False
+        super().__init__(agent_id="dynamic_pricing_agent", **kwargs)
         self.app = FastAPI(title="Dynamic Pricing Agent API", version="1.0.0")
         self.setup_routes()
         # OpenAI client is initialized in openai_helper
-        # Pricing data and strategies will be loaded from DB
-        # self.pricing_strategies: Dict[str, PricingStrategy] = {}
-        # self.competitor_prices: Dict[str, List[CompetitorPrice]] = {}
-        # self.price_history: Dict[str, List[PriceChangeEvent]] = {}
+        # Pricing data and strategies
+        self.pricing_strategies: Dict[str, PricingStrategy] = {}
+        self.competitor_prices: Dict[str, List[CompetitorPrice]] = {}
+        self.price_history: Dict[str, List[PriceChangeEvent]] = {}
         
         # Register message handlers
         self.register_handler(MessageType.DEMAND_FORECAST, self._handle_demand_forecast)
@@ -163,27 +153,19 @@ class DynamicPricingAgent(BaseAgent):
     async def initialize(self):
         """Initialize the Dynamic Pricing Agent."""
         self.logger.info("Initializing Dynamic Pricing Agent")
-        try:
-            self.db_manager = await get_database_manager()
-            self.db_helper = DatabaseHelper()
-            self.setup_database(self.db_manager, self.db_helper)
-            self.logger.info("Database setup complete.")
-            
-            # Initialize pricing strategies
-            await self._initialize_pricing_strategies()
-            
-            # Load competitor pricing data
-            await self._load_competitor_prices()
-            
-            # Start background tasks
-            asyncio.create_task(self._monitor_competitor_prices())
-            asyncio.create_task(self._optimize_prices_periodically())
-            asyncio.create_task(self._analyze_pricing_performance())
-            
-            self.logger.info("Dynamic Pricing Agent initialized successfully")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize Dynamic Pricing Agent: {e}", exc_info=True)
-            raise
+        
+        # Initialize pricing strategies
+        await self._initialize_pricing_strategies()
+        
+        # Load competitor pricing data
+        await self._load_competitor_prices()
+        
+        # Start background tasks
+        asyncio.create_task(self._monitor_competitor_prices())
+        asyncio.create_task(self._optimize_prices_periodically())
+        asyncio.create_task(self._analyze_pricing_performance())
+        
+        self.logger.info("Dynamic Pricing Agent initialized successfully")
     
     async def cleanup(self):
         """Cleanup resources."""
@@ -205,98 +187,13 @@ class DynamicPricingAgent(BaseAgent):
             return await self._apply_promotional_pricing(data["promotion_config"])
         else:
             raise ValueError(f"Unknown action: {action}")
-
-    async def process_message(self, message_type: MessageType, payload: Dict[str, Any]):
-        """Process incoming messages from other agents via Kafka."""
-        self.logger.info(f"Received message: {message_type.name}", payload=payload)
-        try:
-            handler = self.message_handlers.get(message_type)
-            if handler:
-                await handler(payload)
-            else:
-                self.logger.warning(f"No handler registered for message type: {message_type.name}")
-        except Exception as e:
-            self.logger.error(f"Error processing message {message_type.name}: {e}", exc_info=True)
-
-    async def send_message(self, recipient_agent: str, message_type: MessageType, payload: Dict[str, Any]):
-        """Send messages to other agents via Kafka."""
-        self.logger.info(f"Sending message to {recipient_agent}: {message_type.name}", payload=payload)
-        # In a real Kafka setup, you would use a Kafka producer here.
-        # For now, we'll just log the message.        # producer.send(topic, value=message.json().encode(\'utf-8\'))
-        pass
-
-    async def _handle_demand_forecast(self, payload: Dict[str, Any]):
-        """
-        Handles incoming demand forecast messages from other agents.
-
-        Args:
-            payload (Dict[str, Any]): The message payload containing demand forecast data.
-        """
-        self.logger.info("Handling demand forecast", payload=payload)
-        # Process demand forecast data, e.g., update internal state or trigger price re-evaluation
-        product_id = payload.get("product_id")
-        forecast_data = payload.get("forecast_data")
-        if product_id and forecast_data:
-            self.logger.info(f"Demand forecast for {product_id} updated.", forecast=forecast_data)
-        else:
-            self.logger.warning("Invalid demand forecast payload.", payload=payload)
-
-    async def _handle_inventory_update(self, payload: Dict[str, Any]):
-        """
-        Handles incoming inventory update messages from other agents.
-
-        Args:
-            payload (Dict[str, Any]): The message payload containing inventory update data.
-        """
-        self.logger.info("Handling inventory update", payload=payload)
-        # Process inventory update data, e.g., update internal state or trigger price re-evaluation
-        product_id = payload.get("product_id")
-        inventory_data = payload.get("inventory_data")
-        if product_id and inventory_data:
-            self.logger.info(f"Inventory for {product_id} updated.", inventory=inventory_data)
-        else:
-            self.logger.warning("Invalid inventory update payload.", payload=payload)
-
-    async def _handle_competitor_price_update(self, payload: Dict[str, Any]):
-        """
-        Handles incoming competitor price update messages from other agents.
-
-        Args:
-            payload (Dict[str, Any]): The message payload containing competitor price update data.
-        """
-        self.logger.info("Handling competitor price update", payload=payload)
-        # Process competitor price update data, e.g., update internal state or trigger price re-evaluation
-        product_id = payload.get("product_id")
-        competitor_prices = payload.get("competitor_prices")
-        if product_id and competitor_prices:
-            self.logger.info(f"Competitor prices for {product_id} updated.", prices=competitor_prices)
-            await self._update_competitor_prices(product_id, competitor_prices)
-        else:
-            self.logger.warning("Invalid competitor price update payload.", payload=payload)
-
-    def setup_routes(self):            """Setup FastAPI routes for the Dynamic Pricing Agent."""
-
-            @self.app.get("/health")
-            async def health_check():
-                """Health check endpoint."""
-                return {"status": "healthy", "agent_id": self.agent_id}
-
-            @self.app.get("/")
-            async def root():
-                """Root endpoint for the API."""
-                return {"message": "Dynamic Pricing Agent is running!"}
+    
+    def setup_routes(self):
+        """Setup FastAPI routes for the Dynamic Pricing Agent."""
         
         @self.app.post("/optimize-price", response_model=APIResponse)
         async def optimize_price(request: PriceOptimizationRequest):
-            """
-            API endpoint to optimize the price for a product.
-
-            Args:
-                request (PriceOptimizationRequest): The request body containing product details for optimization.
-
-            Returns:
-                APIResponse: A response object indicating success/failure and the optimization result.
-            """
+            """Optimize price for a product."""
             try:
                 result = await self._optimize_price(request.dict())
                 
@@ -312,15 +209,7 @@ class DynamicPricingAgent(BaseAgent):
         
         @self.app.post("/price-recommendation", response_model=APIResponse)
         async def get_price_recommendation(request: PriceOptimizationRequest):
-            """
-            API endpoint to get a price recommendation for a product without applying changes.
-
-            Args:
-                request (PriceOptimizationRequest): The request body containing product details for recommendation.
-
-            Returns:
-                APIResponse: A response object indicating success/failure and the recommendation result.
-            """
+            """Get price recommendation without applying changes."""
             try:
                 result = await self._get_price_recommendation(request.dict())
                 
@@ -336,16 +225,7 @@ class DynamicPricingAgent(BaseAgent):
         
         @self.app.post("/competitor-prices/{product_id}", response_model=APIResponse)
         async def update_competitor_prices(product_id: str, prices: List[CompetitorPrice]):
-            """
-            API endpoint to update competitor prices for a specific product.
-
-            Args:
-                product_id (str): The ID of the product for which to update competitor prices.
-                prices (List[CompetitorPrice]): A list of competitor price objects.
-
-            Returns:
-                APIResponse: A response object indicating success/failure and the update result.
-            """
+            """Update competitor prices for a product."""
             try:
                 result = await self._update_competitor_prices(product_id, [p.dict() for p in prices])
                 
@@ -361,15 +241,7 @@ class DynamicPricingAgent(BaseAgent):
         
         @self.app.get("/analytics", response_model=APIResponse)
         async def get_pricing_analytics(product_id: Optional[str] = None):
-            """
-            API endpoint to retrieve pricing analytics and performance metrics.
-
-            Args:
-                product_id (Optional[str]): The ID of the product for which to retrieve analytics. If None, retrieves overall analytics.
-
-            Returns:
-                APIResponse: A response object indicating success/failure and the analytics data.
-            """
+            """Get pricing analytics and performance metrics."""
             try:
                 result = await self._get_pricing_analytics(product_id)
                 
@@ -380,33 +252,20 @@ class DynamicPricingAgent(BaseAgent):
                 )
             
             except Exception as e:
-                self.logger.error(f"Failed to get pricing analytics: {e}", exc_info=True)
+                self.logger.error("Failed to get pricing analytics", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.get("/competitor-prices/{product_id}", response_model=APIResponse)
         async def get_competitor_prices(product_id: str):
-            """
-            API endpoint to retrieve competitor prices for a specific product.
-
-            Args:
-                product_id (str): The ID of the product for which to retrieve competitor prices.
-
-            Returns:
-                APIResponse: A response object indicating success/failure and the competitor prices data.
-            """
+            """Get competitor prices for a product."""
             try:
                 prices = self.competitor_prices.get(product_id, [])
                 
-                if not self._db_initialized:
-                    raise HTTPException(status_code=503, detail="Database not initialized")
-                async with self.db_manager.get_session() as session:
-                    competitor_prices_db = await self.db_helper.get_all(session, CompetitorPriceDB)
-                    prices = [CompetitorPrice(**self.db_helper.to_dict(cp)) for cp in competitor_prices_db if cp.product_id == product_id]
-                    return APIResponse(
-                        success=True,
-                        message="Competitor prices retrieved successfully",
-                        data={"product_id": product_id, "competitor_prices": [p.dict() for p in prices]}
-                    )
+                return APIResponse(
+                    success=True,
+                    message="Competitor prices retrieved successfully",
+                    data={"product_id": product_id, "competitor_prices": [p.dict() for p in prices]}
+                )
             
             except Exception as e:
                 self.logger.error("Failed to get competitor prices", error=str(e), product_id=product_id)
@@ -414,18 +273,9 @@ class DynamicPricingAgent(BaseAgent):
         
         @self.app.get("/strategies", response_model=APIResponse)
         async def list_pricing_strategies():
-            """
-            API endpoint to list all available pricing strategies.
-
-            Returns:
-                APIResponse: A response object indicating success/failure and a list of pricing strategies.
-            """
+            """List all pricing strategies."""
             try:
-                if not self._db_initialized:
-                    raise HTTPException(status_code=503, detail="Database not initialized")
-                async with self.db_manager.get_session() as session:
-                    strategies_db = await self.db_helper.get_all(session, PricingStrategyDB)
-                    strategies = [PricingStrategy(**self.db_helper.to_dict(s)) for s in strategies_db]
+                strategies = [strategy.dict() for strategy in self.pricing_strategies.values()]
                 
                 return APIResponse(
                     success=True,
@@ -438,18 +288,7 @@ class DynamicPricingAgent(BaseAgent):
                 raise HTTPException(status_code=500, detail=str(e))
     
     async def _optimize_price(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Optimizes the price for a product based on the provided request data.
-        If the confidence score of the recommendation is high enough, the price change is applied.
-
-        Args:
-            request_data (Dict[str, Any]): A dictionary containing the product ID, current price, cost price,
-                                          and other factors for price optimization.
-
-        Returns:
-            Dict[str, Any]: A dictionary indicating whether the price was applied and the recommendation.
-        """
-
+        """Optimize price for a product and apply the changes."""
         try:
             # Get price recommendation
             recommendation_result = await self._get_price_recommendation(request_data)
@@ -499,16 +338,7 @@ class DynamicPricingAgent(BaseAgent):
             raise
     
     async def _get_price_recommendation(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Generates a price recommendation for a product based on various factors.
-
-        Args:
-            request_data (Dict[str, Any]): A dictionary containing product details and factors to consider.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the recommended price, reasoning, and confidence score.
-        """
-
+        """Generate price recommendation without applying changes."""
         try:
             product_id = request_data["product_id"]
             channel = request_data.get("channel")
@@ -607,8 +437,13 @@ class DynamicPricingAgent(BaseAgent):
             return factors
         
         except Exception as e:
-            self.logger.error(f"Failed to collect pricing factors: {e}", exc_info=True)
+            self.logger.error("Failed to collect pricing factors", error=str(e))
+            if not self._db_initialized:
             return {}
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else {}
     
     async def _ai_price_recommendation(
         self, 
@@ -622,7 +457,12 @@ class DynamicPricingAgent(BaseAgent):
         try:
             if not os.getenv("OPENAI_API_KEY"):
                 self.logger.warning("OpenAI API key not configured, using rule-based pricing")
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
             
             # Prepare AI prompt
             prompt = f"""
@@ -692,11 +532,21 @@ class DynamicPricingAgent(BaseAgent):
             
             except json.JSONDecodeError:
                 self.logger.error("Failed to parse AI response as JSON", response=content)
-                return None
+                if not self._db_initialized:
+            return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
         
         except Exception as e:
-            self.logger.error(f"AI price recommendation failed: {e}", exc_info=True)
+            self.logger.error("AI price recommendation failed", error=str(e))
+            if not self._db_initialized:
             return None
+        
+        async with self.db_manager.get_session() as session:
+            record = await self.db_helper.get_by_id(session, OrderDB, record_id)
+            return self.db_helper.to_dict(record) if record else None
     
     async def _rule_based_pricing(
         self, 
@@ -761,7 +611,7 @@ class DynamicPricingAgent(BaseAgent):
             return final_price, reasoning, confidence
         
         except Exception as e:
-            self.logger.error(f"Rule-based pricing failed: {e}", exc_info=True)
+            self.logger.error("Rule-based pricing failed", error=str(e))
             return current_price, ["Error in pricing calculation, maintaining current price"], 0.5
     
     async def _get_competitor_pricing_data(self, product_id: str) -> Dict[str, Any]:
@@ -788,7 +638,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to get competitor pricing data: {e}", exc_info=True)
+            self.logger.error("Failed to get competitor pricing data", error=str(e))
             return {"available": False}
     
     async def _get_demand_data(self, product_id: str) -> Dict[str, Any]:
@@ -811,7 +661,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to get demand data: {e}", exc_info=True)
+            self.logger.error("Failed to get demand data", error=str(e))
             return {"available": False}
     
     async def _get_inventory_data(self, product_id: str) -> Dict[str, Any]:
@@ -840,7 +690,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to get inventory data: {e}", exc_info=True)
+            self.logger.error("Failed to get inventory data", error=str(e))
             return {"available": False}
     
     async def _get_market_conditions(self) -> Dict[str, Any]:
@@ -862,7 +712,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to get market conditions: {e}", exc_info=True)
+            self.logger.error("Failed to get market conditions", error=str(e))
             return {"condition": "neutral", "volatility": 0.2}
     
     async def _get_pricing_performance(self, product_id: str) -> Dict[str, Any]:
@@ -885,7 +735,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to get pricing performance: {e}", exc_info=True)
+            self.logger.error("Failed to get pricing performance", error=str(e))
             return {"available": False}
     
     async def _get_seasonal_factors(self, product_id: str) -> Dict[str, Any]:
@@ -917,7 +767,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to get seasonal factors: {e}", exc_info=True)
+            self.logger.error("Failed to get seasonal factors", error=str(e))
             return {"season": "normal", "factor": 1.0}
     
     async def _apply_price_change(self, recommendation: PriceRecommendation):
@@ -948,7 +798,7 @@ class DynamicPricingAgent(BaseAgent):
                            new_price=recommendation.recommended_price)
         
         except Exception as e:
-            self.logger.error(f"Failed to apply price change: {e}", exc_info=True)
+            self.logger.error("Failed to apply price change", error=str(e))
             raise
     
     async def _update_competitor_prices(self, product_id: str, prices_data: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -979,7 +829,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to update competitor prices: {e}", exc_info=True)
+            self.logger.error("Failed to update competitor prices", error=str(e))
             raise
     
     async def _get_pricing_analytics(self, product_id: Optional[str] = None) -> Dict[str, Any]:
@@ -1012,7 +862,7 @@ class DynamicPricingAgent(BaseAgent):
                 }
         
         except Exception as e:
-            self.logger.error(f"Failed to get pricing analytics: {e}", exc_info=True)
+            self.logger.error("Failed to get pricing analytics", error=str(e))
             raise
     
     async def _apply_promotional_pricing(self, promotion_config: Dict[str, Any]) -> Dict[str, Any]:
@@ -1080,7 +930,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to apply promotional pricing: {e}", exc_info=True)
+            self.logger.error("Failed to apply promotional pricing", error=str(e))
             raise
     
     async def _calculate_price_position(self, product_id: str) -> Dict[str, Any]:
@@ -1125,7 +975,7 @@ class DynamicPricingAgent(BaseAgent):
             }
         
         except Exception as e:
-            self.logger.error(f"Failed to calculate price position: {e}", exc_info=True)
+            self.logger.error("Failed to calculate price position", error=str(e))
             return {"position": "unknown", "reason": "Calculation error"}
     
     async def _identify_optimization_opportunities(self, product_id: str) -> List[Dict[str, Any]]:
@@ -1166,134 +1016,98 @@ class DynamicPricingAgent(BaseAgent):
             return opportunities
         
         except Exception as e:
-            self.logger.error(f"Failed to identify optimization opportunities: {e}", exc_info=True)
+            self.logger.error("Failed to identify optimization opportunities", error=str(e))
+            if not self._db_initialized:
             return []
+        
+        async with self.db_manager.get_session() as session:
+            records = await self.db_helper.get_all(session, OrderDB, limit=100)
+            return [self.db_helper.to_dict(r) for r in records]
     
     async def _initialize_pricing_strategies(self):
-        """
-        Initializes pricing strategies from the database or creates default ones if none exist.
-        """
-
-        self.logger.info("Initializing pricing strategies...")
-        if not self._db_initialized: 
-            self.logger.warning("Database not initialized. Cannot load pricing strategies.")
-            return
-
+        """Initialize default pricing strategies."""
         try:
-            async with self.db_manager.get_session() as session:
-                strategies_db = await self.db_helper.get_all(session, PricingStrategyDB)
-                if not strategies_db:
-                    self.logger.info("No pricing strategies found in DB. Creating default strategies.")
-                    default_strategies_data = [
-                        {
-                            "strategy_id": "competitive",
-                            "name": "Competitive Pricing",
-                            "description": "Price based on competitor analysis",
-                            "min_margin_percent": 15.0,
-                            "max_discount_percent": 20.0,
-                            "demand_sensitivity": 0.3,
-                            "competitor_sensitivity": 0.7,
-                            "inventory_sensitivity": 0.2,
-                            "active": True
-                        },
-                        {
-                            "strategy_id": "demand_based",
-                            "name": "Demand-Based Pricing",
-                            "description": "Price based on demand forecasting",
-                            "min_margin_percent": 20.0,
-                            "max_discount_percent": 15.0,
-                            "demand_sensitivity": 0.8,
-                            "competitor_sensitivity": 0.2,
-                            "inventory_sensitivity": 0.4,
-                            "active": True
-                        },
-                        {
-                            "strategy_id": "inventory_driven",
-                            "name": "Inventory-Driven Pricing",
-                            "description": "Price based on inventory levels",
-                            "min_margin_percent": 10.0,
-                            "max_discount_percent": 30.0,
-                            "demand_sensitivity": 0.2,
-                            "competitor_sensitivity": 0.3,
-                            "inventory_sensitivity": 0.8,
-                            "active": True
-                        }
-                    ]
-                    for strategy_data in default_strategies_data:
-                        strategy_db = PricingStrategyDB(**strategy_data)
-                        await self.db_helper.create(session, strategy_db)
-                    strategies_db = await self.db_helper.get_all(session, PricingStrategyDB)
-
-                self.pricing_strategies = {s.strategy_id: PricingStrategy(**self.db_helper.to_dict(s)) for s in strategies_db}
-                self.logger.info(f"Loaded {len(self.pricing_strategies)} pricing strategies from DB.")
+            # Define default pricing strategies
+            strategies = [
+                PricingStrategy(
+                    strategy_id="competitive",
+                    name="Competitive Pricing",
+                    description="Price based on competitor analysis",
+                    min_margin_percent=15.0,
+                    max_discount_percent=20.0,
+                    demand_sensitivity=0.3,
+                    competitor_sensitivity=0.7,
+                    inventory_sensitivity=0.2
+                ),
+                PricingStrategy(
+                    strategy_id="demand_based",
+                    name="Demand-Based Pricing",
+                    description="Price based on demand forecasting",
+                    min_margin_percent=20.0,
+                    max_discount_percent=15.0,
+                    demand_sensitivity=0.8,
+                    competitor_sensitivity=0.2,
+                    inventory_sensitivity=0.4
+                ),
+                PricingStrategy(
+                    strategy_id="inventory_driven",
+                    name="Inventory-Driven Pricing",
+                    description="Price based on inventory levels",
+                    min_margin_percent=10.0,
+                    max_discount_percent=30.0,
+                    demand_sensitivity=0.2,
+                    competitor_sensitivity=0.3,
+                    inventory_sensitivity=0.8
+                )
+            ]
+            
+            for strategy in strategies:
+                self.pricing_strategies[strategy.strategy_id] = strategy
+            
+            self.logger.info("Pricing strategies initialized", count=len(strategies))
+        
         except Exception as e:
-            self.logger.error(f"Error initializing pricing strategies: {e}", exc_info=True)
+            self.logger.error("Failed to initialize pricing strategies", error=str(e))
     
     async def _load_competitor_prices(self):
-        """
-        Loads competitor pricing data from the database into the agent's memory.
-        """
-
-        self.logger.info("Loading initial competitor prices...")
-        if not self._db_initialized:
-            self.logger.warning("Database not initialized. Cannot load competitor prices.")
-            return
-
+        """Load initial competitor pricing data."""
         try:
-            async with self.db_manager.get_session() as session:
-                competitor_prices_db = await self.db_helper.get_all(session, CompetitorPriceDB)
-                if not competitor_prices_db:
-                    self.logger.info("No competitor prices found in DB. Adding example data.")
-                    example_competitor_prices_data = [
-                        {
-                            "id": str(uuid4()),
-                            "product_id": "product_1",
-                            "competitor_name": "Competitor A",
-                            "price": 24.99,
-                            "availability": True,
-                            "last_updated": datetime.utcnow(),
-                            "source": "api"
-                        },
-                        {
-                            "id": str(uuid4()),
-                            "product_id": "product_1",
-                            "competitor_name": "Competitor B",
-                            "price": 26.50,
-                            "availability": True,
-                            "last_updated": datetime.utcnow(),
-                            "source": "scraping"
-                        },
-                        {
-                            "id": str(uuid4()),
-                            "product_id": "product_2",
-                            "competitor_name": "Competitor X",
-                            "price": 199.0,
-                            "availability": True,
-                            "last_updated": datetime.utcnow(),
-                            "source": "api"
-                        }
-                    ]
-                    for price_data in example_competitor_prices_data:
-                        competitor_price_db = CompetitorPriceDB(**price_data)
-                        await self.db_helper.create(session, competitor_price_db)
-                    competitor_prices_db = await self.db_helper.get_all(session, CompetitorPriceDB)
-
-                self.competitor_prices = {}
-                for cp_db in competitor_prices_db:
-                    if cp_db.product_id not in self.competitor_prices:
-                        self.competitor_prices[cp_db.product_id] = []
-                    # Manually create CompetitorPrice instance from db data
-                    cp_data = self.db_helper.to_dict(cp_db)
-                    self.competitor_prices[cp_db.product_id].append(CompetitorPrice(
-                        competitor_name=cp_data['competitor_name'],
-                        price=cp_data['price'],
-                        availability=cp_data['availability'],
-                        last_updated=cp_data['last_updated'],
-                        source=cp_data['source'],
-                    ))
-                self.logger.info(f"Loaded initial competitor prices for {len(self.competitor_prices)} products from DB.")
+            # In production, this would load from database or external APIs
+            # For now, create sample data
+            
+            sample_products = ["product_1", "product_2", "product_3"]
+            
+            for product_id in sample_products:
+                competitor_prices = [
+                    CompetitorPrice(
+                        competitor_name="Competitor A",
+                        price=24.99,
+                        availability=True,
+                        last_updated=datetime.utcnow(),
+                        source="api"
+                    ),
+                    CompetitorPrice(
+                        competitor_name="Competitor B",
+                        price=26.50,
+                        availability=True,
+                        last_updated=datetime.utcnow(),
+                        source="scraping"
+                    ),
+                    CompetitorPrice(
+                        competitor_name="Competitor C",
+                        price=23.75,
+                        availability=False,
+                        last_updated=datetime.utcnow() - timedelta(hours=2),
+                        source="api"
+                    )
+                ]
+                
+                self.competitor_prices[product_id] = competitor_prices
+            
+            self.logger.info("Competitor prices loaded", products=len(sample_products))
+        
         except Exception as e:
-            self.logger.error(f"Error loading competitor prices: {e}", exc_info=True)
+            self.logger.error("Failed to load competitor prices", error=str(e))
     
     async def _check_for_price_optimization_trigger(self, product_id: str):
         """Check if price optimization should be triggered."""
@@ -1399,10 +1213,7 @@ class DynamicPricingAgent(BaseAgent):
                 self.logger.error("Failed to handle competitor price update", error=str(e), product_id=product_id)
     
     async def _monitor_competitor_prices(self):
-        """
-        Monitors competitor prices periodically and updates the internal state.
-        """
-
+        """Background task to monitor competitor prices."""
         while not self.shutdown_event.is_set():
             try:
                 # In production, this would scrape competitor websites or call APIs
@@ -1432,10 +1243,7 @@ class DynamicPricingAgent(BaseAgent):
                 await asyncio.sleep(1800)  # Wait 30 minutes on error
     
     async def _optimize_prices_periodically(self):
-        """
-        Periodically optimizes prices for all active products.
-        """
-
+        """Background task to optimize prices periodically."""
         while not self.shutdown_event.is_set():
             try:
                 # Run optimization every 6 hours
@@ -1468,10 +1276,7 @@ class DynamicPricingAgent(BaseAgent):
                 await asyncio.sleep(3600)  # Wait 1 hour on error
     
     async def _analyze_pricing_performance(self):
-        """
-        Periodically analyzes the performance of pricing strategies and identifies areas for improvement.
-        """
-
+        """Background task to analyze pricing performance."""
         while not self.shutdown_event.is_set():
             try:
                 # Analyze performance every 24 hours
@@ -1560,48 +1365,3 @@ if __name__ == "__main__":
         reload=False,
         log_level="info"
     )
-
-
-
-    def start_api_server(self, host: str = "0.0.0.0", port: int = 8000):
-        """Start the FastAPI server."""
-        self.logger.info(f"Starting API server on {host}:{port}")
-        try:
-            uvicorn.run(self.app, host=host, port=port)
-        except Exception as e:
-            self.logger.error(f"Failed to start API server: {e}", exc_info=True)
-
-async def main():
-    """Main function to run the Dynamic Pricing Agent."""
-    try:
-        agent = DynamicPricingAgent()
-        await agent.initialize()
-        # In a real application, you might run this in a separate thread or process
-        # For simplicity, we run it directly here. 
-        # agent.start_api_server() 
-    except Exception as e:
-        logger = structlog.get_logger()
-        logger.error(f"Failed to run Dynamic Pricing Agent: {e}", exc_info=True)
-
-if __name__ == "__main__":
-    # This part is for standalone execution and testing
-    # In a multi-agent system, the agent would be managed by a central controller
-    
-    # Configure logging
-    structlog.configure(
-        processors=[
-            structlog.stdlib.filter_by_level,
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
-            structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
-            structlog.processors.JSONRenderer(),
-        ],
-        context_class=dict,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        wrapper_class=structlog.stdlib.BoundLogger,
-        cache_logger_on_first_use=True,
-    )
-    
-    # Example of how to run the agent
-    asyncio.run(main())
-

@@ -30,8 +30,6 @@ import structlog
 import aiohttp
 import sys
 import os
-from http import HTTPStatus
-import uvicorn
 
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
@@ -186,22 +184,15 @@ class StandardMarketplaceAgent(BaseAgent):
     """
     
     def __init__(self, **kwargs):
-        super().__init__(agent_id="standard_marketplace_agent", agent_type="marketplace_agent", **kwargs)
-        self.db_manager = get_database_manager()
-        self.db_helper = DatabaseHelper(self.db_manager)
-        self._db_initialized = False # Flag for database initialization
-
+        super().__init__(agent_id="standard_marketplace_agent", **kwargs)
         self.app = FastAPI(title="Standard Marketplace Agent API", version="1.0.0")
         self.setup_routes()
         
-        # In-memory data structures (will be primarily managed via DB)
+        # Marketplace data
         self.marketplace_credentials: Dict[str, MarketplaceCredentials] = {}
         self.product_listings: Dict[str, ProductListing] = {}
         self.marketplace_orders: Dict[str, MarketplaceOrder] = {}
         self.sync_results: Dict[str, SyncResult] = {}
-
-        self.port = int(os.getenv("AGENT_PORT", 8000))
-        self.database_url = os.getenv("DATABASE_URL", "sqlite:///./marketplace.db")
         
         # HTTP session for API calls
         self.session: Optional[aiohttp.ClientSession] = None
@@ -213,27 +204,14 @@ class StandardMarketplaceAgent(BaseAgent):
         self.register_handler(MessageType.ORDER_FULFILLMENT_REQUIRED, self._handle_order_fulfillment)
     
     async def initialize(self):
-        """Initializes the Standard Marketplace Agent.
-
-        This method sets up the database, ensures tables exist, loads marketplace credentials,
-        initializes the HTTP session, and starts background synchronization tasks.
-        """
+        """Initialize the Standard Marketplace Agent."""
         self.logger.info("Initializing Standard Marketplace Agent")
-        try:
-            await self.db_manager.initialize_db()
-            self._db_initialized = True
-            self.logger.info("Database initialized successfully.")
-            await self._ensure_db_tables_exist()
-            await self._load_marketplace_credentials_from_db()
-        except Exception as e:
-            self.logger.error(f"Failed to initialize database: {e}")
-            self._db_initialized = False
-            # Depending on criticality, you might want to exit or retry
         
         # Initialize HTTP session
         self.session = aiohttp.ClientSession()
         
-
+        # Load marketplace credentials
+        await self._load_marketplace_credentials()
         
         # Start background synchronization tasks
         asyncio.create_task(self._sync_orders_periodically())
@@ -244,16 +222,11 @@ class StandardMarketplaceAgent(BaseAgent):
         self.logger.info("Standard Marketplace Agent initialized successfully")
     
     async def cleanup(self):
-        """Cleans up resources used by the Standard Marketplace Agent.
-
-        This includes closing the HTTP session and the database connection if they were initialized.
-        """
+        """Cleanup resources."""
         self.logger.info("Cleaning up Standard Marketplace Agent")
         
         if self.session:
             await self.session.close()
-        if self._db_initialized:
-            await self.db_manager.close_db()
     
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process marketplace business logic."""
@@ -1428,40 +1401,21 @@ class StandardMarketplaceAgent(BaseAgent):
         
         except Exception as e:
             self.logger.error("Failed to get marketplace performance", error=str(e))
-            raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e))
-
-    async def _ensure_db_tables_exist(self):
-        """Ensures that all necessary database tables for the agent's models exist.
-        This method checks for the existence of tables required for MarketplaceCredentials, ProductListing, etc.
-        """
-        if not self._db_initialized: return
-        self.logger.info("Ensuring database tables exist...")
-        try:
-            async with self.db_manager.get_session() as session:
-                # In a real ORM setup, this would involve creating tables based on models
-                # For now, we'll assume the helper handles it or tables pre-exist.
-                self.logger.info("Database tables creation/check initiated.")
-            self.logger.info("Database tables ensured.")
-        except Exception as e:
-            self.logger.error(f"Error ensuring database tables: {e}")
             raise
-
-    async def _load_marketplace_credentials_from_db(self):
-        """Loads marketplace API credentials from the database into the agent's in-memory storage.
-
-        This method retrieves all stored MarketplaceCredentials and populates the `self.marketplace_credentials` dictionary.
-        """
-        if not self._db_initialized: return
-        self.logger.info("Loading marketplace credentials from DB...")
+    
+    async def _load_marketplace_credentials(self):
+        """Load marketplace credentials from configuration."""
         try:
-            async with self.db_manager.get_session() as session:
-                credentials_list = await self.db_helper.get_all(session, MarketplaceCredentials)
-                # Store them in memory for quick access, or fetch on demand
-                self.marketplace_credentials = {cred.marketplace_id: cred for cred in credentials_list}
-            self.logger.info(f"Loaded {len(credentials_list)} marketplace credentials from DB.")
-        except Exception as e:
-            self.logger.error(f"Error loading marketplace credentials from DB: {e}")
-            raise
+            # In production, this would load from secure configuration
+            # For now, create sample credentials
+            
+            sample_credentials = [
+                MarketplaceCredentials(
+                    marketplace_type=MarketplaceType.AMAZON,
+                    marketplace_id="amazon_de",
+                    api_key="sample_amazon_key",
+                    secret_key="sample_amazon_secret",
+                    seller_id="A1SAMPLE123",
                     additional_params={
                         "marketplace_id": "A1PA6795UKMFR9",
                         "refresh_token": "sample_refresh_token",

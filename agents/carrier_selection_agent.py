@@ -453,6 +453,7 @@ class CarrierSelectionAgent(BaseAgent):
         try:
             # Check if carrier can deliver to destination
             if not self._can_deliver_to_destination(carrier, delivery_requirements.destination_country):
+                pass
                 if not self._db_initialized:
             return None
         

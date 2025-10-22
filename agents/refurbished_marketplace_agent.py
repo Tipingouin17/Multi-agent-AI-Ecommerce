@@ -17,11 +17,8 @@ from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 from enum import Enum
 from decimal import Decimal
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from shared.db_helpers import DatabaseHelper
-from shared.models import RefurbishedCredentialsDB, RefurbishedProductDB, RefurbishedOrderDB, QualityReportDB, MarketplaceOrderDB
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -29,7 +26,6 @@ import structlog
 import aiohttp
 import sys
 import os
-from aiokafka import AIOKafkaProducer
 
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
@@ -255,42 +251,20 @@ class RefurbishedMarketplaceAgent(BaseAgent):
     - Specialized pricing for refurbished items
     """
     
-    def __init__(self,
-                 agent_id: str = "refurbished_marketplace_agent",
-                 agent_type: str = "refurbished_marketplace_agent",
-                 **kwargs):
-        """Initializes the RefurbishedMarketplaceAgent.
-
-        Args:
-            agent_id (str, optional): The unique identifier for the agent. Defaults to "refurbished_marketplace_agent".
-            agent_type (str, optional): The type of the agent. Defaults to "refurbished_marketplace_agent".
-            **kwargs: Arbitrary keyword arguments.
-        """
-        super().__init__(agent_id=agent_id, agent_type=agent_type, **kwargs)
-        self.db_manager = get_database_manager()
-        self.db_helper = DatabaseHelper()
-        self._db_initialized = False
+    def __init__(self, **kwargs):
+        super().__init__(agent_id="refurbished_marketplace_agent", **kwargs)
         self.app = FastAPI(title="Refurbished Marketplace Agent API", version="1.0.0")
         self.setup_routes()
         
         # Refurbished marketplace data
-        self.marketplace_credentials: Dict[str, RefurbishedCredentials] = {} # Stored in DB
-        self.refurbished_products: Dict[str, RefurbishedProduct] = {} # Stored in DB
-        self.refurbished_orders: Dict[str, RefurbishedOrder] = {} # Stored in DB
-        self.quality_reports: Dict[str, QualityReport] = {} # Stored in DB
+        self.marketplace_credentials: Dict[str, RefurbishedCredentials] = {}
+        self.refurbished_products: Dict[str, RefurbishedProduct] = {}
+        self.refurbished_orders: Dict[str, RefurbishedOrder] = {}
+        self.quality_reports: Dict[str, QualityReport] = {}
         
         # Grading systems for different marketplaces
         self.grading_systems = self._initialize_grading_systems()
         
-        # Load Kafka topics from environment variables
-        self.kafka_product_topic = os.getenv("KAFKA_PRODUCT_TOPIC", "product_updates")
-        self.kafka_inventory_topic = os.getenv("KAFKA_INVENTORY_TOPIC", "inventory_updates")
-        self.kafka_quality_topic = os.getenv("KAFKA_QUALITY_TOPIC", "quality_assessments")
-        self.kafka_refurbishment_topic = os.getenv("KAFKA_REFURBISHMENT_TOPIC", "refurbishment_events")
-        self.kafka_group_id = os.getenv("KAFKA_GROUP_ID", "refurbished_marketplace_group")
-
-        self.kafka_producer = AIOKafkaProducer(bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"))
-
         # HTTP session for API calls
         self.session: Optional[aiohttp.ClientSession] = None
         
@@ -301,25 +275,14 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         self.register_handler(MessageType.REFURBISHMENT_COMPLETED, self._handle_refurbishment_completed)
     
     async def initialize(self):
-        """Initializes the Refurbished Marketplace Agent.
-
-        This method performs several asynchronous initialization steps:
-        1. Initializes an aiohttp ClientSession for making HTTP requests.
-        2. Starts the AIOKafkaProducer for publishing messages to Kafka topics.
-        3. Initializes the database and loads existing marketplace credentials.
-        4. Starts various background tasks for syncing orders, inventory, monitoring quality, and updating pricing.
-        """
+        """Initialize the Refurbished Marketplace Agent."""
         self.logger.info("Initializing Refurbished Marketplace Agent")
         
         # Initialize HTTP session
         self.session = aiohttp.ClientSession()
         
-        # Start Kafka producer
-        await self.kafka_producer.start()
-
         # Load marketplace credentials
-        await self._initialize_db()
-        await self._load_refurbished_credentials_from_db()
+        await self._load_refurbished_credentials()
         
         # Start background tasks
         asyncio.create_task(self._sync_refurbished_orders())
@@ -328,36 +291,16 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         asyncio.create_task(self._update_condition_pricing())
         
         self.logger.info("Refurbished Marketplace Agent initialized successfully")
-
-    async def _on_shutdown(self):
-        """Handles the shutdown process for the Refurbished Marketplace Agent.
-
-        This method ensures that all active connections and resources are properly closed.
-        Specifically, it closes the aiohttp client session and stops the AIOKafkaProducer,
-        preventing resource leaks and ensuring a graceful shutdown.
-        """
-        self.logger.info("Shutting down Refurbished Marketplace Agent")
+    
+    async def cleanup(self):
+        """Cleanup resources."""
+        self.logger.info("Cleaning up Refurbished Marketplace Agent")
+        
         if self.session:
             await self.session.close()
-        if self.kafka_producer:
-            await self.kafka_producer.stop()
     
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Processes incoming business logic requests for the refurbished marketplace agent.
-
-        This method acts as a central dispatcher for various business operations,
-        delegating tasks based on the 'action' specified in the input data.
-
-        Args:
-            data (Dict[str, Any]): A dictionary containing the action to be performed
-                                   and any relevant data for that action.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the result of the processed action.
-        
-        Raises:
-            HTTPException: If an unknown action is requested.
-        """
+        """Process refurbished marketplace business logic."""
         action = data.get("action")
         
         if action == "create_refurbished_listing":
@@ -388,7 +331,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                 validation_result = await self._validate_refurbished_credentials(credentials)
                 
                 if validation_result["valid"]:
-                    await self._save_refurbished_credentials(credentials)
+                    self.marketplace_credentials[credentials.marketplace_id] = credentials
                     
                     return APIResponse(
                         success=True,
@@ -404,7 +347,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         
         @self.app.post("/listings", response_model=APIResponse)
         async def create_refurbished_listing(listing_data: RefurbishedProduct):
-    
+            """Create a new refurbished product listing."""
             try:
                 result = await self._create_refurbished_listing(listing_data.dict())
                 
@@ -420,7 +363,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         
         @self.app.put("/listings/{listing_id}/condition", response_model=APIResponse)
         async def update_condition_grade(listing_id: str, condition_data: Dict[str, Any]):
-    
+            """Update product condition and grading."""
             try:
                 result = await self._update_condition_grade(listing_id, condition_data)
                 
@@ -436,7 +379,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         
         @self.app.post("/quality-reports", response_model=APIResponse)
         async def generate_quality_report(product_id: str, assessment_data: Dict[str, Any]):
-    
+            """Generate quality report for refurbished product."""
             try:
                 result = await self._generate_quality_report(product_id, assessment_data)
                 
@@ -490,9 +433,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         ):
             """List refurbished product listings with filters."""
             try:
-                async with self.db_manager.get_session() as session:
-                    products_db = await self.db_helper.get_all(session, RefurbishedProductDB)
-                    products = [RefurbishedProduct(**self.db_helper.to_dict(p)) for p in products_db]
+                products = list(self.refurbished_products.values())
                 
                 if marketplace_id:
                     products = [p for p in products if p.marketplace_id == marketplace_id]
@@ -517,9 +458,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         async def list_quality_reports(product_id: Optional[str] = None):
             """List quality reports with optional product filter."""
             try:
-                async with self.db_manager.get_session() as session:
-                    reports_db = await self.db_helper.get_all(session, QualityReportDB)
-                    reports = [QualityReport(**self.db_helper.to_dict(r)) for r in reports_db]
+                reports = list(self.quality_reports.values())
                 
                 if product_id:
                     reports = [r for r in reports if r.product_id == product_id]
@@ -648,26 +587,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return {"valid": False, "error": f"Refurbed validation failed: {str(e)}"}
     
     async def _create_refurbished_listing(self, listing_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Creates a new refurbished product listing in the marketplace.
-
-        This method takes listing data, validates it, and then attempts to create
-        a new product listing in the appropriate refurbished marketplace.
-
-        Args:
-            listing_data (Dict[str, Any]): A dictionary containing all necessary data
-                                           to create a refurbished product listing.
-                                           Expected keys include 'marketplace_type', 'product_id',
-                                           'title', 'description', 'price', 'quantity', etc.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the status and details of the
-                            newly created listing, including its `listing_id`.
-
-        Raises:
-            HTTPException: If required listing data is missing or if the marketplace
-                           API call fails.
-        """
-
+        """Create a new refurbished product listing."""
         try:
             # Create refurbished product
             product = RefurbishedProduct(
@@ -717,7 +637,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                 product.last_sync = datetime.utcnow()
                 
                 # Store product
-                await self._save_refurbished_product(product)
+                self.refurbished_products[product.listing_id] = product
                 
                 # Send notification
                 await self.send_message(
@@ -743,18 +663,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             raise
     
     async def _validate_product_grading_data(self, product: RefurbishedProduct) -> Dict[str, Any]:
-        """Validates a product's grading against marketplace-specific standards.
-
-        This method checks if the product's condition, aesthetic grade, and functional grade
-        meet the minimum requirements defined by the grading system of its associated marketplace.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object to validate.
-
-        Returns:
-            Dict[str, Any]: A dictionary indicating whether the product grading is 'valid'
-                            and a 'message' or 'error' detailing the validation result.
-        """
+        """Validate product grading against marketplace standards."""
         try:
             grading_system = self.grading_systems.get(product.marketplace_type.value)
             
@@ -801,24 +710,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return {"valid": False, "error": str(e)}
     
     async def _create_marketplace_refurbished_listing(self, product: RefurbishedProduct) -> Dict[str, Any]:
-        """Creates a listing for a refurbished product on a specific marketplace.
-
-        This method acts as a dispatcher, routing the product creation request
-        to the appropriate marketplace-specific method (e.g., Back Market, Refurbed)
-        based on the `marketplace_type` specified in the product.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object containing
-                                         all details necessary for listing.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the success status and any
-                            marketplace-specific product ID or error messages.
-
-        Raises:
-            ValueError: If marketplace credentials are not found.
-            Exception: If an error occurs during the marketplace-specific listing creation.
-        """
+        """Create listing on specific refurbished marketplace."""
         try:
             credentials = self.marketplace_credentials.get(product.marketplace_id)
             if not credentials:
@@ -837,23 +729,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return {"success": False, "error": str(e)}
     
     async def _create_back_market_listing(self, product: RefurbishedProduct, credentials: RefurbishedCredentials) -> Dict[str, Any]:
-        """Creates a product listing on the Back Market platform.
-
-        This method simulates the interaction with the Back Market API to create
-        a new listing, mapping the internal product data to Back Market-specific
-        fields and conditions.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object to be listed.
-            credentials (RefurbishedCredentials): The API credentials for Back Market.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the success status and the
-                            marketplace-specific product ID if successful, or an error message.
-
-        Raises:
-            Exception: If an error occurs during the simulated API call.
-        """
+        """Create listing on Back Market."""
         try:
             # Back Market API product creation
             # In production, this would use the actual Back Market API
@@ -897,23 +773,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return {"success": False, "error": str(e)}
     
     async def _create_refurbed_listing(self, product: RefurbishedProduct, credentials: RefurbishedCredentials) -> Dict[str, Any]:
-        """Creates a product listing on the Refurbed platform.
-
-        This method simulates the interaction with the Refurbed API to create
-        a new listing, mapping the internal product data to Refurbed-specific
-        fields and conditions.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object to be listed.
-            credentials (RefurbishedCredentials): The API credentials for Refurbed.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the success status and the
-                            marketplace-specific product ID if successful, or an error message.
-
-        Raises:
-            Exception: If an error occurs during the simulated API call.
-        """
+        """Create listing on Refurbed."""
         try:
             # Refurbed API product creation
             refurbed_data = {
@@ -948,23 +808,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return {"success": False, "error": str(e)}
     
     async def _create_generic_refurbished_listing(self, product: RefurbishedProduct, credentials: RefurbishedCredentials) -> Dict[str, Any]:
-        """Creates a product listing on a generic refurbished marketplace.
-
-        This method handles the creation of listings for marketplaces that do not
-        have a specific integration method. It logs the creation and returns a
-        simulated marketplace product ID.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object to be listed.
-            credentials (RefurbishedCredentials): The API credentials for the generic marketplace.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the success status and the
-                            simulated marketplace-specific product ID.
-
-        Raises:
-            Exception: If an error occurs during the simulated listing creation.
-        """
+        """Create listing on generic refurbished marketplace."""
         try:
             self.logger.info("Generic refurbished listing created", 
                            marketplace=product.marketplace_type.value,
@@ -982,16 +826,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return {"success": False, "error": str(e)}
     
     def _map_condition_to_back_market(self, condition: ProductCondition) -> str:
-        """Maps an internal `ProductCondition` enum to its corresponding string representation
-        used by the Back Market platform.
-
-        Args:
-            condition (ProductCondition): The internal product condition enum value.
-
-        Returns:
-            str: The Back Market-specific string representation of the condition.
-                 Defaults to "good" if no direct mapping is found.
-        """
+        """Map internal condition to Back Market condition."""
         mapping = {
             ProductCondition.EXCELLENT: "excellent",
             ProductCondition.VERY_GOOD: "very_good",
@@ -1001,16 +836,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         return mapping.get(condition, "good")
     
     def _map_condition_to_refurbed(self, condition: ProductCondition) -> str:
-        """Maps an internal `ProductCondition` enum to its corresponding string representation
-        used by the Refurbed platform.
-
-        Args:
-            condition (ProductCondition): The internal product condition enum value.
-
-        Returns:
-            str: The Refurbed-specific string representation of the condition.
-                 Defaults to "good" if no direct mapping is found.
-        """
+        """Map internal condition to Refurbed condition."""
         mapping = {
             ProductCondition.EXCELLENT: "like_new",
             ProductCondition.VERY_GOOD: "very_good",
@@ -1020,29 +846,11 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         return mapping.get(condition, "good")
     
     async def _update_condition_grade(self, listing_id: str, condition_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Updates the condition grade of a specific refurbished product listing.
-
-        This method takes a listing ID and new condition data, then updates the
-        corresponding product in the database and potentially in the marketplace.
-
-        Args:
-            listing_id (str): The unique identifier of the product listing to update.
-            condition_data (Dict[str, Any]): A dictionary containing the new condition
-                                            information. Expected keys include 'condition',
-                                            'aesthetic_grade', 'functional_grade', etc.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the status of the update operation.
-
-        Raises:
-            HTTPException: If the listing is not found or if the update operation fails.
-        """
-
+        """Update product condition and grading."""
         try:
-            product_db = await self._get_refurbished_product_by_id(listing_id)
-            if not product_db:
+            product = self.refurbished_products.get(listing_id)
+            if not product:
                 raise ValueError(f"Product listing {listing_id} not found")
-            product = RefurbishedProduct(**self.db_helper.to_dict(product_db))
             
             # Update condition fields
             if "condition" in condition_data:
@@ -1098,22 +906,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             raise
     
     async def _update_marketplace_condition(self, product: RefurbishedProduct, condition_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Updates the condition of a refurbished product on its respective marketplace.
-
-        This method dispatches the update request to the appropriate marketplace-specific
-        method based on the product's `marketplace_type`.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object with updated condition data.
-            condition_data (Dict[str, Any]): A dictionary containing the new condition information.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the success status of the update operation.
-
-        Raises:
-            ValueError: If marketplace credentials are not found.
-            Exception: If an error occurs during the marketplace-specific update.
-        """
+        """Update condition on marketplace."""
         try:
             credentials = self.marketplace_credentials.get(product.marketplace_id)
             if not credentials:
@@ -1133,19 +926,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return {"success": False, "error": str(e)}
     
     async def _update_back_market_condition(self, product: RefurbishedProduct, condition_data: Dict[str, Any], credentials: RefurbishedCredentials) -> Dict[str, Any]:
-        """Updates the condition of a refurbished product on the Back Market platform.
-
-        This method simulates sending an update request to the Back Market API
-        to reflect changes in the product's condition.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object whose condition is to be updated.
-            condition_data (Dict[str, Any]): A dictionary containing the new condition information.
-            credentials (RefurbishedCredentials): The API credentials for Back Market.
-
-        Returns:
-            Dict[str, Any]: A dictionary indicating the success status of the update operation.
-        """
+        """Update condition on Back Market."""
         # Simulate Back Market condition update
         self.logger.info("Back Market condition updated", 
                        sku=product.sku, 
@@ -1153,19 +934,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         return {"success": True, "message": "Back Market condition updated"}
     
     async def _update_refurbed_condition(self, product: RefurbishedProduct, condition_data: Dict[str, Any], credentials: RefurbishedCredentials) -> Dict[str, Any]:
-        """Updates the condition of a refurbished product on the Refurbed platform.
-
-        This method simulates sending an update request to the Refurbed API
-        to reflect changes in the product's condition.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object whose condition is to be updated.
-            condition_data (Dict[str, Any]): A dictionary containing the new condition information.
-            credentials (RefurbishedCredentials): The API credentials for Refurbed.
-
-        Returns:
-            Dict[str, Any]: A dictionary indicating the success status of the update operation.
-        """
+        """Update condition on Refurbed."""
         # Simulate Refurbed condition update
         self.logger.info("Refurbed condition updated", 
                        sku=product.sku, 
@@ -1173,33 +942,16 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         return {"success": True, "message": "Refurbed condition updated"}
     
     async def _generate_quality_report(self, product_id: str, assessment_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Generates and saves a quality report for a given product.
-
-        This method takes product ID and assessment data, then creates a new
-        quality report and stores it in the database.
-
-        Args:
-            product_id (str): The unique identifier of the product.
-            assessment_data (Dict[str, Any]): A dictionary containing the quality
-                                             assessment details. Expected keys include
-                                             'overall_condition', 'aesthetic_score',
-                                             'functional_score', etc.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the status and details of the
-                            newly generated quality report.
-
-        Raises:
-            HTTPException: If the product is not found or if the report generation fails.
-        """
-
+        """Generate quality report for refurbished product."""
         try:
             # Find product listing
-            product_listing: Optional[RefurbishedProduct] = None
-            product_listing_db = await self._get_refurbished_product_by_product_id(product_id)
-            if product_listing_db:
-                product_listing = RefurbishedProduct(**self.db_helper.to_dict(product_listing_db))
-            else:
+            product_listing = None
+            for product in self.refurbished_products.values():
+                if product.product_id == product_id:
+                    product_listing = product
+                    break
+            
+            if not product_listing:
                 raise ValueError(f"Product {product_id} not found in refurbished listings")
             
             # Create quality report
@@ -1224,7 +976,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             )
             
             # Store quality report
-            await self._save_quality_report(report)
+            self.quality_reports[report.report_id] = report
             
             # Update product grading based on report
             if report.aesthetic_score and report.functional_score:
@@ -1257,27 +1009,11 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             raise
     
     async def _get_condition_pricing_recommendations(self, product_id: str) -> Dict[str, Any]:
-        """Retrieves pricing recommendations for a product based on its condition.
-
-        This method calculates a recommended price for a refurbished product by considering
-        its original price, current condition, and marketplace-specific grading systems.
-
-        Args:
-            product_id (str): The unique identifier of the product for which to get recommendations.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing pricing recommendations, including
-                            the original price, price factor, recommended price, and current price.
-
-        Raises:
-            ValueError: If the product is not found, no grading system is defined,
-                        or the condition is not found in the grading system.
-        """
+        """Get pricing recommendations based on product condition."""
         try:
             # Find product listing
             product_listing = None
-            products = await self._get_all_refurbished_products()
-            for product in products:
+            for product in self.refurbished_products.values():
                 if product.product_id == product_id:
                     product_listing = product
                     break
@@ -1323,26 +1059,11 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             raise
     
     async def _validate_product_grading(self, listing_id: str) -> Dict[str, Any]:
-        """Validates a product's grading against marketplace standards.
-
-        This method retrieves a product by its listing ID and then uses a helper method
-        to validate its grading data against predefined marketplace standards.
-
-        Args:
-            listing_id (str): The unique identifier of the product listing to validate.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the validation results.
-
-        Raises:
-            ValueError: If the product listing is not found.
-            Exception: If the grading validation process fails.
-        """
+        """Validate product grading against marketplace standards."""
         try:
-            product_db = await self._get_refurbished_product_by_id(listing_id)
-            if not product_db:
+            product = self.refurbished_products.get(listing_id)
+            if not product:
                 raise ValueError(f"Product listing {listing_id} not found")
-            product = RefurbishedProduct(**self.db_helper.to_dict(product_db))
             
             return await self._validate_product_grading_data(product)
         
@@ -1351,23 +1072,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             raise
     
     async def _sync_orders(self, marketplace_id: str) -> Dict[str, Any]:
-        """Synchronizes orders from a specific refurbished marketplace.
-
-        This method fetches new or updated orders from the marketplace API,
-        processes them, and stores them in the local database.
-
-        Args:
-            marketplace_id (str): The unique identifier of the marketplace to sync orders from.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the status of the synchronization,
-                            including the number of new or updated orders.
-
-        Raises:
-            HTTPException: If the marketplace credentials are not found or if the
-                           marketplace API call fails.
-        """
-
+        """Synchronize orders from refurbished marketplace."""
         try:
             credentials = self.marketplace_credentials.get(marketplace_id)
             if not credentials:
@@ -1383,13 +1088,10 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             for order_data in orders:
                 try:
                     # Process order
-                    order_db = await self._process_refurbished_order(order_data, credentials)
-                    if order_db:
-                        order = RefurbishedOrder(**self.db_helper.to_dict(order_db))
-                        await self._save_refurbished_order(order_db)
+                    order = await self._process_refurbished_order(order_data, credentials)
                     
                     if order:
-
+                        self.refurbished_orders[order.order_id] = order
                         success_count += 1
                         
                         # Send order to order agent
@@ -1418,23 +1120,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             raise
     
     async def _fetch_refurbished_orders(self, credentials: RefurbishedCredentials) -> List[Dict[str, Any]]:
-        """Fetches refurbished orders from a specific marketplace using the provided credentials.
-
-        This method simulates fetching order data from a marketplace's API.
-        In a real-world scenario, this would involve making actual HTTP requests
-        to the marketplace's API endpoint.
-
-        Args:
-            credentials (RefurbishedCredentials): The API credentials for the marketplace.
-
-        Returns:
-            List[Dict[str, Any]]: A list of dictionaries, where each dictionary represents
-                                  an order fetched from the marketplace.
-
-        Raises:
-            Exception: If an error occurs during the simulated API call.
-        """
-
+        """Fetch orders from refurbished marketplace API."""
         try:
             if credentials.marketplace_type == RefurbishedMarketplace.BACK_MARKET:
                 return await self._fetch_back_market_orders(credentials)
@@ -1447,24 +1133,14 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         except Exception as e:
             self.logger.error("Failed to fetch refurbished orders", error=str(e))
             if not self._db_initialized:
-                return []
+            return []
         
         async with self.db_manager.get_session() as session:
             records = await self.db_helper.get_all(session, MarketplaceOrderDB, limit=100)
             return [self.db_helper.to_dict(r) for r in records]
     
     async def _fetch_back_market_orders(self, credentials: RefurbishedCredentials) -> List[Dict[str, Any]]:
-        """Fetches simulated orders from the Back Market API.
-
-        This method generates a mock list of orders, simulating the data structure
-        that would be received from the actual Back Market API.
-
-        Args:
-            credentials (RefurbishedCredentials): The API credentials for Back Market (not directly used in simulation).
-
-        Returns:
-            List[Dict[str, Any]]: A list of dictionaries, each representing a simulated Back Market order.
-        """
+        """Fetch orders from Back Market API."""
         # Simulate Back Market orders
         return [
             {
@@ -1498,17 +1174,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         ]
     
     async def _fetch_refurbed_orders(self, credentials: RefurbishedCredentials) -> List[Dict[str, Any]]:
-        """Fetches simulated orders from the Refurbed API.
-
-        This method generates a mock list of orders, simulating the data structure
-        that would be received from the actual Refurbed API.
-
-        Args:
-            credentials (RefurbishedCredentials): The API credentials for Refurbed (not directly used in simulation).
-
-        Returns:
-            List[Dict[str, Any]]: A list of dictionaries, each representing a simulated Refurbed order.
-        """
+        """Fetch orders from Refurbed API."""
         # Simulate Refurbed orders
         return [
             {
@@ -1539,18 +1205,9 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                 ]
             }
         ]
+    
     async def _fetch_generic_refurbished_orders(self, credentials: RefurbishedCredentials) -> List[Dict[str, Any]]:
-        """Fetches simulated orders from a generic refurbished marketplace.
-
-        This method generates a mock list of orders for a generic marketplace,
-        simulating the data structure that would be received from a real API.
-
-        Args:
-            credentials (RefurbishedCredentials): The API credentials for the generic marketplace.
-
-        Returns:
-            List[Dict[str, Any]]: A list of dictionaries, each representing a simulated generic order.
-        """
+        """Fetch orders from generic refurbished marketplace."""
         # Simulate generic refurbished orders
         return [
             {
@@ -1583,23 +1240,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         ]
     
     async def _process_refurbished_order(self, order_data: Dict[str, Any], credentials: RefurbishedCredentials) -> Optional[RefurbishedOrder]:
-        """Processes and normalizes raw order data from various refurbished marketplaces.
-
-        This method acts as a dispatcher, routing the raw order data to the
-        appropriate marketplace-specific processing method (e.g., Back Market, Refurbed)
-        based on the `marketplace_type` in the credentials.
-
-        Args:
-            order_data (Dict[str, Any]): The raw order data received from a marketplace.
-            credentials (RefurbishedCredentials): The API credentials for the marketplace.
-
-        Returns:
-            Optional[RefurbishedOrder]: A normalized `RefurbishedOrder` object if processing
-                                        is successful, otherwise `None`.
-
-        Raises:
-            Exception: If an error occurs during marketplace-specific order processing.
-        """
+        """Process and normalize refurbished marketplace order data."""
         try:
             if credentials.marketplace_type == RefurbishedMarketplace.BACK_MARKET:
                 return self._process_back_market_order(order_data, credentials)
@@ -1613,18 +1254,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return None
     
     def _process_back_market_order(self, order_data: Dict[str, Any], credentials: RefurbishedCredentials) -> RefurbishedOrder:
-        """Processes and normalizes raw order data from Back Market into a `RefurbishedOrder` object.
-
-        This method extracts relevant information from the raw Back Market order data
-        and transforms it into a standardized `RefurbishedOrder` format.
-
-        Args:
-            order_data (Dict[str, Any]): The raw order data received from Back Market.
-            credentials (RefurbishedCredentials): The API credentials for Back Market.
-
-        Returns:
-            RefurbishedOrder: A normalized `RefurbishedOrder` object.
-        """
+        """Process Back Market order data."""
         return RefurbishedOrder(
             order_id=str(uuid4()),
             marketplace_type=RefurbishedMarketplace.BACK_MARKET,
@@ -1655,18 +1285,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         )
     
     def _process_refurbed_order(self, order_data: Dict[str, Any], credentials: RefurbishedCredentials) -> RefurbishedOrder:
-        """Processes and normalizes raw order data from Refurbed into a `RefurbishedOrder` object.
-
-        This method extracts relevant information from the raw Refurbed order data
-        and transforms it into a standardized `RefurbishedOrder` format.
-
-        Args:
-            order_data (Dict[str, Any]): The raw order data received from Refurbed.
-            credentials (RefurbishedCredentials): The API credentials for Refurbed.
-
-        Returns:
-            RefurbishedOrder: A normalized `RefurbishedOrder` object.
-        """
+        """Process Refurbed order data."""
         return RefurbishedOrder(
             order_id=str(uuid4()),
             marketplace_type=RefurbishedMarketplace.REFURBED,
@@ -1697,19 +1316,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         )
     
     def _process_generic_refurbished_order(self, order_data: Dict[str, Any], credentials: RefurbishedCredentials) -> RefurbishedOrder:
-        """Processes and normalizes raw order data from a generic refurbished marketplace
-        into a `RefurbishedOrder` object.
-
-        This method extracts relevant information from the raw generic order data
-        and transforms it into a standardized `RefurbishedOrder` format.
-
-        Args:
-            order_data (Dict[str, Any]): The raw order data received from a generic marketplace.
-            credentials (RefurbishedCredentials): The API credentials for the generic marketplace.
-
-        Returns:
-            RefurbishedOrder: A normalized `RefurbishedOrder` object.
-        """
+        """Process generic refurbished marketplace order data."""
         return RefurbishedOrder(
             order_id=str(uuid4()),
             marketplace_type=credentials.marketplace_type,
@@ -1739,29 +1346,11 @@ class RefurbishedMarketplaceAgent(BaseAgent):
         )
     
     async def _update_warranty_info(self, listing_id: str, warranty_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Updates the warranty information for a specific refurbished product.
-
-        This method takes a listing ID and new warranty data, then updates the
-        corresponding product in the database and potentially on the marketplace.
-
-        Args:
-            listing_id (str): The unique identifier of the product listing to update.
-            warranty_data (Dict[str, Any]): A dictionary containing the new warranty
-                                           information. Expected keys include 'warranty_type'
-                                           and 'warranty_duration_months'.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the status of the update operation.
-
-        Raises:
-            ValueError: If the product listing is not found.
-            Exception: If the update operation on the marketplace fails.
-        """
+        """Update warranty information for refurbished product."""
         try:
-            product_db = await self._get_refurbished_product_by_id(listing_id)
-            if not product_db:
+            product = self.refurbished_products.get(listing_id)
+            if not product:
                 raise ValueError(f"Product listing {listing_id} not found")
-            product = RefurbishedProduct(**self.db_helper.to_dict(product_db))
             
             # Update warranty fields
             if "warranty_type" in warranty_data:
@@ -1786,21 +1375,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             raise
     
     async def _update_marketplace_warranty(self, product: RefurbishedProduct, warranty_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Updates the warranty information for a refurbished product on its respective marketplace.
-
-        This method simulates sending an update request to the marketplace API
-        to reflect changes in the product's warranty details.
-
-        Args:
-            product (RefurbishedProduct): The refurbished product object with updated warranty data.
-            warranty_data (Dict[str, Any]): A dictionary containing the new warranty information.
-
-        Returns:
-            Dict[str, Any]: A dictionary indicating the success status of the update operation.
-
-        Raises:
-            Exception: If an error occurs during the simulated API call.
-        """
+        """Update warranty information on marketplace."""
         try:
             # Simulate warranty update
             self.logger.info("Marketplace warranty updated", 
@@ -1815,13 +1390,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             return {"success": False, "error": str(e)}
     
     async def _load_refurbished_credentials(self):
-        """Loads refurbished marketplace credentials from a simulated configuration.
-
-        In a production environment, this method would securely load API keys and
-        other sensitive credentials from a configuration management system or
-        environment variables. For this simulation, it populates `marketplace_credentials`
-        with sample data.
-        """
+        """Load refurbished marketplace credentials from configuration."""
         try:
             # In production, this would load from secure configuration
             sample_credentials = [
@@ -1856,100 +1425,98 @@ class RefurbishedMarketplaceAgent(BaseAgent):
             self.logger.error("Failed to load refurbished credentials", error=str(e))
     
     async def _handle_product_updated(self, message: AgentMessage):
-        """Handles incoming product update messages by publishing them to a Kafka topic.
-
-        This method extracts product information from the `AgentMessage` payload
-        and sends it to the configured Kafka product topic. This ensures that
-        other services or agents subscribed to product updates are notified.
-
-        Args:
-            message (AgentMessage): The incoming message containing product update details.
-        """
+        """Handle product update messages."""
         payload = message.payload
         product_id = payload.get("product_id")
         
         if product_id:
             try:
-                # Publish to Kafka
-                await self.kafka_producer.send_and_wait(self.kafka_product_topic, json.dumps(payload).encode('utf-8'))
-                self.logger.info("Published product update to Kafka", topic=self.kafka_product_topic, product_id=product_id)
-            except Exception as e:
-                self.logger.error("Failed to publish product update to Kafka", topic=self.kafka_product_topic, product_id=product_id, error=str(e))
+                # Find refurbished listings for this product
+                product_listings = [p for p in self.refurbished_products.values() if p.product_id == product_id]
+                
+                # Update each listing
+                for listing in product_listings:
+                    updates = {}
+                    
+                    if "title" in payload:
+                        updates["title"] = payload["title"]
+                    if "description" in payload:
+                        updates["description"] = payload["description"]
+                    if "images" in payload:
+                        updates["images"] = payload["images"]
+                    
+                    if updates:
+                        listing.updated_at = datetime.utcnow()
+                        for field, value in updates.items():
+                            setattr(listing, field, value)
             
-
+            except Exception as e:
+                self.logger.error("Failed to handle product update", error=str(e), product_id=product_id)
+    
     async def _handle_inventory_updated(self, message: AgentMessage):
-        """Handles incoming inventory update messages by publishing them to a Kafka topic.
-
-        This method extracts product and quantity information from the `AgentMessage` payload
-        and sends it to the configured Kafka inventory topic. This ensures that
-        other services or agents dependent on inventory levels are notified.
-
-        Args:
-            message (AgentMessage): The incoming message containing inventory update details.
-        """
+        """Handle inventory update messages."""
         payload = message.payload
         product_id = payload.get("product_id")
         new_quantity = payload.get("available_quantity")
         
         if product_id and new_quantity is not None:
             try:
-                # Publish to Kafka
-                await self.kafka_producer.send_and_wait(self.kafka_inventory_topic, json.dumps(payload).encode("utf-8"))
-                self.logger.info("Published inventory update to Kafka", topic=self.kafka_inventory_topic, product_id=product_id, new_quantity=new_quantity)
+                # Find refurbished listings for this product
+                product_listings = [p for p in self.refurbished_products.values() if p.product_id == product_id]
+                
+                # Update quantity for each listing
+                for listing in product_listings:
+                    if listing.quantity != new_quantity:
+                        listing.quantity = new_quantity
+                        listing.updated_at = datetime.utcnow()
+            
             except Exception as e:
-                self.logger.error("Failed to publish inventory update to Kafka", topic=self.kafka_inventory_topic, product_id=product_id, error=str(e))
+                self.logger.error("Failed to handle inventory update", error=str(e), product_id=product_id)
     
     async def _handle_quality_assessment(self, message: AgentMessage):
-        """Handles incoming quality assessment completion messages by publishing them to a Kafka topic.
-
-        This method extracts quality assessment details from the `AgentMessage` payload
-        and sends it to the configured Kafka quality topic. This ensures that
-        other services or agents interested in product quality are notified.
-
-        Args:
-            message (AgentMessage): The incoming message containing quality assessment details.
-        """
+        """Handle quality assessment completion messages."""
         payload = message.payload
         product_id = payload.get("product_id")
-        condition = payload.get("final_condition")
+        condition = payload.get("condition")
         
         if product_id and condition:
             try:
-                # Publish to Kafka
-                await self.kafka_producer.send_and_wait(self.kafka_quality_topic, json.dumps(payload).encode("utf-8"))
-                self.logger.info("Published quality assessment to Kafka", topic=self.kafka_quality_topic, product_id=product_id, condition=condition)
+                # Generate quality report based on assessment
+                assessment_data = {
+                    "overall_condition": condition,
+                    "aesthetic_score": payload.get("aesthetic_score", 8),
+                    "functional_score": payload.get("functional_score", 9),
+                    "inspector_notes": f"Quality assessment completed for {product_id}"
+                }
+                
+                await self._generate_quality_report(product_id, assessment_data)
+            
             except Exception as e:
-                self.logger.error("Failed to publish quality assessment to Kafka", topic=self.kafka_quality_topic, product_id=product_id, error=str(e))
-
+                self.logger.error("Failed to handle quality assessment", error=str(e), product_id=product_id)
+    
     async def _handle_refurbishment_completed(self, message: AgentMessage):
-        """Handles incoming refurbishment completion messages by publishing them to a Kafka topic.
-
-        This method extracts refurbishment details from the `AgentMessage` payload
-        and sends it to the configured Kafka refurbishment topic. This ensures that
-        other services or agents interested in refurbishment events are notified.
-
-        Args:
-            message (AgentMessage): The incoming message containing refurbishment completion details.
-        """
+        """Handle refurbishment completion messages."""
         payload = message.payload
         product_id = payload.get("product_id")
         final_condition = payload.get("final_condition")
         
         if product_id and final_condition:
             try:
-                # Publish to Kafka
-                await self.kafka_producer.send_and_wait(self.kafka_refurbishment_topic, json.dumps(payload).encode("utf-8"))
-                self.logger.info("Published refurbishment completion to Kafka", topic=self.kafka_refurbishment_topic, product_id=product_id, final_condition=final_condition)
+                # Find refurbished listings for this product
+                product_listings = [p for p in self.refurbished_products.values() if p.product_id == product_id]
+                
+                # Update condition for each listing
+                for listing in product_listings:
+                    await self._update_condition_grade(
+                        listing.listing_id,
+                        {"condition": final_condition}
+                    )
+            
             except Exception as e:
-                self.logger.error("Failed to publish refurbishment completion to Kafka", topic=self.kafka_refurbishment_topic, product_id=product_id, error=str(e))
+                self.logger.error("Failed to handle refurbishment completion", error=str(e), product_id=product_id)
     
     async def _sync_refurbished_orders(self):
-        """Background task to periodically synchronize refurbished orders from marketplaces.
-
-        This method runs in a loop, periodically fetching new or updated orders
-        from all configured marketplaces and processing them. It uses a shutdown
-        event to gracefully terminate when the agent is shutting down.
-        """
+        """Background task to sync refurbished orders."""
         while not self.shutdown_event.is_set():
             try:
                 # Sync orders every 10 minutes
@@ -1969,12 +1536,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                 await asyncio.sleep(600)
     
     async def _sync_refurbished_inventory(self):
-        """Background task to periodically synchronize refurbished product inventory.
-
-        This method runs in a loop, periodically checking and updating the inventory
-        levels for all refurbished products. In a real-world scenario, this would
-        involve integration with actual inventory management systems.
-        """
+        """Background task to sync refurbished inventory."""
         while not self.shutdown_event.is_set():
             try:
                 # Sync inventory every 20 minutes
@@ -1982,8 +1544,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                 
                 if not self.shutdown_event.is_set():
                     # Update inventory for all refurbished products
-                    products = await self._get_all_refurbished_products()
-                    for product in products:
+                    for product in self.refurbished_products.values():
                         try:
                             # In production, this would sync with actual inventory
                             pass
@@ -1997,12 +1558,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                 await asyncio.sleep(1200)
     
     async def _monitor_quality_standards(self):
-        """Background task to periodically monitor product quality standards compliance.
-
-        This method runs in a loop, checking if refurbished products have recent
-        quality reports and sending alerts if reviews are needed. This ensures
-        that product quality is consistently maintained.
-        """
+        """Background task to monitor quality standards compliance."""
         while not self.shutdown_event.is_set():
             try:
                 # Monitor quality every 4 hours
@@ -2012,8 +1568,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                     # Check for products that need quality review
                     products_needing_review = []
                     
-                    products = await self._get_all_refurbished_products()
-                    for product in products:
+                    for product in self.refurbished_products.values():
                         # Check if product has recent quality report
                         product_reports = [r for r in self.quality_reports.values() if r.product_id == product.product_id]
                         
@@ -2042,12 +1597,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                 await asyncio.sleep(4 * 3600)
     
     async def _update_condition_pricing(self):
-        """Background task to periodically update pricing based on product condition changes.
-
-        This method runs in a loop, reviewing pricing for all refurbished products
-        and sending price recommendations to the dynamic pricing agent if significant
-        differences are found. This helps maintain competitive pricing based on product quality.
-        """
+        """Background task to update pricing based on condition changes."""
         while not self.shutdown_event.is_set():
             try:
                 # Update pricing every 6 hours
@@ -2055,8 +1605,7 @@ class RefurbishedMarketplaceAgent(BaseAgent):
                 
                 if not self.shutdown_event.is_set():
                     # Review pricing for all refurbished products
-                    products = await self._get_all_refurbished_products()
-                    for product in products:
+                    for product in self.refurbished_products.values():
                         try:
                             # Get pricing recommendations
                             pricing_rec = await self._get_condition_pricing_recommendations(product.product_id)
@@ -2136,9 +1685,9 @@ if __name__ == "__main__":
         database=os.getenv("POSTGRES_DB", "multi_agent_ecommerce"),
         username=os.getenv("POSTGRES_USER", "postgres"),
         password=os.getenv("POSTGRES_PASSWORD")
+        if not password:
+            raise ValueError("Database password must be set in environment variables")
     )
-    if not db_config.password:
-        raise ValueError("Database password must be set in environment variables")
     initialize_database_manager(db_config)
     
     # Run the agent
@@ -2149,108 +1698,3 @@ if __name__ == "__main__":
         reload=False,
         log_level="info"
     )
-
-'''
-
-    async def _initialize_db(self):
-        """Initialize the database tables if they don't exist."""
-        self.logger.info("Initializing database for Refurbished Marketplace Agent")
-        try:
-            async with self.db_manager.engine.begin() as conn:
-                await conn.run_sync(self.db_manager.Base.metadata.create_all)
-            self._db_initialized = True
-            self.logger.info("Database initialized successfully")
-        except Exception as e:
-            self.logger.error(f"Error initializing database: {e}")
-            self._db_initialized = False
-
-    async def _load_refurbished_credentials_from_db(self):
-        """Load marketplace credentials from the database."""
-        if not self._db_initialized: return
-        self.logger.info("Loading refurbished credentials from DB")
-        async with self.db_manager.get_session() as session:
-            credentials_dbs = await self.db_helper.get_all(session, RefurbishedCredentialsDB)
-            self.marketplace_credentials = {c.marketplace_id: RefurbishedCredentials(**self.db_helper.to_dict(c)) for c in credentials_dbs}
-        self.logger.info(f"Loaded {len(self.marketplace_credentials)} credentials")
-
-    async def _save_refurbished_credentials(self, credentials: RefurbishedCredentials):
-        """Save refurbished marketplace credentials to the database."""
-        if not self._db_initialized: return
-        async with self.db_manager.get_session() as session:
-            credentials_db = RefurbishedCredentialsDB(**credentials.dict())
-            await self.db_helper.add_or_update(session, credentials_db)
-            await session.commit()
-        self.logger.info(f"Saved credentials for {credentials.marketplace_id}")
-
-    async def _get_refurbished_credentials_by_id(self, marketplace_id: str) -> Optional[RefurbishedCredentialsDB]:
-        """Get refurbished marketplace credentials by ID from the database."""
-        if not self._db_initialized: return None
-        async with self.db_manager.get_session() as session:
-            return await self.db_helper.get_by_id(session, RefurbishedCredentialsDB, marketplace_id)
-
-    async def _get_all_refurbished_credentials(self) -> List[RefurbishedCredentials]:
-        """Get all refurbished marketplace credentials from the database."""
-        if not self._db_initialized: return []
-        async with self.db_manager.get_session() as session:
-            credentials_dbs = await self.db_helper.get_all(session, RefurbishedCredentialsDB)
-            return [RefurbishedCredentials(**self.db_helper.to_dict(c)) for c in credentials_dbs]
-
-    async def _delete_refurbished_credentials(self, marketplace_id: str):
-        """Delete refurbished marketplace credentials from the database."""
-        if not self._db_initialized: return
-        async with self.db_manager.get_session() as session:
-            await self.db_helper.delete(session, RefurbishedCredentialsDB, marketplace_id)
-            await session.commit()
-        self.logger.info(f"Deleted credentials for {marketplace_id}")
-'''
-
-
-    async def _save_refurbished_product(self, product: RefurbishedProduct):
-        """Save a refurbished product to the database."""
-        if not self._db_initialized: return
-        async with self.db_manager.get_session() as session:
-            product_db = RefurbishedProductDB(**product.dict())
-            await self.db_helper.add_or_update(session, product_db)
-            await session.commit()
-        self.logger.info(f"Saved product {product.listing_id}")
-
-    async def _get_refurbished_product_by_id(self, listing_id: str) -> Optional[RefurbishedProductDB]:
-        """Get a refurbished product by listing ID from the database."""
-        if not self._db_initialized: return None
-        async with self.db_manager.get_session() as session:
-            return await self.db_helper.get_by_id(session, RefurbishedProductDB, listing_id)
-
-    async def _get_refurbished_product_by_product_id(self, product_id: str) -> Optional[RefurbishedProductDB]:
-        """Get a refurbished product by product ID from the database."""
-        if not self._db_initialized: return None
-        async with self.db_manager.get_session() as session:
-            stmt = select(RefurbishedProductDB).where(RefurbishedProductDB.product_id == product_id)
-            result = await session.execute(stmt)
-            return result.scalars().first()
-
-    async def _get_all_refurbished_products(self) -> List[RefurbishedProduct]:
-        """Get all refurbished products from the database."""
-        if not self._db_initialized: return []
-        async with self.db_manager.get_session() as session:
-            product_dbs = await self.db_helper.get_all(session, RefurbishedProductDB)
-            return [RefurbishedProduct(**self.db_helper.to_dict(p)) for p in product_dbs]
-
-    async def _save_refurbished_order(self, order: RefurbishedOrder):
-        """Save a refurbished order to the database."""
-        if not self._db_initialized: return
-        async with self.db_manager.get_session() as session:
-            order_db = RefurbishedOrderDB(**order.dict())
-            await self.db_helper.add_or_update(session, order_db)
-            await session.commit()
-        self.logger.info(f"Saved order {order.order_id}")
-
-    async def _save_quality_report(self, report: QualityReport):
-        """Save a quality report to the database."""
-        if not self._db_initialized: return
-        async with self.db_manager.get_session() as session:
-            report_db = QualityReportDB(**report.dict())
-            await self.db_helper.add_or_update(session, report_db)
-            await session.commit()
-        self.logger.info(f"Saved quality report {report.report_id}")
-
-
