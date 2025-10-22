@@ -560,6 +560,57 @@ class OrderAgent(BaseAgent):
                     "description": f"Failed to process message of type {message.message_type}"
                 }
             )
+    
+    async def initialize(self):
+        """Initialize agent-specific components"""
+        await super().initialize()
+        logger.info(f"{self.agent_name} initialized successfully")
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if hasattr(self, 'db_manager') and self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process order-specific business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "create_order")
+            
+            if operation == "create_order":
+                order_data = data.get("order_data")
+                order = await self.create_order(order_data)
+                return {"status": "success", "order": order}
+            
+            elif operation == "update_order":
+                order_id = data.get("order_id")
+                updates = data.get("updates")
+                order = await self.update_order(order_id, updates)
+                return {"status": "success", "order": order}
+            
+            elif operation == "cancel_order":
+                order_id = data.get("order_id")
+                reason = data.get("reason", "customer_request")
+                result = await self.cancel_order(order_id, reason)
+                return {"status": "success", "result": result}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # Uvicorn runner for FastAPI

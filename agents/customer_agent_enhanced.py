@@ -493,6 +493,68 @@ class CustomerAgent(BaseAgent):
                 logger.warning("Unhandled message type", message_type=message.type)
         except Exception as e:
             logger.error("Error processing Kafka message", message=message.model_dump_json(), error=str(e))
+    
+    async def initialize(self):
+        """Initialize agent-specific components"""
+        await super().initialize()
+        logger.info(f"{self.agent_name} initialized successfully")
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if hasattr(self, 'db_manager') and self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process customer-specific business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "get_profile")
+            
+            if operation == "get_profile":
+                customer_id = data.get("customer_id")
+                profile = await self.get_customer_profile(customer_id)
+                return {"status": "success", "profile": profile}
+            
+            elif operation == "create_profile":
+                profile_data = CustomerProfileCreate(**data.get("profile", {}))
+                customer_id = await self.create_customer_profile(profile_data)
+                return {"status": "success", "customer_id": customer_id}
+            
+            elif operation == "update_profile":
+                customer_id = data.get("customer_id")
+                updates = data.get("updates", {})
+                result = await self.update_customer_profile(customer_id, updates)
+                return {"status": "success", "result": result}
+            
+            elif operation == "add_address":
+                customer_id = data.get("customer_id")
+                address = data.get("address", {})
+                address_id = await self.add_customer_address(customer_id, address)
+                return {"status": "success", "address_id": address_id}
+            
+            elif operation == "update_loyalty":
+                customer_id = data.get("customer_id")
+                points = data.get("points", 0)
+                result = await self.update_loyalty_points(customer_id, points)
+                return {"status": "success", "result": result}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # =====================================================

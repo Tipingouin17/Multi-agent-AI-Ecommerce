@@ -542,6 +542,39 @@ async def mark_article_helpful_endpoint(
     return updated_article
 
 
+    async def initialize(self):
+        """Initialize agent-specific components"""
+        await super().initialize()
+        logger.info(f"{self.agent_name} initialized successfully")
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if hasattr(self, 'db_manager') and self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process agent-specific business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            # Implement specific business logic here
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
+
+
 
 if __name__ == "__main__":
     # This block is for local development/testing and will not be run in the agent's async loop

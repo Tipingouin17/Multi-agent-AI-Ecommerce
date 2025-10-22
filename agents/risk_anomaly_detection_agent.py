@@ -1145,6 +1145,22 @@ class RiskAnomalyDetectionAgent(BaseAgent):
             except Exception as e:
                 self.logger.error(f"Error during alert lifecycle management: {e}", exc_info=True)
 
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process agent-specific business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
+
 
 if __name__ == "__main__":
     """Main entry point for the Risk Anomaly Detection Agent."""
