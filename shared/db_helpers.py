@@ -447,3 +447,4 @@ def get_db_helper(db_manager: DatabaseManager) -> DatabaseHelper:
     
     return _db_helper_instance
 
+from shared.models import ProductDB, WarehouseDB, InventoryDB, OrderDB, OrderItemDB, StockMovementDB, QualityInspectionDB

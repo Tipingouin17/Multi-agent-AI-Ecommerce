@@ -562,3 +562,42 @@ class APIResponse(BaseModel):
             Decimal: lambda v: str(v)
         }
 
+
+
+class StockMovementDB(Base):
+    """Stock movement database model"""
+    __tablename__ = 'stock_movements'
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    product_id = Column(PGUUID(as_uuid=True), ForeignKey('products.id'), nullable=False)
+    warehouse_id = Column(PGUUID(as_uuid=True), ForeignKey('warehouses.id'), nullable=False)
+    movement_type = Column(String(50), nullable=False)  # 'IN', 'OUT', 'TRANSFER', 'ADJUSTMENT'
+    quantity = Column(Integer, nullable=False)
+    reference_id = Column(PGUUID(as_uuid=True))  # Order ID, Transfer ID, etc.
+    reference_type = Column(String(50))  # 'ORDER', 'TRANSFER', 'ADJUSTMENT'
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(String(255))
+    
+    # Relationships
+    product = relationship("ProductDB")
+    warehouse = relationship("WarehouseDB")
+
+
+class QualityInspectionDB(Base):
+    """Quality inspection database model"""
+    __tablename__ = 'quality_inspections'
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    product_id = Column(PGUUID(as_uuid=True), ForeignKey('products.id'), nullable=False)
+    inspection_type = Column(String(50), nullable=False)  # 'INCOMING', 'OUTGOING', 'RETURN'
+    status = Column(String(50), nullable=False)  # 'PASS', 'FAIL', 'CONDITIONAL'
+    condition = Column(String(50))
+    grade = Column(String(10))
+    defects = Column(JSONB)
+    notes = Column(Text)
+    inspector_id = Column(String(255))
+    inspected_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    product = relationship("ProductDB")
