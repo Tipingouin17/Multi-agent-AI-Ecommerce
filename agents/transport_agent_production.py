@@ -25,7 +25,7 @@ if parent_dir not in sys.path:
 
 from shared.base_agent import BaseAgent
 from shared.kafka_config import KafkaProducer, KafkaConsumer
-from shared.db_manager import DatabaseManager
+from shared.database import DatabaseManager
 from shared.db_helpers import DatabaseHelper
 from shared.carrier_apis import (
     get_carrier_manager,

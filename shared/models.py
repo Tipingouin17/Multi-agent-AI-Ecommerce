@@ -601,3 +601,20 @@ class QualityInspectionDB(Base):
     
     # Relationships
     product = relationship("ProductDB")
+
+# Carrier Configuration Models
+class CarrierConfig(BaseModel):
+    """Carrier configuration model"""
+    carrier_id: str
+    carrier_name: str
+    api_key: Optional[str] = None
+    api_url: Optional[str] = None
+    enabled: bool = True
+    
+class CarrierRate(BaseModel):
+    """Carrier rate model"""
+    carrier_id: str
+    service_level: str
+    price: float
+    transit_days: int
+    

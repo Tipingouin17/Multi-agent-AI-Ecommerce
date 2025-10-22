@@ -118,7 +118,7 @@ class OrderAgent(BaseAgent):
         self.async_session = sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
         self.db_helper = DatabaseHelper(Base) # Assuming DatabaseHelper is compatible with SQLAlchemy 2.0 async
         self._db_initialized = False
-        asyncio.create_task(self._init_db())
+        pass  # DB init happens in initialize()
 
         # Initialize enhanced services
         self.cancellation_service = OrderCancellationService() if OrderCancellationService else None

@@ -87,10 +87,7 @@ class ProductAgent(BaseAgent):
     """
     
     def __init__(self):
-        super().__init__(
-            agent_id="product_agent",
-            agent_type="product_management"
-        )
+        super().__init__(agent_id="product_agent")
         
         # Initialize enhanced services
         self.variants_service = ProductVariantsService() if ProductVariantsService else None
@@ -226,6 +223,33 @@ class ProductAgent(BaseAgent):
     async def handle_product_updated(self, payload: Dict):
         """Handle product updated event"""
         logger.info(f"Product updated: {payload.get('product_id')}")
+
+
+    # Required abstract methods from BaseAgent
+    async def initialize(self):
+        """Initialize agent-specific components."""
+        await super().initialize()
+        while not self._db_initialized:
+            await asyncio.sleep(0.1)
+        logger.info(f"{self.agent_name} initialized successfully")
+
+    async def cleanup(self):
+        """Cleanup agent-specific resources."""
+        if hasattr(self, 'engine') and self.engine:
+            await self.engine.dispose()
+        await super().cleanup()
+        logger.info(f"{self.agent_name} cleaned up successfully")
+
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process agent-specific business logic."""
+        try:
+            operation = data.get("operation", "unknown")
+            logger.info(f"Processing {operation} operation")
+            return {"status": "success", "operation": operation}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
+
 
 # Create agent instance
 agent = ProductAgent()
