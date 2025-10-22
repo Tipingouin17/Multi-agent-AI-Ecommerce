@@ -180,6 +180,14 @@ class AgentMonitor:
             # Prepare environment with database/Kafka settings
             env = os.environ.copy()
             
+            # CRITICAL: Add project root to PYTHONPATH so agents can import 'shared' module
+            project_root = os.path.dirname(os.path.abspath(__file__))
+            pythonpath = env.get('PYTHONPATH', '')
+            if pythonpath:
+                env['PYTHONPATH'] = f"{project_root}{os.pathsep}{pythonpath}"
+            else:
+                env['PYTHONPATH'] = project_root
+            
             # Ensure critical environment variables are set
             if 'DATABASE_HOST' not in env:
                 env['DATABASE_HOST'] = 'localhost'
