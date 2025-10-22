@@ -88,7 +88,7 @@ class DocumentGenerationAgent(BaseAgent):
         Initializes the DocumentGenerationAgent.
         """
         super().__init__(agent_id="document_generation_agent")
-        self.db_helper = None
+        self.db_helper = DatabaseHelper(self.db_manager)
         self.templates = {}
         self._db_initialized = False
 
@@ -98,7 +98,6 @@ class DocumentGenerationAgent(BaseAgent):
         This method is called during agent instantiation.
         """
         try:
-            await self.db_helper.initialize()
             self._db_initialized = True
             logger.info("Database connection initialized.")
             
