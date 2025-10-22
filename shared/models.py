@@ -618,3 +618,16 @@ class CarrierRate(BaseModel):
     price: float
     transit_days: int
     
+
+# Message Types for Kafka
+class MessageType(str, Enum):
+    """Kafka message types"""
+    ORDER_CREATED = "order.created"
+    ORDER_UPDATED = "order.updated"
+    ORDER_CANCELLED = "order.cancelled"
+    INVENTORY_UPDATED = "inventory.updated"
+    SHIPMENT_CREATED = "shipment.created"
+    SHIPMENT_UPDATED = "shipment.updated"
+    PRODUCT_CREATED = "product.created"
+    PRODUCT_UPDATED = "product.updated"
+    

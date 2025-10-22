@@ -67,16 +67,13 @@ class WarehouseAgent(BaseAgent):
         Initializes the WarehouseAgent, setting up its ID, type, database connection,
         FastAPI application, and message processing capabilities.
         """
-        super().__init__(
-            agent_id=os.getenv("AGENT_ID", "warehouse_agent"),
-            agent_type="warehouse_management"
-        )
+        super().__init__(agent_id=os.getenv("AGENT_ID", "warehouse_agent"))
         self.db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./warehouse.db")
         self.db_manager = None
-        self.db_helper = DatabaseHelper()
+        self.db_helper = DatabaseHelper(self.db_manager)
 
         # Initialize capacity service
-        self.capacity_service = WarehouseCapacityService() if WarehouseCapacityService else None
+        self.capacity_service = WarehouseCapacityService(self.db_manager) if WarehouseCapacityService else None
 
         logger.info("Warehouse Agent initialized. Setting up database and FastAPI.")
 

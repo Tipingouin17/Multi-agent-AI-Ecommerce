@@ -90,11 +90,11 @@ class ProductAgent(BaseAgent):
         super().__init__(agent_id="product_agent")
         
         # Initialize enhanced services
-        self.variants_service = ProductVariantsService() if ProductVariantsService else None
-        self.categories_service = ProductCategoriesService() if ProductCategoriesService else None
-        self.seo_service = ProductSEOService() if ProductSEOService else None
-        self.bundles_service = ProductBundlesService() if ProductBundlesService else None
-        self.attributes_service = ProductAttributesService() if ProductAttributesService else None
+        self.variants_service = ProductVariantsService(self.db_manager) if ProductVariantsService else None
+        self.categories_service = ProductCategoriesService(self.db_manager) if ProductCategoriesService else None
+        self.seo_service = ProductSEOService(self.db_manager) if ProductSEOService else None
+        self.bundles_service = ProductBundlesService(self.db_manager) if ProductBundlesService else None
+        self.attributes_service = ProductAttributesService(self.db_manager) if ProductAttributesService else None
         
         logger.info("Product Agent initialized with enhanced services")
         

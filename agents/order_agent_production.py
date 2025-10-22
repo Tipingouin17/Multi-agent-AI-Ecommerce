@@ -121,8 +121,8 @@ class OrderAgent(BaseAgent):
         pass  # DB init happens in initialize()
 
         # Initialize enhanced services
-        self.cancellation_service = OrderCancellationService() if OrderCancellationService else None
-        self.shipments_service = PartialShipmentsService() if PartialShipmentsService else None
+        self.cancellation_service = OrderCancellationService(self.db_manager) if OrderCancellationService else None
+        self.shipments_service = PartialShipmentsService(self.db_manager) if PartialShipmentsService else None
 
         logger.info("Order Agent initialized with enhanced services")
 
