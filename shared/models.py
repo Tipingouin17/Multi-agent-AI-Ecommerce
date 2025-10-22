@@ -509,15 +509,29 @@ class PaginatedResponse(BaseModel):
 # Configuration models
 class DatabaseConfig(BaseModel):
     """Database configuration model."""
-    host: str = "localhost"
-    port: int = 5432
-    database: str = "multi_agent_ecommerce"
-    username: str = "postgres"
-    password: str
+    host: str = Field(default="localhost")
+    port: int = Field(default=5432)
+    database: str = Field(default="multi_agent_ecommerce")
+    username: str = Field(default="postgres")
+    password: str = Field(default="postgres")
     pool_size: int = 10
     max_overflow: int = 20
     pool_timeout: int = 30
     echo: bool = False
+    
+    def __init__(self, **data):
+        """Initialize DatabaseConfig from environment variables or provided data."""
+        import os
+        # Support both DATABASE_* and POSTGRES_* prefixes for compatibility
+        if not data:
+            data = {
+                'host': os.getenv('DATABASE_HOST') or os.getenv('POSTGRES_HOST', 'localhost'),
+                'port': int(os.getenv('DATABASE_PORT') or os.getenv('POSTGRES_PORT', '5432')),
+                'database': os.getenv('DATABASE_NAME') or os.getenv('POSTGRES_NAME', 'multi_agent_ecommerce'),
+                'username': os.getenv('DATABASE_USER') or os.getenv('POSTGRES_USER', 'postgres'),
+                'password': os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD', 'postgres'),
+            }
+        super().__init__(**data)
     
     @property
     def url(self) -> str:
