@@ -560,7 +560,10 @@ class TransportAgentProduction(BaseAgentV2):
         logger.info("Transport Agent starting main loop")
         try:
             if self.kafka_consumer:
-                await self.kafka_consumer.start_consumer(self.process_message)
+                await self.kafka_consumer.start()
+                # Process messages in a loop
+                async for message in self.kafka_consumer:
+                    await self.process_message(message)
             else:
                 logger.error("Kafka consumer not initialized, cannot start main loop.")
         except Exception as e:

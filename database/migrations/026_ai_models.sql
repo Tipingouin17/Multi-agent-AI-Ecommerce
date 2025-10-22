@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS ai_models (
     metadata JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER REFERENCES users(id),
-    updated_by INTEGER REFERENCES users(id),
+    created_by UUID REFERENCES system_users(user_id),
+    updated_by UUID REFERENCES system_users(user_id),
     UNIQUE(name, version)
 );
 
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS ai_model_versions (
     deprecated_at TIMESTAMP,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER REFERENCES users(id),
+    created_by UUID REFERENCES system_users(user_id),
     UNIQUE(model_id, version)
 );
 
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS ai_model_training_jobs (
     completed_at TIMESTAMP,
     duration_seconds INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER REFERENCES users(id)
+    created_by UUID REFERENCES system_users(user_id)
 );
 
 -- Model Predictions Log (for monitoring and analysis)
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS ai_model_ab_tests (
     metrics JSONB, -- Comparison metrics
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER REFERENCES users(id)
+    created_by UUID REFERENCES system_users(user_id)
 );
 
 -- Model Deployment History
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS ai_model_deployments (
     deployed_at TIMESTAMP,
     rolled_back_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deployed_by INTEGER REFERENCES users(id)
+    deployed_by UUID REFERENCES system_users(user_id)
 );
 
 -- Model Monitoring Alerts
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS ai_model_alerts (
     message TEXT NOT NULL,
     metrics JSONB,
     acknowledged BOOLEAN DEFAULT false,
-    acknowledged_by INTEGER REFERENCES users(id),
+    acknowledged_by UUID REFERENCES system_users(user_id),
     acknowledged_at TIMESTAMP,
     resolved BOOLEAN DEFAULT false,
     resolved_at TIMESTAMP,

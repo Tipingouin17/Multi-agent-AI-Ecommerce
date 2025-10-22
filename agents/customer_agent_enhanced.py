@@ -27,7 +27,7 @@ project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from shared.base_agent import AgentMessage, BaseAgent, MessageType
+from shared.base_agent_v2 import AgentMessage, BaseAgentV2, MessageType
 from shared.db_helpers import DatabaseHelper
 from shared.database import DatabaseManager, DatabaseConfig, initialize_database_manager
 
@@ -186,7 +186,7 @@ class CustomerInteraction(CustomerInteractionCreate):
 # AGENT
 # =====================================================
 
-class CustomerAgent(BaseAgent):
+class CustomerAgent(BaseAgentV2):
     """
     Customer Agent Enhanced - Manages customer profiles, addresses, loyalty, and interactions.
 
@@ -219,10 +219,10 @@ class CustomerAgent(BaseAgent):
             db_config = DatabaseConfig()
             self.db_manager = initialize_database_manager(db_config)
             await self.db_manager.initialize_async()
-            self.db_helper_profile = DatabaseHelper(self.db_manager, "customer_profiles", CustomerProfile, "customer_id")
-            self.db_helper_address = DatabaseHelper(self.db_manager, "customer_addresses", CustomerAddress, "address_id")
-            self.db_helper_loyalty = DatabaseHelper(self.db_manager, "customer_loyalty", Loyalty, "loyalty_id")
-            self.db_helper_interaction = DatabaseHelper(self.db_manager, "customer_interactions", CustomerInteraction, "interaction_id")
+            self.db_helper_profile = DatabaseHelper(self.db_manager)
+            self.db_helper_address = DatabaseHelper(self.db_manager)
+            self.db_helper_loyalty = DatabaseHelper(self.db_manager)
+            self.db_helper_interaction = DatabaseHelper(self.db_manager)
             self._db_initialized = True
             logger.info("Database initialized for CustomerAgent.")
         except Exception as e:

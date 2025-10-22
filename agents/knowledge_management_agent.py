@@ -136,7 +136,7 @@ class KnowledgeManagementService:
     """Service layer for managing knowledge base articles."""
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
-        self.db_helper = DatabaseHelper(db_manager, DBArticle)
+        self.db_helper = DatabaseHelper(db_manager)
         self._db_initialized = False
 
     async def initialize_db(self):
@@ -364,8 +364,14 @@ class KnowledgeManagementAgent(BaseAgentV2):
     """
     def __init__(self):
         super().__init__(agent_id="knowledge_management_agent")
-        self.db_manager = None
-        self.service = None
+        # Initialize database manager with fallback
+        try:
+            self.db_manager = get_database_manager()
+        except RuntimeError:
+            from shared.models import DatabaseConfig
+            db_config = DatabaseConfig()
+            self.db_manager = DatabaseManager(db_config)
+        self.service = KnowledgeManagementService(self.db_manager)
         self._db_initialized = False
 
     async def setup(self):
