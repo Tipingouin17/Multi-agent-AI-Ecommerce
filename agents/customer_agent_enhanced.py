@@ -30,6 +30,7 @@ if project_root not in sys.path:
 from shared.base_agent import AgentMessage, BaseAgent, MessageType
 from shared.db_helpers import DatabaseHelper
 from shared.database import DatabaseManager, get_database_manager
+from shared.health_checks import setup_health_endpoints
 
 logger = structlog.get_logger(__name__)
 

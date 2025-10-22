@@ -39,6 +39,7 @@ import asyncio
 from shared.db_helpers import DatabaseHelper
 from shared.base_agent_v2 import BaseAgentV2
 from shared.models import AgentMessage, MessageType
+from shared.health_checks import setup_health_endpoints
 import base64
 
 # PDF generation

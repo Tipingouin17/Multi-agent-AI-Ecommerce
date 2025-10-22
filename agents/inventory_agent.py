@@ -299,6 +299,7 @@ class InventoryAgent(BaseAgentV2):
         except RuntimeError:
             # Create our own database manager
             from shared.models import DatabaseConfig
+from shared.health_checks import setup_health_endpoints
             db_config = DatabaseConfig()
             db_manager = DatabaseManager(db_config)
             await db_manager.initialize_async()

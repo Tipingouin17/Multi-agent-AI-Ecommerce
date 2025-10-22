@@ -505,6 +505,7 @@ class FraudDetectionAgent(BaseAgentV2):
             self.db_manager = get_database_manager()
         except RuntimeError:
             from shared.models import DatabaseConfig
+from shared.health_checks import setup_health_endpoints
             db_config = DatabaseConfig()
             self.db_manager = DatabaseManager(db_config)
         self.db_helper = DatabaseHelper(self.db_manager)

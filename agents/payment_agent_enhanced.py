@@ -855,6 +855,7 @@ class PaymentAgent(BaseAgent):
             # PaymentRepository expects db_manager.engine, but we have async_engine
             # Create a temporary wrapper or use DatabaseHelper directly
             from shared.db_helpers import DatabaseHelper
+from shared.health_checks import setup_health_endpoints
             if hasattr(self.db_manager, 'async_engine'):
                 self.db_helper = DatabaseHelper(self.db_manager.async_engine)
             self._db_initialized = True

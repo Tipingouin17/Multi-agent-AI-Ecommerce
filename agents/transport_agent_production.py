@@ -35,6 +35,7 @@ from shared.carrier_apis import (
     RateQuote
 )
 from shared.models import CarrierConfig, AgentMessage, MessageType # Assuming these models exist
+from shared.health_checks import setup_health_endpoints
 
 logger = structlog.get_logger(__name__)
 
