@@ -41,7 +41,7 @@ if project_root not in sys.path:
 # Now try the import
 try:
     from shared.openai_helper import chat_completion
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -56,7 +56,7 @@ except ImportError as e:
     else:
         logger.info(f"Directory not found: {shared_dir}")
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import APIResponse
 from shared.database import DatabaseManager, get_database_manager
 
@@ -125,7 +125,7 @@ class PriceChangeEvent(BaseModel):
     created_by: str  # agent_id or user_id
 
 
-class DynamicPricingAgent(BaseAgent):
+class DynamicPricingAgent(BaseAgentV2):
     """
     Dynamic Pricing Agent provides AI-powered pricing optimization including:
     - Real-time price optimization based on multiple factors
@@ -151,6 +151,8 @@ class DynamicPricingAgent(BaseAgent):
         self.register_handler(MessageType.COMPETITOR_PRICE_UPDATE, self._handle_competitor_price_update)
     
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the Dynamic Pricing Agent."""
         self.logger.info("Initializing Dynamic Pricing Agent")
         
@@ -170,7 +172,8 @@ class DynamicPricingAgent(BaseAgent):
     async def cleanup(self):
         """Cleanup resources."""
         self.logger.info("Cleaning up Dynamic Pricing Agent")
-    
+        await super().cleanup()
+
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process dynamic pricing business logic."""
         action = data.get("action")

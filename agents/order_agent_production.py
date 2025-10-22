@@ -43,7 +43,7 @@ if project_root not in sys.path:
 
 # Import base agent
 try:
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -98,7 +98,7 @@ class Order(BaseModel):
     created_at: Optional[datetime] = None
 
 
-class OrderAgent(BaseAgent):
+class OrderAgent(BaseAgentV2):
     """
     Production-ready Order Agent with all enhanced features.
     Manages order lifecycle, integrates with cancellation and partial shipment services,

@@ -41,7 +41,7 @@ if project_root not in sys.path:
 # Now try the import
 try:
     from shared.openai_helper import chat_completion
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -57,8 +57,8 @@ except ImportError as e:
         logger.info(f"Directory not found: {shared_dir}")
 
 # Now import the module
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import (
     Carrier, CarrierType, APIResponse
 )
@@ -183,7 +183,7 @@ class CarrierRepository(BaseRepository):
         )
 
 
-class CarrierSelectionAgent(BaseAgent):
+class CarrierSelectionAgent(BaseAgentV2):
     """
     Carrier Selection Agent uses AI to select optimal shipping carriers based on:
     - Package characteristics and constraints
@@ -207,6 +207,8 @@ class CarrierSelectionAgent(BaseAgent):
         self.register_handler(MessageType.ORDER_UPDATED, self._handle_order_updated)
     
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the Carrier Selection Agent."""
         self.logger.info("Initializing Carrier Selection Agent")
         
@@ -226,7 +228,8 @@ class CarrierSelectionAgent(BaseAgent):
     async def cleanup(self):
         """Cleanup resources."""
         self.logger.info("Cleaning up Carrier Selection Agent")
-    
+        await super().cleanup()
+
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process carrier selection business logic."""
         action = data.get("action")

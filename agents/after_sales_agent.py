@@ -26,7 +26,7 @@ parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from shared.base_agent import BaseAgent
+from shared.base_agent_v2 import BaseAgentV2
 from shared.kafka_config import KafkaProducer, KafkaConsumer
 
 logger = structlog.get_logger(__name__)
@@ -111,7 +111,7 @@ class WarrantyClaim(BaseModel):
     filed_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class AfterSalesAgent(BaseAgent):
+class AfterSalesAgent(BaseAgentV2):
     """
     After-Sales Agent
     

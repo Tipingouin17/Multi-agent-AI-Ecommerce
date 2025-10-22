@@ -42,7 +42,7 @@ from shared.db_helpers import DatabaseHelper
 from shared.database import DatabaseManager, get_database_manager
 from shared.models import APIResponse
 from shared.openai_helper import chat_completion
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 
 logger = structlog.get_logger(__name__)
 
@@ -169,7 +169,7 @@ class ReverseLogisticsMetrics(BaseModel):
     customer_satisfaction_score: float
 
 
-class ReverseLogisticsAgent(BaseAgent):
+class ReverseLogisticsAgent(BaseAgentV2):
     """
     Reverse Logistics Agent manages the complete reverse supply chain including:
     - Return authorization and processing
@@ -207,6 +207,8 @@ class ReverseLogisticsAgent(BaseAgent):
         self.register_handler(MessageType.REFURBISHMENT_COMPLETED, self._handle_refurbishment_completed)
 
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the Reverse Logistics Agent, including database connection and background tasks."""
         self.logger.info("Initializing Reverse Logistics Agent")
         try:
@@ -235,6 +237,7 @@ class ReverseLogisticsAgent(BaseAgent):
             self.logger.info("Database disconnected successfully.")
         except Exception as e:
             self.logger.error(f"Error during database disconnection: {e}")
+        await super().cleanup()
 
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process reverse logistics business logic based on the given action.

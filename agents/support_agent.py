@@ -80,7 +80,7 @@ from sqlalchemy.sql import func
 
 from shared.db_helpers import DatabaseHelper
 from shared.database import DatabaseManager, get_database_manager
-from shared.base_agent import BaseAgent, AgentMessage, MessageType
+from shared.base_agent_v2 import BaseAgentV2, AgentMessage, MessageType
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body
 from pydantic import BaseModel, Field
@@ -840,7 +840,7 @@ async def health_check():
     return {"status": "healthy", "agent": "support_agent", "version": os.getenv("AGENT_VERSION", "1.0.0")}
 
 
-class SupportAgent(BaseAgent):
+class SupportAgent(BaseAgentV2):
     """Support Agent for managing customer support tickets, SLAs, and escalations.
 
     This agent integrates with a database for ticket management, uses FastAPI for API exposure,

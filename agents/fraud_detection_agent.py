@@ -29,7 +29,7 @@ project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.database import DatabaseManager, get_database_manager
 
 # Initialize structured logger
@@ -491,7 +491,7 @@ class FraudDetectionService:
 
 
 # --- Agent ---
-class FraudDetectionAgent(BaseAgent):
+class FraudDetectionAgent(BaseAgentV2):
     """Fraud Detection Agent for the Multi-Agent E-Commerce System.
 
     This agent provides ML-based fraud detection, risk scoring, and anomaly detection

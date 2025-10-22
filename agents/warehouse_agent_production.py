@@ -37,7 +37,7 @@ if project_root not in sys.path:
 
 # Import base agent and shared utilities
 try:
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     from shared.db_helpers import DatabaseManager, DatabaseHelper, ProductDB
     logger.info("Successfully imported shared.base_agent and db_helpers")
 except ImportError as e:
@@ -52,7 +52,7 @@ except ImportError as e:
     logger.warning(f"Could not import warehouse capacity service: {e}. Functionality will be limited.")
     WarehouseCapacityService = None
 
-class WarehouseAgent(BaseAgent):
+class WarehouseAgent(BaseAgentV2):
     """
     Production-ready Warehouse Agent with capacity management and full database integration.
 

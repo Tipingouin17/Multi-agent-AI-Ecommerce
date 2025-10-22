@@ -29,7 +29,7 @@ project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import (
     Inventory, InventoryBase, APIResponse, PaginatedResponse, StockMovementDB
 )
@@ -253,7 +253,7 @@ class StockMovementRepository(BaseRepository):
             raise
 
 
-class InventoryAgent(BaseAgent):
+class InventoryAgent(BaseAgentV2):
     """
     Inventory Agent handles all inventory-related operations including:
     - Stock level monitoring
@@ -284,6 +284,8 @@ class InventoryAgent(BaseAgent):
         self.register_handler(MessageType.WAREHOUSE_SELECTED, self._handle_warehouse_selected)
     
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the Inventory Agent.
 
         This includes initializing database repositories, creating database tables,
@@ -316,7 +318,8 @@ class InventoryAgent(BaseAgent):
         """Cleanup resources used by the Inventory Agent.
         """
         self.logger.info("Cleaning up Inventory Agent")
-    
+        await super().cleanup()
+
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process inventory-specific business logic based on the action in the data.
 

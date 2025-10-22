@@ -22,7 +22,7 @@ parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from shared.base_agent import BaseAgent, AgentMessage, MessageType
+from shared.base_agent_v2 import BaseAgentV2, AgentMessage, MessageType
 from shared.db_helpers import DatabaseHelper
 from shared.kafka_config import KafkaProducer, KafkaConsumer
 from shared.marketplace_apis import (

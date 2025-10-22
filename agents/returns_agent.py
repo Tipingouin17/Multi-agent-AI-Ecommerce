@@ -27,7 +27,7 @@ project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
 
@@ -376,7 +376,7 @@ class ReturnsService:
             raise
 
 # AGENT
-class ReturnsAgent(BaseAgent):
+class ReturnsAgent(BaseAgentV2):
     """Returns Agent for managing product returns and refunds in the e-commerce system."""
     def __init__(self, agent_id: str, agent_type: str, kafka_broker_url: str, database_url: str):
         """

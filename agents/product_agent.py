@@ -35,7 +35,7 @@ if project_root not in sys.path:
 
 # Now try the import
 try:
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -50,7 +50,7 @@ except ImportError as e:
     else:
         logger.info(f"Directory not found: {shared_dir}")
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import (
     Product, ProductBase, ProductCondition, RefurbishedGrade,
     APIResponse, PaginatedResponse
@@ -165,7 +165,7 @@ class ProductRepository(BaseRepository):
         )
 
 
-class ProductAgent(BaseAgent):
+class ProductAgent(BaseAgentV2):
     """
     Product Agent handles all product-related operations including:
     - Product catalog management
@@ -185,6 +185,8 @@ class ProductAgent(BaseAgent):
         self.register_handler(MessageType.ORDER_CREATED, self._handle_order_created)
     
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the Product Agent."""
         self.logger.info("Initializing Product Agent")
         
@@ -201,7 +203,8 @@ class ProductAgent(BaseAgent):
     async def cleanup(self):
         """Cleanup resources."""
         self.logger.info("Cleaning up Product Agent")
-    
+        await super().cleanup()
+
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process product-specific business logic."""
         action = data.get("action")

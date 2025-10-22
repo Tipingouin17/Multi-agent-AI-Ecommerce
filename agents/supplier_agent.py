@@ -23,7 +23,7 @@ project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from shared.base_agent import AgentMessage, BaseAgent, MessageType
+from shared.base_agent_v2 import AgentMessage, BaseAgentV2, MessageType
 from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
 from shared.kafka_manager import KafkaManager
@@ -329,7 +329,7 @@ class SupplierRepository:
             return None
 
 
-class SupplierAgent(BaseAgent):
+class SupplierAgent(BaseAgentV2):
     """
     Manages supplier relationships, products, and purchase orders through a FastAPI interface and Kafka messaging.
     """

@@ -88,7 +88,7 @@ project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from shared.base_agent import BaseAgent, AgentMessage, MessageType
+from shared.base_agent_v2 import BaseAgentV2, AgentMessage, MessageType
 from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
 
@@ -456,7 +456,7 @@ class ComplianceService:
             raise
 
 # AGENT
-class ComplianceAgent(BaseAgent):
+class ComplianceAgent(BaseAgentV2):
     """Compliance Agent for managing GDPR, data retention, and regulatory reporting.
 
     This agent integrates with a FastAPI server for API endpoints and Kafka for message processing.

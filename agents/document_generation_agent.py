@@ -37,7 +37,7 @@ import uvicorn
 import asyncio
 
 from shared.db_helpers import DatabaseHelper
-from shared.base_agent import BaseAgent
+from shared.base_agent_v2 import BaseAgentV2
 from shared.models import AgentMessage, MessageType
 import base64
 
@@ -74,7 +74,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class DocumentGenerationAgent(BaseAgent):
+class DocumentGenerationAgent(BaseAgentV2):
     """
     Main agent class for document generation.
 

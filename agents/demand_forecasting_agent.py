@@ -44,7 +44,7 @@ if project_root not in sys.path:
 
 # Now try the import
 try:
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     from shared.models import APIResponse, Product, SalesData, InventoryData
     from shared.database import DatabaseManager, get_database_manager
     from shared.db_helpers import DatabaseHelper
@@ -151,7 +151,7 @@ class SeasonalPattern(BaseModel):
     confidence: float
 
 
-class DemandForecastingAgent(BaseAgent):
+class DemandForecastingAgent(BaseAgentV2):
     """
     Demand Forecasting Agent provides AI-powered demand predictions including:
     - Machine learning-based demand forecasting
@@ -183,6 +183,8 @@ class DemandForecastingAgent(BaseAgent):
         self.register_handler(MessageType.INVENTORY_UPDATE, self._handle_inventory_update)
 
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the Demand Forecasting Agent."""
         self.logger.info("Initializing Demand Forecasting Agent")
         await self._initialize_db()
@@ -209,6 +211,7 @@ class DemandForecastingAgent(BaseAgent):
             self.logger.info("Database disconnected.")
         except Exception as e:
             self.logger.error(f"Error disconnecting from database: {e}")
+        await super().cleanup()
 
     async def _initialize_db(self):
         """Initialize the database connection.

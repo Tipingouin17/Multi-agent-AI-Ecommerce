@@ -43,7 +43,7 @@ if project_root not in sys.path:
 # Now try the import
 try:
     from shared.openai_helper import chat_completion
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -58,7 +58,7 @@ except ImportError as e:
     else:
         logger.info(f"Directory not found: {shared_dir}")
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import APIResponse
 from shared.database import DatabaseManager, get_database_manager
 
@@ -129,7 +129,7 @@ class ChatbotResponse(BaseModel):
     context_data: Dict[str, Any]
 
 
-class CustomerCommunicationAgent(BaseAgent):
+class CustomerCommunicationAgent(BaseAgentV2):
     """
     Customer Communication Agent provides comprehensive communication services including:
     - AI-powered chatbot for instant customer support
@@ -159,6 +159,8 @@ class CustomerCommunicationAgent(BaseAgent):
         self.register_handler(MessageType.RETURN_REQUESTED, self._handle_return_requested)
     
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the Customer Communication Agent."""
         self.logger.info("Initializing Customer Communication Agent")
         
@@ -185,7 +187,8 @@ class CustomerCommunicationAgent(BaseAgent):
                 await websocket.close()
             except:
                 pass
-    
+        await super().cleanup()
+
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process customer communication business logic."""
         action = data.get("action")

@@ -20,7 +20,7 @@ project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage, AgentStatus, HealthStatus
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage, AgentStatus, HealthStatus
 from shared.models import (
     Order, OrderBase, OrderStatus, OrderItem, OrderItemBase,
     APIResponse, PaginatedResponse, DatabaseConfig, OrderDB
@@ -145,7 +145,7 @@ class OrderRepository(BaseRepository):
             updated_at=db_record.updated_at
         )
 
-class OrderAgent(BaseAgent):
+class OrderAgent(BaseAgentV2):
     """
     Order Agent handles all order-related operations including:
     - Order creation and validation
@@ -174,6 +174,8 @@ class OrderAgent(BaseAgent):
         self.register_handler(MessageType.ORDER_FULFILLMENT_REQUIRED, self._handle_order_fulfillment_required)
 
     async def initialize(self):
+        await super().initialize()
+
         """Initializes the Order Agent, including database and background tasks."
 
         This method is called by the BaseAgent during startup.
@@ -206,6 +208,7 @@ class OrderAgent(BaseAgent):
         if self.repository:
             await self.repository.close()
         self.logger.info("Order Agent cleanup complete")
+        await super().cleanup()
 
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Processes order-specific business logic based on received data."

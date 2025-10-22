@@ -47,7 +47,7 @@ if project_root not in sys.path:
 # Now try the import
 try:
     from shared.openai_helper import chat_completion
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 except ImportError as e:
     # logger.error(f"Import error: {e}")
     # logger.info(f"Current sys.path: {sys.path}")
@@ -63,7 +63,7 @@ except ImportError as e:
         pass
         # logger.info(f"Directory not found: {shared_dir}")
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import APIResponse
 from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
@@ -195,7 +195,7 @@ class AnomalyResult:
     explanation: str = Field(..., description="Detailed explanation of the anomaly and its potential causes.")
 
 
-class RiskAnomalyDetectionAgent(BaseAgent):
+class RiskAnomalyDetectionAgent(BaseAgentV2):
     """
     Risk and Anomaly Detection Agent provides comprehensive monitoring including:
     - Real-time anomaly detection using ML models
@@ -328,6 +328,8 @@ class RiskAnomalyDetectionAgent(BaseAgent):
                 self.logger.error(f"Error in alert lifecycle management: {e}")
 
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the Risk and Anomaly Detection Agent."""
         self.logger.info("Initializing Risk and Anomaly Detection Agent")
         await self.initialize_db()
@@ -356,7 +358,8 @@ class RiskAnomalyDetectionAgent(BaseAgent):
         if self.db_manager:
             await self.db_manager.close()
             self.logger.info("Database connection closed.")
-    
+        await super().cleanup()
+
     async def process_message(self, message: AgentMessage):
         """
         Process an incoming agent message.

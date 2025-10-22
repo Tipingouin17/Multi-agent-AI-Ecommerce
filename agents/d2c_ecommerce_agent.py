@@ -46,7 +46,7 @@ if project_root not in sys.path:
 
 # Now try the import
 try:
-    from shared.base_agent import BaseAgent, MessageType, AgentMessage
+    from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     logger.info("Successfully imported shared.base_agent")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -61,7 +61,7 @@ except ImportError as e:
     else:
         logger.info(f"Directory not found: {shared_dir}")
 
-from shared.base_agent import BaseAgent, MessageType, AgentMessage
+from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import APIResponse
 from shared.database import DatabaseManager, get_database_manager
 
@@ -314,7 +314,7 @@ class WebhookEvent(BaseModel):
     received_at: datetime
 
 
-class D2CEcommerceAgent(BaseAgent):
+class D2CEcommerceAgent(BaseAgentV2):
     """
     D2C E-commerce Platform Agent manages connections to direct-to-consumer platforms including:
     - Shopify REST Admin API and GraphQL integration
@@ -351,6 +351,8 @@ class D2CEcommerceAgent(BaseAgent):
         self.register_handler(MessageType.PRICE_UPDATED, self._handle_price_updated)
     
     async def initialize(self):
+        await super().initialize()
+
         """Initialize the D2C E-commerce Agent."""
         self.logger.info("Initializing D2C E-commerce Agent")
         
@@ -375,7 +377,8 @@ class D2CEcommerceAgent(BaseAgent):
         
         if self.session:
             await self.session.close()
-    
+        await super().cleanup()
+
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process D2C e-commerce business logic."""
         action = data.get("action")
