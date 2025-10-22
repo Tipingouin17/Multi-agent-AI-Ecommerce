@@ -98,13 +98,13 @@ function Test-Prerequisites {
     try {
         $dockerVersion = docker --version 2>$null
         if ($dockerVersion) {
-            Write-Log "✓ Docker: $dockerVersion" "SUCCESS"
+            Write-Log "[OK] Docker: $dockerVersion" "SUCCESS"
         } else {
-            Write-Log "✗ Docker not found" "ERROR"
+            Write-Log "[ERROR] Docker not found" "ERROR"
             $allOk = $false
         }
     } catch {
-        Write-Log "✗ Docker not found or not running" "ERROR"
+        Write-Log "[ERROR] Docker not found or not running" "ERROR"
         $allOk = $false
     }
     
@@ -112,13 +112,13 @@ function Test-Prerequisites {
     try {
         $pythonVersion = python --version 2>$null
         if ($pythonVersion) {
-            Write-Log "✓ Python: $pythonVersion" "SUCCESS"
+            Write-Log "[OK] Python: $pythonVersion" "SUCCESS"
         } else {
-            Write-Log "✗ Python not found" "ERROR"
+            Write-Log "[ERROR] Python not found" "ERROR"
             $allOk = $false
         }
     } catch {
-        Write-Log "✗ Python not found" "ERROR"
+        Write-Log "[ERROR] Python not found" "ERROR"
         $allOk = $false
     }
     
@@ -126,13 +126,13 @@ function Test-Prerequisites {
     try {
         $nodeVersion = node --version 2>$null
         if ($nodeVersion) {
-            Write-Log "✓ Node.js: $nodeVersion" "SUCCESS"
+            Write-Log "[OK] Node.js: $nodeVersion" "SUCCESS"
         } else {
-            Write-Log "✗ Node.js not found" "ERROR"
+            Write-Log "[ERROR] Node.js not found" "ERROR"
             $allOk = $false
         }
     } catch {
-        Write-Log "✗ Node.js not found" "ERROR"
+        Write-Log "[ERROR] Node.js not found" "ERROR"
         $allOk = $false
     }
     
@@ -183,7 +183,7 @@ function Start-Infrastructure {
             $connection = Test-NetConnection -ComputerName localhost -Port 5432 -WarningAction SilentlyContinue
             if ($connection.TcpTestSucceeded) {
                 $postgresReady = $true
-                Write-Log "✓ PostgreSQL is ready" "SUCCESS"
+                Write-Log "[OK] PostgreSQL is ready" "SUCCESS"
             } else {
                 Start-Sleep -Seconds 2
             }
@@ -201,7 +201,7 @@ function Start-Infrastructure {
     Write-Log "Kafka: Waiting for initialization (this takes 2-3 minutes)..." "INFO"
     Start-Sleep -Seconds 120
     
-    Write-Log "✓ All infrastructure services ready" "SUCCESS"
+    Write-Log "[OK] All infrastructure services ready" "SUCCESS"
     Write-Host ""
 }
 
@@ -224,9 +224,9 @@ function Initialize-Database {
     if (-not $dbExists) {
         Write-Log "Creating database..." "INFO"
         docker exec multi-agent-postgres psql -U postgres -c "CREATE DATABASE multi_agent_ecommerce;" 2>&1 | Tee-Object -FilePath $LogFile -Append | Out-Null
-        Write-Log "✓ Database created" "SUCCESS"
+        Write-Log "[OK] Database created" "SUCCESS"
     } else {
-        Write-Log "✓ Database already exists" "SUCCESS"
+        Write-Log "[OK] Database already exists" "SUCCESS"
     }
     
     # Run migrations
@@ -247,21 +247,21 @@ function Initialize-Database {
             
             if ($LASTEXITCODE -eq 0) {
                 $migrationCount++
-                Write-Log "    ✓ Applied successfully" "SUCCESS"
+                Write-Log "    [OK] Applied successfully" "SUCCESS"
             } else {
                 # Check if error is "already exists" (which is OK)
                 if ($result -match "already exists") {
-                    Write-Log "    ⚠ Already applied (skipping)" "WARNING"
+                    Write-Log "    [WARNING] Already applied (skipping)" "WARNING"
                 } else {
-                    Write-Log "    ✗ Failed: $result" "ERROR"
+                    Write-Log "    [ERROR] Failed: $result" "ERROR"
                 }
             }
         } catch {
-            Write-Log "    ✗ Failed: $_" "ERROR"
+            Write-Log "    [ERROR] Failed: $_" "ERROR"
         }
     }
     
-    Write-Log "✓ Database initialized ($migrationCount migrations applied)" "SUCCESS"
+    Write-Log "[OK] Database initialized ($migrationCount migrations applied)" "SUCCESS"
     Write-Host ""
 }
 
@@ -298,13 +298,13 @@ function Initialize-KafkaTopics {
             --if-not-exists 2>&1 | Out-Null
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Log "    ✓ Created" "SUCCESS"
+            Write-Log "    [OK] Created" "SUCCESS"
         } else {
-            Write-Log "    ⚠ Already exists or failed" "WARNING"
+            Write-Log "    [WARNING] Already exists or failed" "WARNING"
         }
     }
     
-    Write-Log "✓ Kafka topics initialized" "SUCCESS"
+    Write-Log "[OK] Kafka topics initialized" "SUCCESS"
     Write-Host ""
 }
 
@@ -333,7 +333,7 @@ function Start-Agents {
         -RedirectStandardError $agentMonitorLog `
         -WindowStyle Hidden
     
-    Write-Log "✓ Agent monitor started (logging to $agentMonitorLog)" "SUCCESS"
+    Write-Log "[OK] Agent monitor started (logging to $agentMonitorLog)" "SUCCESS"
     
     # Wait for agents to start
     Write-Log "Waiting for agents to initialize (30 seconds)..." "INFO"
@@ -356,7 +356,7 @@ function Start-Agents {
         }
     }
     
-    Write-Log "✓ $runningAgents / $($agentPorts.Count) agents running" "SUCCESS"
+    Write-Log "[OK] $runningAgents / $($agentPorts.Count) agents running" "SUCCESS"
     
     if ($runningAgents -lt 10) {
         Write-Log "Warning: Less than 10 agents started. Check logs for details." "WARNING"
@@ -390,7 +390,7 @@ function Start-Dashboard {
     
     Set-Location $ProjectRoot
     
-    Write-Log "✓ Dashboard started (logging to $dashboardLog)" "SUCCESS"
+    Write-Log "[OK] Dashboard started (logging to $dashboardLog)" "SUCCESS"
     Write-Host ""
 }
 
