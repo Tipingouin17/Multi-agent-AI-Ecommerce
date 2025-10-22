@@ -59,6 +59,10 @@ class DatabaseManager:
         
         logger.info("Synchronous database engine initialized")
     
+    async def initialize(self):
+        """Initialize database (alias for initialize_async).""" 
+        await self.initialize_async()
+    
     async def initialize_async(self):
         """Initialize asynchronous database engine and session factory."""
         async_url = self.config.url.replace("postgresql://", "postgresql+asyncpg://")
@@ -67,8 +71,15 @@ class DatabaseManager:
             async_url,
             pool_pre_ping=True,
             pool_recycle=300,
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,
             echo=self.config.echo,
-            poolclass=NullPool  # Use NullPool for async to avoid connection issues
+            connect_args={
+                "server_settings": {"application_name": "multi_agent_ecommerce"},
+                "command_timeout": 60,
+                "timeout": 30
+            }
         )
         
         self.async_session_factory = async_sessionmaker(
@@ -152,6 +163,11 @@ class DatabaseManager:
         return stats
     
     @asynccontextmanager
+    async def get_session(self):
+        """Get database session (alias for get_async_session)."""
+        async with self.get_async_session() as session:
+            yield session
+    
     async def get_async_session(self) -> AsyncGenerator[AsyncSession, None]:
         """Get an async database session with automatic cleanup."""
         if not self._initialized:
