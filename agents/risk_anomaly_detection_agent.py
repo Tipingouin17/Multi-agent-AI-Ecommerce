@@ -212,7 +212,7 @@ class RiskAnomalyDetectionAgent(BaseAgent):
             agent_id (str): The unique identifier for the agent.
             agent_type (str): The type of the agent.
         """
-        super().__init__(agent_id=agent_id, agent_type=agent_type, **kwargs)
+        super().__init__(agent_id=agent_id, **kwargs)
         self.app = FastAPI(title="Risk and Anomaly Detection Agent API", version="1.0.0")
         self.setup_routes()
         

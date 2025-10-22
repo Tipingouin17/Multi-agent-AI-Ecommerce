@@ -91,7 +91,7 @@ class DocumentGenerationAgent(BaseAgent):
             agent_id (str): The unique identifier for this agent instance.
             agent_type (str): The type of the agent, e.g., 'document_generation'.
         """
-        super().__init__(agent_id=agent_id, agent_type=agent_type, kafka_bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
+        super().__init__(agent_id=agent_id, kafka_bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
         self.db_helper = DatabaseHelper(DATABASE_URL)
         self.templates = {}
         self._db_initialized = False
@@ -739,8 +739,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
-)
+    allow_headers=["*"])
 
 # Agent instance (global for FastAPI to access)
 agent_instance: Optional[DocumentGenerationAgent] = None

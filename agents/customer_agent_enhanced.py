@@ -201,7 +201,7 @@ class CustomerAgent(BaseAgent):
 
     def __init__(self, agent_id: str, agent_type: str = "customer_agent"):
         """Initializes the CustomerAgent with a unique ID and type."""
-        super().__init__(agent_id=agent_id, agent_type=agent_type)
+        super().__init__(agent_id=agent_id)
         self.db_manager: Optional[DatabaseManager] = None
         self.db_helper_profile: Optional[DatabaseHelper] = None
         self.db_helper_address: Optional[DatabaseHelper] = None

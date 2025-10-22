@@ -160,7 +160,7 @@ class OrderAgent(BaseAgent):
         Args:
             **kwargs: Arbitrary keyword arguments passed to BaseAgent.
         """
-        super().__init__(agent_id="order_agent", agent_type="order_management", **kwargs)
+        super().__init__(agent_id="order_agent", **kwargs)
         self.repository: Optional[OrderRepository] = None
         self.app = FastAPI(title="Order Agent API", version="1.0.0",
                            description="API for managing orders in the e-commerce system.")

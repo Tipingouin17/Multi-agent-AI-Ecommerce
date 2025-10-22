@@ -159,6 +159,7 @@ class BaseAgent(ABC):
         log_level: str = "INFO"
     ):
         self.agent_id = agent_id
+        self.agent_name = agent_id  # Set agent_name same as agent_id for compatibility
         # Read from environment variable first, then use parameter, finally fall back to default
         self.kafka_bootstrap_servers = (
             os.getenv("KAFKA_BOOTSTRAP_SERVERS") or 

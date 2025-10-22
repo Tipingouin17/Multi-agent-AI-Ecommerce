@@ -164,7 +164,7 @@ class DemandForecastingAgent(BaseAgent):
     def __init__(self, **kwargs):
         agent_id = os.getenv("AGENT_ID", "demand_forecasting_agent")
         agent_type = os.getenv("AGENT_TYPE", "demand_forecasting")  # Default agent_type
-        super().__init__(agent_id=agent_id, agent_type=agent_type, **kwargs)
+        super().__init__(agent_id=agent_id, **kwargs)
         self.app = FastAPI(title="Demand Forecasting Agent API", version="1.0.0")
         self.setup_routes()
 

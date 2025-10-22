@@ -188,7 +188,7 @@ class ReverseLogisticsAgent(BaseAgent):
             agent_type (str): The type of the agent, defaults to 'reverse_logistics'.
             **kwargs: Additional keyword arguments to pass to the BaseAgent constructor.
         """
-        super().__init__(agent_id=agent_id, agent_type=agent_type, **kwargs)
+        super().__init__(agent_id=agent_id, **kwargs)
         self.app = FastAPI(title="Reverse Logistics Agent API", version="1.0.0")
         self.db_manager = get_database_manager()
         self.db_helper = DatabaseHelper(self.db_manager)

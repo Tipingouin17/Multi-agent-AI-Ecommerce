@@ -388,7 +388,7 @@ class ReturnsAgent(BaseAgent):
             kafka_broker_url (str): URL for the Kafka broker.
             database_url (str): URL for the database connection.
         """
-        super().__init__(agent_id=agent_id, agent_type=agent_type, kafka_broker_url=kafka_broker_url)
+        super().__init__(agent_id=agent_id, kafka_broker_url=kafka_broker_url)
         self.db_manager = DatabaseManager(database_url)
         self.returns_repo = ReturnsRepository(self.db_manager)
         self.returns_service = ReturnsService(self.returns_repo)

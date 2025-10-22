@@ -363,7 +363,7 @@ class KnowledgeManagementAgent(BaseAgent):
     and Kafka for inter-agent communication.
     """
     def __init__(self, agent_id: str, agent_type: str, db_manager: DatabaseManager):
-        super().__init__(agent_id=agent_id, agent_type=agent_type, kafka_broker=KAFKA_BROKER_URL, topic=KAFKA_KNOWLEDGE_TOPIC)
+        super().__init__(agent_id=agent_id, kafka_broker=KAFKA_BROKER_URL, topic=KAFKA_KNOWLEDGE_TOPIC)
         self.db_manager = db_manager
         self.service = KnowledgeManagementService(db_manager)
         self._db_initialized = False
