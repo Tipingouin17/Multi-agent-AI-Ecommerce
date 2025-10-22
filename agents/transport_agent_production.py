@@ -575,6 +575,65 @@ class TransportAgentProduction(BaseAgent):
             if self.db_manager:
                 await self.db_manager.disconnect()
             await self.shutdown()
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if self.kafka_producer:
+                await self.kafka_producer.stop()
+            if self.kafka_consumer:
+                await self.kafka_consumer.stop()
+            if self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process transport-specific business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "get_rate")
+            
+            if operation == "get_rate":
+                # Calculate shipping rate
+                origin = Address(**data.get("origin", {}))
+                destination = Address(**data.get("destination", {}))
+                package = Package(**data.get("package", {}))
+                carrier_code = data.get("carrier_code")
+                service_level = ServiceLevel(data.get("service_level", "standard"))
+                
+                rate = await self.get_shipping_rate(
+                    origin, destination, package, carrier_code, service_level
+                )
+                return {"status": "success", "rate": rate}
+            
+            elif operation == "create_label":
+                # Generate shipping label
+                shipment_data = data.get("shipment_data", {})
+                label = await self.create_shipping_label(shipment_data)
+                return {"status": "success", "label": label}
+            
+            elif operation == "track_shipment":
+                # Track shipment
+                carrier_code = data.get("carrier_code")
+                tracking_number = data.get("tracking_number")
+                tracking_info = await self.track_shipment(carrier_code, tracking_number)
+                return {"status": "success", "tracking": tracking_info}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 # FastAPI Server Setup
 app = FastAPI(

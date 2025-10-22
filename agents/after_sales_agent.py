@@ -696,6 +696,65 @@ class AfterSalesAgent(BaseAgent):
             logger.error("Error in agent loop", error=str(e))
         finally:
             await self.shutdown()
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if self.kafka_producer:
+                await self.kafka_producer.stop()
+            if self.kafka_consumer:
+                await self.kafka_consumer.stop()
+            if self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process after-sales business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "create_return")
+            
+            if operation == "create_return":
+                # Create return request
+                return_request = ReturnRequest(**data.get("return_request", {}))
+                rma_number = await self.create_return_request(return_request)
+                return {"status": "success", "rma_number": rma_number}
+            
+            elif operation == "approve_return":
+                # Approve return
+                rma_number = data.get("rma_number")
+                approved_by = data.get("approved_by")
+                result = await self.approve_return(rma_number, approved_by)
+                return {"status": "success", "result": result}
+            
+            elif operation == "process_refund":
+                # Process refund
+                rma_number = data.get("rma_number")
+                refund_amount = data.get("refund_amount")
+                result = await self.process_refund(rma_number, refund_amount)
+                return {"status": "success", "result": result}
+            
+            elif operation == "warranty_claim":
+                # Process warranty claim
+                claim = WarrantyClaim(**data.get("claim", {}))
+                claim_id = await self.process_warranty_claim(claim)
+                return {"status": "success", "claim_id": claim_id}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

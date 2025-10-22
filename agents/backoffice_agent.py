@@ -720,6 +720,64 @@ class BackofficeAgent(BaseAgent):
             logger.error("Error in agent loop", error=str(e))
         finally:
             await self.shutdown()
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if self.kafka_producer:
+                await self.kafka_producer.stop()
+            if self.kafka_consumer:
+                await self.kafka_consumer.stop()
+            if self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process backoffice business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "create_application")
+            
+            if operation == "create_application":
+                # Create merchant application
+                application = MerchantApplication(**data.get("application", {}))
+                application_id = await self.create_merchant_application(application)
+                return {"status": "success", "application_id": application_id}
+            
+            elif operation == "verify_documents":
+                # Verify merchant documents
+                application_id = data.get("application_id")
+                result = await self.verify_merchant_documents(application_id)
+                return {"status": "success", "result": result}
+            
+            elif operation == "approve_merchant":
+                # Approve merchant application
+                application_id = data.get("application_id")
+                approved_by = data.get("approved_by")
+                result = await self.approve_merchant(application_id, approved_by)
+                return {"status": "success", "result": result}
+            
+            elif operation == "create_account":
+                # Create merchant account
+                application_id = data.get("application_id")
+                account_id = await self.create_merchant_account(application_id)
+                return {"status": "success", "account_id": account_id}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

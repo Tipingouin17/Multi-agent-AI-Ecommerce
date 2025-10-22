@@ -622,6 +622,66 @@ class QualityControlAgent(BaseAgent):
             logger.error("Error in agent loop", error=str(e))
         finally:
             await self.shutdown()
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if self.kafka_producer:
+                await self.kafka_producer.stop()
+            if self.kafka_consumer:
+                await self.kafka_consumer.stop()
+            if self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process quality control business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "inspect_product")
+            
+            if operation == "inspect_product":
+                # Inspect product
+                request = InspectionRequest(**data.get("inspection_request", {}))
+                result = await self.inspect_product(request)
+                return {"status": "success", "result": result}
+            
+            elif operation == "inspect_inbound":
+                # Inspect inbound shipment
+                shipment_id = data.get("shipment_id")
+                items = data.get("items", [])
+                result = await self.inspect_inbound_shipment(shipment_id, items)
+                return {"status": "success", "result": result}
+            
+            elif operation == "inspect_return":
+                # Inspect returned item
+                rma_number = data.get("rma_number")
+                product_id = data.get("product_id")
+                result = await self.inspect_return(rma_number, product_id)
+                return {"status": "success", "result": result}
+            
+            elif operation == "quality_report":
+                # Generate quality report
+                start_date = data.get("start_date")
+                end_date = data.get("end_date")
+                report = await self.generate_quality_report(start_date, end_date)
+                return {"status": "success", "report": report}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

@@ -649,30 +649,9 @@ class AIMonitoringAgent:
             
             if not response:
                 if not self._db_initialized:
-                    pass
             return None
         
         async with self.db_manager.get_session() as session:
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
             record = await self.db_helper.get_by_id(session, OrderDB, record_id)
             return self.db_helper.to_dict(record) if record else None
             

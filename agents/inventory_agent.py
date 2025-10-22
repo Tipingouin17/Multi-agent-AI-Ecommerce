@@ -269,7 +269,7 @@ class InventoryAgent(BaseAgent):
         Args:
             **kwargs: Arbitrary keyword arguments passed to the BaseAgent constructor.
         """
-        super().__init__(agent_id="inventory_agent", agent_type="inventory_agent", **kwargs)
+        super().__init__(agent_id="inventory_agent", agent_type="InventoryAgent")
         self.repository: Optional[InventoryRepository] = None
         self.movement_repository: Optional[StockMovementRepository] = None
         self.app = FastAPI(title="Inventory Agent API", version="1.0.0")

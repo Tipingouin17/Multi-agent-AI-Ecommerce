@@ -55,7 +55,7 @@ class MarketplaceConnectorAgentProduction(BaseAgent):
         """
         agent_id = "MarketplaceConnectorAgentProduction"
         agent_type = "MarketplaceConnector"
-        super().__init__(agent_id=agent_id, agent_type=agent_type)
+        super().__init__(name="marketplace_connector_agent")
         self.kafka_producer = None
         self.kafka_consumer = None
         self.marketplace_manager = get_marketplace_manager()
@@ -488,6 +488,61 @@ class MarketplaceConnectorAgentProduction(BaseAgent):
             except Exception as e:
                 logger.error("Error in periodic sync", error=str(e))
                 await asyncio.sleep(60)  # Wait 1 minute before retry
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if self.kafka_producer:
+                await self.kafka_producer.stop()
+            if self.kafka_consumer:
+                await self.kafka_consumer.stop()
+            if self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process marketplace-specific business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "sync_products")
+            
+            if operation == "sync_products":
+                # Sync products to marketplaces
+                marketplace = data.get("marketplace")
+                result = await self.sync_products_to_marketplace(marketplace)
+                return {"status": "success", "result": result}
+            
+            elif operation == "sync_inventory":
+                # Sync inventory levels
+                marketplace = data.get("marketplace")
+                result = await self.sync_inventory_to_marketplace(marketplace)
+                return {"status": "success", "result": result}
+            
+            elif operation == "sync_orders":
+                # Sync orders from marketplaces
+                result = await self.sync_all_orders()
+                return {"status": "success", "result": result}
+            
+            elif operation == "sync_messages":
+                # Sync customer messages
+                result = await self.sync_messages_from_marketplaces()
+                return {"status": "success", "result": result}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 # FastAPI Server Setup
 app = FastAPI(

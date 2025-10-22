@@ -840,6 +840,81 @@ class PaymentAgent(BaseAgent):
                     error_message=str(e)
                 )
             raise ValueError(f"Refund processing failed: {str(e)}")
+    
+    async def initialize(self):
+        """Initialize agent-specific components"""
+        await super().initialize()
+        logger.info(f"{self.agent_name} initialized successfully")
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if hasattr(self, 'db_manager') and self.db_manager:
+                await self.db_manager.disconnect()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process payment business logic
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process_payment")
+            
+            if operation == "process_payment":
+                # Process payment
+                order_id = data.get("order_id")
+                amount = Decimal(str(data.get("amount", 0)))
+                currency = data.get("currency", "EUR")
+                customer_id = data.get("customer_id")
+                payment_method = data.get("payment_method")
+                gateway = GatewayType(data.get("gateway", "stripe"))
+                
+                transaction = await self.process_payment(
+                    order_id=order_id,
+                    amount=amount,
+                    currency=currency,
+                    customer_id=customer_id,
+                    payment_method=payment_method,
+                    gateway=gateway
+                )
+                return {"status": "success", "transaction": transaction}
+            
+            elif operation == "capture_payment":
+                # Capture authorized payment
+                transaction_id = data.get("transaction_id")
+                amount = data.get("amount")
+                result = await self.capture_payment(transaction_id, amount)
+                return {"status": "success", "result": result}
+            
+            elif operation == "refund":
+                # Process refund
+                transaction_id = data.get("transaction_id")
+                amount = Decimal(str(data.get("amount", 0)))
+                reason = data.get("reason", "customer_request")
+                refund_type = RefundType(data.get("refund_type", "full"))
+                
+                refund = await self.process_refund(
+                    transaction_id=transaction_id,
+                    amount=amount,
+                    reason=reason,
+                    refund_type=refund_type
+                )
+                return {"status": "success", "refund": refund}
+            
+            else:
+                return {"status": "error", "message": f"Unknown operation: {operation}"}
+                
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 
