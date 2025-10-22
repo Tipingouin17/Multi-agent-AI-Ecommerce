@@ -204,19 +204,21 @@ class RiskAnomalyDetectionAgent(BaseAgent):
     - Predictive risk modeling
     - External threat monitoring
     """
-    def __init__(self, agent_id: str, agent_type: str, **kwargs):
+    def __init__(self):
         """
         Initializes the Risk Anomaly Detection Agent.
-
-        Args:
-            agent_id (str): The unique identifier for the agent.
-            agent_type (str): The type of the agent.
         """
-        super().__init__(agent_id=agent_id, **kwargs)
+        super().__init__(agent_id="risk_anomaly_detection_agent")
         self.app = FastAPI(title="Risk and Anomaly Detection Agent API", version="1.0.0")
         self.setup_routes()
         
-        self.db_manager: DatabaseManager = get_database_manager()
+        # Initialize database manager with fallback
+        try:
+            self.db_manager: DatabaseManager = get_database_manager()
+        except RuntimeError:
+            from shared.models import DatabaseConfig
+            db_config = DatabaseConfig()
+            self.db_manager = DatabaseManager(db_config)
         self._db_initialized: bool = False
         self.db_helper = DatabaseHelper(self.db_manager, self.logger)
 

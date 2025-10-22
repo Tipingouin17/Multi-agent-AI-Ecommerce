@@ -500,7 +500,13 @@ class FraudDetectionAgent(BaseAgent):
     def __init__(self):
         """Initializes the FraudDetectionAgent."""
         super().__init__(agent_id="fraud_detection_agent")
-        self.db_manager = get_database_manager()
+        # Initialize database manager with fallback
+        try:
+            self.db_manager = get_database_manager()
+        except RuntimeError:
+            from shared.models import DatabaseConfig
+            db_config = DatabaseConfig()
+            self.db_manager = DatabaseManager(db_config)
         self.db_helper = DatabaseHelper(self.db_manager)
         self.repository = FraudDetectionRepository(self.db_helper)
         self.service = FraudDetectionService(self.repository)
