@@ -11,7 +11,7 @@ services:
     environment:
       POSTGRES_DB: multi_agent_ecommerce
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -255,7 +255,7 @@ services:
       DB_PORT: 5432
       DB_NAME: multi_agent_ecommerce
       DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      DB_PASSWORD: ${DATABASE_PASSWORD:-postgres}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       DOCUMENT_STORAGE_PATH: /app/storage/documents
     volumes:
@@ -280,7 +280,7 @@ services:
       - "5050:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@multiagent.com
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_DEFAULT_PASSWORD: ${DATABASE_PASSWORD:-admin123}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:
       - pgadmin_data:/var/lib/pgadmin
