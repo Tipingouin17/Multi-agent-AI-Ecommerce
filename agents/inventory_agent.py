@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import structlog
 import sys
@@ -273,6 +274,15 @@ class InventoryAgent(BaseAgentV2):
         self.repository: Optional[InventoryRepository] = None
         self.movement_repository: Optional[StockMovementRepository] = None
         self.app = FastAPI(title="Inventory Agent API", version="1.0.0")
+        
+        # Add CORS middleware
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # In production, specify exact origins
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         self.setup_routes()
         
         # In-memory reservations (in production, this would be in Redis or database)

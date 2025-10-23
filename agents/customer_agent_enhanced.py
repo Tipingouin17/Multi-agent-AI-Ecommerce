@@ -17,6 +17,7 @@ from uuid import UUID, uuid4
 
 import structlog
 from fastapi import Body, Depends, FastAPI, HTTPException, Path, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
 # Path setup

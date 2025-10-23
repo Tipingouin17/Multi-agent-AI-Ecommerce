@@ -16,6 +16,7 @@ from enum import Enum
 import hashlib
 
 from fastapi import FastAPI, HTTPException, Depends, Body, Path
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import structlog
 import sys
@@ -515,6 +516,15 @@ class FraudDetectionAgent(BaseAgentV2):
                            description="Agent for detecting and managing fraudulent activities.",
                            on_startup=[self.on_startup],
                            on_shutdown=[self.on_shutdown])
+        
+        # Add CORS middleware
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # In production, specify exact origins
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         self._db_initialized = False
 
         self.setup_routes()

@@ -14,6 +14,7 @@ from uuid import uuid4, UUID
 from enum import Enum
 
 from fastapi import FastAPI, HTTPException, Depends, Body, Path, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import structlog
 import uvicorn

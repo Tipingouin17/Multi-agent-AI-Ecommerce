@@ -19,6 +19,7 @@ from uuid import uuid4
 from shared.db_helpers import DatabaseHelper
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import structlog
 import sys
@@ -100,6 +101,15 @@ class ProductAgent(BaseAgentV2):
         
         # FastAPI app
         self.app = FastAPI(title="Product Agent API")
+        
+        # Add CORS middleware
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # In production, specify exact origins
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         self._setup_routes()
     
     def _setup_routes(self):

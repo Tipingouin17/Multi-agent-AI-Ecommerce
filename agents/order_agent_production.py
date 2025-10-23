@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import Column, String, DateTime, Numeric
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -128,6 +129,16 @@ class OrderAgent(BaseAgentV2):
 
         # FastAPI app
         self.app = FastAPI(title="Order Agent API")
+        
+        # Add CORS middleware
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # In production, specify exact origins
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        
         self._setup_routes()
 
     async def _init_db(self):

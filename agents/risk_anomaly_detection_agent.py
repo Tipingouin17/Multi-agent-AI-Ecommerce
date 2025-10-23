@@ -22,6 +22,7 @@ from dataclasses import dataclass
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import structlog
 import numpy as np
@@ -210,6 +211,15 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         """
         super().__init__(agent_id="risk_anomaly_detection_agent")
         self.app = FastAPI(title="Risk and Anomaly Detection Agent API", version="1.0.0")
+        
+        # Add CORS middleware
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # In production, specify exact origins
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         self.setup_routes()
         
         # Initialize database manager with fallback
