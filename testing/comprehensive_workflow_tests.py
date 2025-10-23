@@ -311,9 +311,12 @@ class WorkflowTestSuite:
         
         try:
             # Step 1: Create customer
+            customer_id = f"CUST-{uuid4().hex[:8].upper()}"
             customer_data = {
-                "name": "Test Customer",
+                "customer_id": customer_id,
                 "email": f"test{uuid4().hex[:8]}@example.com",
+                "first_name": "Test",
+                "last_name": "Customer",
                 "phone": "1234567890"
             }
             
@@ -333,7 +336,7 @@ class WorkflowTestSuite:
                     "agents": ["customer"]
                 }
             
-            customer_id = customer.get("id") or customer.get("customer_id")
+            # customer_id already defined above
             
             # Step 2: Create order
             order_data = {
@@ -416,30 +419,52 @@ class WorkflowTestSuite:
         
         try:
             # Check inventory availability
+            product_id = "PROD-001"
+            quantity = 5
             status, inventory = await self.make_api_call(
                 "inventory",
-                "/inventory/check",
-                method="POST",
-                data={"product_id": "PROD-001", "quantity": 5}
+                f"/inventory/{product_id}/availability?quantity={quantity}",
+                method="GET"
             )
-            api_calls.append({"step": "check_availability", "status": status})
+            api_calls.append({"step": "check_availability", "status": status, "response": inventory})
+            
+            if status not in [200, 201]:
+                return {
+                    "passed": False,
+                    "error": f"Failed to check availability: HTTP {status}",
+                    "input": {"product_id": product_id, "quantity": quantity},
+                    "expected": "Availability check successful",
+                    "actual": f"HTTP {status}",
+                    "agents": ["inventory"],
+                    "api_calls": api_calls
+                }
             
             # Reserve inventory
+            order_id = f"ORD-{uuid4().hex[:8].upper()}"
             status, reservation = await self.make_api_call(
                 "inventory",
                 "/inventory/reserve",
                 method="POST",
-                data={"product_id": "PROD-001", "quantity": 5, "order_id": "ORD-001"}
+                data={"product_id": product_id, "quantity": quantity, "order_id": order_id, "warehouse_id": "WH-001"}
             )
-            api_calls.append({"step": "reserve_stock", "status": status})
+            api_calls.append({"step": "reserve_stock", "status": status, "response": reservation})
             
-            passed = all(call["status"] in [200, 201] for call in api_calls)
+            if status not in [200, 201]:
+                return {
+                    "passed": False,
+                    "error": f"Failed to reserve stock: HTTP {status}",
+                    "input": {"product_id": product_id, "quantity": quantity},
+                    "expected": "Reservation successful",
+                    "actual": f"HTTP {status}",
+                    "agents": ["inventory"],
+                    "api_calls": api_calls
+                }
             
             return {
-                "passed": passed,
-                "input": {"product_id": "PROD-001", "quantity": 5},
+                "passed": True,
+                "input": {"product_id": product_id, "quantity": quantity},
                 "expected": "Reservation successful",
-                "actual": f"{len([c for c in api_calls if c['status'] in [200, 201]])}/{len(api_calls)} steps succeeded",
+                "actual": "All steps succeeded",
                 "agents": ["inventory"],
                 "api_calls": api_calls
             }
