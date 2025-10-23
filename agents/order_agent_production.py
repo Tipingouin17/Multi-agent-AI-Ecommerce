@@ -260,6 +260,195 @@ class OrderAgent(BaseAgentV2):
                 except Exception as e:
                     logger.error(f"Error getting shipments for order {order_id}: {e}")
                     raise HTTPException(status_code=500, detail=str(e))
+        
+        # Analytics endpoints - ALL query database
+        @self.app.get("/analytics/sales")
+        async def get_sales_analytics(
+            time_range: str = "24h"  # 1h, 24h, 7d, 30d
+        ) -> Dict[str, Any]:
+            """Get sales analytics from database.
+            
+            Returns real sales data aggregated from orders table.
+            NO MOCK DATA.
+            """
+            try:
+                from datetime import timedelta
+                from sqlalchemy import func, and_
+                
+                # Parse time range
+                time_delta_map = {
+                    "1h": timedelta(hours=1),
+                    "24h": timedelta(hours=24),
+                    "7d": timedelta(days=7),
+                    "30d": timedelta(days=30)
+                }
+                time_delta = time_delta_map.get(time_range, timedelta(hours=24))
+                since = datetime.utcnow() - time_delta
+                
+                async with self.async_session() as session:
+                    # Total sales
+                    total_result = await session.execute(
+                        select(func.sum(OrderDB.total_amount))
+                        .where(OrderDB.created_at >= since)
+                    )
+                    total_sales = total_result.scalar() or Decimal('0')
+                    
+                    # Order count
+                    count_result = await session.execute(
+                        select(func.count(OrderDB.id))
+                        .where(OrderDB.created_at >= since)
+                    )
+                    order_count = count_result.scalar() or 0
+                    
+                    # Average order value
+                    avg_order_value = total_sales / order_count if order_count > 0 else Decimal('0')
+                    
+                    # Sales by status
+                    status_result = await session.execute(
+                        select(OrderDB.status, func.count(OrderDB.id), func.sum(OrderDB.total_amount))
+                        .where(OrderDB.created_at >= since)
+                        .group_by(OrderDB.status)
+                    )
+                    sales_by_status = {
+                        row[0]: {"count": row[1], "total": str(row[2] or Decimal('0'))}
+                        for row in status_result.all()
+                    }
+                    
+                    # Sales by channel
+                    channel_result = await session.execute(
+                        select(OrderDB.channel, func.count(OrderDB.id), func.sum(OrderDB.total_amount))
+                        .where(OrderDB.created_at >= since)
+                        .group_by(OrderDB.channel)
+                    )
+                    sales_by_channel = {
+                        row[0]: {"count": row[1], "total": str(row[2] or Decimal('0'))}
+                        for row in channel_result.all()
+                    }
+                    
+                    return {
+                        "time_range": time_range,
+                        "total_sales": str(total_sales),
+                        "order_count": order_count,
+                        "average_order_value": str(avg_order_value),
+                        "sales_by_status": sales_by_status,
+                        "sales_by_channel": sales_by_channel,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+            except Exception as e:
+                logger.error(f"Error getting sales analytics: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/analytics/kpis")
+        async def get_merchant_kpis() -> Dict[str, Any]:
+            """Get merchant KPIs from database.
+            
+            Returns real KPIs calculated from orders table.
+            NO MOCK DATA.
+            """
+            try:
+                from datetime import timedelta
+                from sqlalchemy import func, and_
+                
+                now = datetime.utcnow()
+                today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                week_start = now - timedelta(days=7)
+                month_start = now - timedelta(days=30)
+                
+                async with self.async_session() as session:
+                    # Today's sales
+                    today_result = await session.execute(
+                        select(func.sum(OrderDB.total_amount), func.count(OrderDB.id))
+                        .where(OrderDB.created_at >= today_start)
+                    )
+                    today_row = today_result.first()
+                    today_sales = today_row[0] or Decimal('0')
+                    today_orders = today_row[1] or 0
+                    
+                    # This week's sales
+                    week_result = await session.execute(
+                        select(func.sum(OrderDB.total_amount), func.count(OrderDB.id))
+                        .where(OrderDB.created_at >= week_start)
+                    )
+                    week_row = week_result.first()
+                    week_sales = week_row[0] or Decimal('0')
+                    week_orders = week_row[1] or 0
+                    
+                    # This month's sales
+                    month_result = await session.execute(
+                        select(func.sum(OrderDB.total_amount), func.count(OrderDB.id))
+                        .where(OrderDB.created_at >= month_start)
+                    )
+                    month_row = month_result.first()
+                    month_sales = month_row[0] or Decimal('0')
+                    month_orders = month_row[1] or 0
+                    
+                    # Pending orders
+                    pending_result = await session.execute(
+                        select(func.count(OrderDB.id))
+                        .where(OrderDB.status == 'pending')
+                    )
+                    pending_orders = pending_result.scalar() or 0
+                    
+                    # Processing orders
+                    processing_result = await session.execute(
+                        select(func.count(OrderDB.id))
+                        .where(OrderDB.status == 'processing')
+                    )
+                    processing_orders = processing_result.scalar() or 0
+                    
+                    # Completed orders (this month)
+                    completed_result = await session.execute(
+                        select(func.count(OrderDB.id))
+                        .where(and_(
+                            OrderDB.status == 'completed',
+                            OrderDB.created_at >= month_start
+                        ))
+                    )
+                    completed_orders = completed_result.scalar() or 0
+                    
+                    return {
+                        "today": {
+                            "sales": str(today_sales),
+                            "orders": today_orders
+                        },
+                        "this_week": {
+                            "sales": str(week_sales),
+                            "orders": week_orders
+                        },
+                        "this_month": {
+                            "sales": str(month_sales),
+                            "orders": month_orders
+                        },
+                        "pending_orders": pending_orders,
+                        "processing_orders": processing_orders,
+                        "completed_orders": completed_orders,
+                        "timestamp": now.isoformat()
+                    }
+            except Exception as e:
+                logger.error(f"Error getting merchant KPIs: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/orders/recent")
+        async def get_recent_orders(limit: int = 10) -> Dict[str, Any]:
+            """Get recent orders from database.
+            
+            Returns real recent orders from orders table.
+            NO MOCK DATA.
+            """
+            try:
+                async with self.async_session() as session:
+                    stmt = select(OrderDB).order_by(OrderDB.created_at.desc()).limit(limit)
+                    result = await session.execute(stmt)
+                    orders = result.scalars().all()
+                    
+                    return {
+                        "orders": [order.to_dict() for order in orders],
+                        "count": len(orders),
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+            except Exception as e:
+                logger.error(f"Error getting recent orders: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
 
     async def get_orders_from_db(self, skip: int, limit: int) -> List[Dict]:
         """Retrieves orders from the database with pagination.
