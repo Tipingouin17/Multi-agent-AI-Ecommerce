@@ -73,21 +73,48 @@ class TransportAgentProduction(BaseAgentV2):
         self._db_initialized: bool = False
         
     async def initialize(self):
-        """Initialize agent"""
+        """Initialize agent with robust error handling"""
         await super().initialize()
         
-        # Initialize Database Manager and Helper
-        try:
-            db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./transport_agent.db")
-            self.db_manager = DatabaseManager(db_url)
-            self.db_helper = DatabaseHelper(self.db_manager)
-            await self.db_manager.initialize_async()
-            await self.db_manager.create_all()
-            self._db_initialized = True
-            logger.info("Database initialized successfully")
-        except Exception as e:
-            logger.error("Failed to initialize database", error=str(e))
-            self._db_initialized = False
+        # Initialize Database Manager with retry logic
+        max_retries = 5
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Try to get global database manager
+                try:
+                    from shared.database_manager import get_database_manager
+                    self.db_manager = get_database_manager()
+                    logger.info("Using global database manager")
+                except (RuntimeError, ImportError):
+                    # Create enhanced database manager with retry logic
+                    from shared.models import DatabaseConfig
+                    from shared.database_manager import EnhancedDatabaseManager
+                    db_config = DatabaseConfig()
+                    self.db_manager = EnhancedDatabaseManager(db_config)
+                    await self.db_manager.initialize(max_retries=5)
+                    logger.info("Created new enhanced database manager")
+                
+                # Initialize database helper
+                self.db_helper = DatabaseHelper(self.db_manager)
+                self._db_initialized = True
+                logger.info("Database initialization successful", attempt=attempt)
+                break
+                
+            except Exception as e:
+                logger.warning(
+                    "Database initialization failed",
+                    attempt=attempt,
+                    max_retries=max_retries,
+                    error=str(e)
+                )
+                
+                if attempt < max_retries:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    logger.info(f"Retrying in {wait_time} seconds...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error("Failed to initialize database after all retries")
+                    self._db_initialized = False
 
         try:
             self.kafka_producer = KafkaProducer()

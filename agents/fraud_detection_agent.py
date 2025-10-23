@@ -6,6 +6,7 @@ This agent provides ML-based fraud detection, risk scoring, and anomaly detectio
 for transactions, orders, and user behavior.
 """
 
+import asyncio
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
@@ -519,17 +520,46 @@ class FraudDetectionAgent(BaseAgentV2):
         self.setup_routes()
 
     async def initialize(self):
-        """Initializes the agent, ensuring database connection and tables are ready."""
+        """Initializes the agent with robust error handling."""
         await super().initialize()
-        try:
-            await self.db_manager.initialize_async()
-            # In a real scenario, you'd run migrations or check tables here.
-            # For this example, we assume tables exist.
-            logger.info("Database connected and initialized.")
-            self._db_initialized = True
-        except Exception as e:
-            logger.error("Failed to connect to database", error=str(e))
-            self._db_initialized = False
+        
+        # Initialize database with retry logic
+        max_retries = 5
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Try to get global database manager
+                try:
+                    from shared.database_manager import get_database_manager
+                    self.db_manager = get_database_manager()
+                    logger.info("Using global database manager")
+                except (RuntimeError, ImportError):
+                    # Create enhanced database manager with retry logic
+                    from shared.models import DatabaseConfig
+                    from shared.database_manager import EnhancedDatabaseManager
+                    db_config = DatabaseConfig()
+                    self.db_manager = EnhancedDatabaseManager(db_config)
+                    await self.db_manager.initialize(max_retries=5)
+                    logger.info("Created new enhanced database manager")
+                
+                self._db_initialized = True
+                logger.info("Database initialization successful", attempt=attempt)
+                break
+                
+            except Exception as e:
+                logger.warning(
+                    "Database initialization failed",
+                    attempt=attempt,
+                    max_retries=max_retries,
+                    error=str(e)
+                )
+                
+                if attempt < max_retries:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    logger.info(f"Retrying in {wait_time} seconds...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error("Failed to initialize database after all retries")
+                    self._db_initialized = False
 
     async def on_startup(self):
         """Handles agent startup tasks, such as initializing the database connection."""
