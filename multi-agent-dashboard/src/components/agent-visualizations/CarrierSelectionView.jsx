@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Truck, 
   MapPin, 
@@ -13,7 +14,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Brain,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 
 // AI Decision Explanation Component
@@ -35,254 +38,311 @@ const AIDecisionCard = ({ decision }) => {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">On-Time Delivery</span>
-            <span className="text-sm font-bold text-purple-700">{decision.onTimeScore}%</span>
+            <span className="text-sm font-bold text-purple-700">{decision.onTimeScore || 0}%</span>
           </div>
-          <Progress value={decision.onTimeScore} className="h-2" />
+          <Progress value={decision.onTimeScore || 0} className="h-2" />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">Cost Efficiency</span>
-            <span className="text-sm font-bold text-purple-700">{decision.costScore}%</span>
+            <span className="text-sm font-bold text-purple-700">{decision.costScore || 0}%</span>
           </div>
-          <Progress value={decision.costScore} className="h-2" />
+          <Progress value={decision.costScore || 0} className="h-2" />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">Service Quality</span>
-            <span className="text-sm font-bold text-purple-700">{decision.qualityScore}%</span>
+            <span className="text-sm font-bold text-purple-700">{decision.qualityScore || 0}%</span>
           </div>
-          <Progress value={decision.qualityScore} className="h-2" />
+          <Progress value={decision.qualityScore || 0} className="h-2" />
         </div>
 
-        <div className="mt-4 p-3 bg-white rounded-lg border border-purple-200">
-          <p className="text-sm text-gray-700">
-            <Sparkles className="w-4 h-4 inline mr-1 text-purple-600" />
-            <strong>AI Reasoning:</strong> {decision.reasoning}
-          </p>
+        <div className="pt-4 border-t border-purple-200">
+          <div className="flex items-start gap-2">
+            <Sparkles className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-gray-700">
+              {decision.reasoning || 'AI analysis in progress...'}
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Clock className="w-4 h-4" />
-          <span>Decision made in {decision.processingTime}ms</span>
-        </div>
+        {decision.factors && decision.factors.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-gray-900">Key Factors:</h4>
+            <ul className="space-y-1">
+              {decision.factors.map((factor, index) => (
+                <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  {factor}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 };
 
-// Carrier Comparison Table
+// Carrier Comparison Component
 const CarrierComparison = ({ carriers, selectedCarrier }) => {
+  if (!carriers || carriers.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <Truck className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p>No carriers available</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">Carrier</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">Delivery Time</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">On-Time Rate</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">Service Level</th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">AI Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          {carriers.map((carrier) => {
-            const isSelected = carrier.name === selectedCarrier;
-            return (
-              <tr 
-                key={carrier.name}
-                className={`border-b border-gray-100 ${
-                  isSelected ? 'bg-green-50' : 'hover:bg-gray-50'
-                }`}
-              >
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-green-600" />}
-                    <span className={`font-medium ${isSelected ? 'text-green-900' : 'text-gray-900'}`}>
-                      {carrier.name}
-                    </span>
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <span className="font-semibold text-gray-900">€{carrier.price.toFixed(2)}</span>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-1 text-gray-700">
-                    <Clock className="w-4 h-4" />
-                    {carrier.deliveryDays} days
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    <Progress value={carrier.onTimeRate} className="h-2 w-20" />
-                    <span className="text-sm text-gray-600">{carrier.onTimeRate}%</span>
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <Badge variant={carrier.serviceLevel === 'Express' ? 'default' : 'secondary'}>
-                    {carrier.serviceLevel}
-                  </Badge>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    <div className="text-2xl font-bold text-purple-600">{carrier.aiScore}</div>
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-3">
+      {carriers.map((carrier) => {
+        const isSelected = carrier.name === selectedCarrier;
+        return (
+          <div
+            key={carrier.id || carrier.name}
+            className={`p-4 rounded-lg border-2 transition-all ${
+              isSelected
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Truck className={`w-5 h-5 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
+                <span className="font-semibold text-gray-900">{carrier.name}</span>
+                {isSelected && (
+                  <Badge className="bg-blue-600">Selected</Badge>
+                )}
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-gray-900">
+                  €{carrier.price?.toFixed(2) || '0.00'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <div>
+                <span className="text-gray-500">Delivery:</span>
+                <span className="ml-1 font-medium">{carrier.deliveryDays || 'N/A'} days</span>
+              </div>
+              <div>
+                <span className="text-gray-500">On-Time:</span>
+                <span className="ml-1 font-medium">{carrier.onTimeRate || 0}%</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Service:</span>
+                <span className="ml-1 font-medium">{carrier.serviceLevel || 'Standard'}</span>
+              </div>
+            </div>
+
+            {carrier.aiScore && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">AI Score:</span>
+                  <span className="font-semibold text-purple-600">{carrier.aiScore}/100</span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
 
-// Interactive Map Component (simplified visualization)
+// Delivery Map Component (Placeholder - can be enhanced with real map library)
 const DeliveryMap = ({ origin, destination, selectedCarrier }) => {
+  if (!origin || !destination) {
+    return (
+      <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <p>Route information unavailable</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full h-[400px] bg-gradient-to-br from-blue-50 to-green-50 rounded-lg overflow-hidden border-2 border-gray-200">
-      <svg width="100%" height="100%" viewBox="0 0 800 400">
-        {/* Map background */}
-        <rect width="800" height="400" fill="url(#mapGradient)" />
-        <defs>
-          <linearGradient id="mapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#EFF6FF" />
-            <stop offset="100%" stopColor="#ECFDF5" />
-          </linearGradient>
-        </defs>
-
-        {/* Route line */}
-        <line
-          x1="150"
-          y1="200"
-          x2="650"
-          y2="200"
-          stroke="#3B82F6"
-          strokeWidth="3"
-          strokeDasharray="10,5"
-          opacity="0.6"
-        />
-
-        {/* Origin marker */}
-        <g>
-          <circle cx="150" cy="200" r="30" fill="#10B981" stroke="#059669" strokeWidth="3" />
-          <MapPin x="135" y="185" className="w-8 h-8 text-white" />
-          <text x="150" y="250" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#374151">
-            {origin}
-          </text>
-        </g>
-
-        {/* Destination marker */}
-        <g>
-          <circle cx="650" cy="200" r="30" fill="#EF4444" stroke="#DC2626" strokeWidth="3" />
-          <MapPin x="635" y="185" className="w-8 h-8 text-white" />
-          <text x="650" y="250" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#374151">
-            {destination}
-          </text>
-        </g>
-
-        {/* Carrier truck (animated) */}
-        <g className="animate-pulse">
-          <circle cx="400" cy="200" r="25" fill="#8B5CF6" stroke="#7C3AED" strokeWidth="2" />
-          <Truck x="385" y="185" className="w-8 h-8 text-white" />
-          <text x="400" y="235" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#6B21A8">
-            {selectedCarrier}
-          </text>
-        </g>
-
-        {/* Distance indicator */}
-        <g>
-          <rect x="350" y="160" width="100" height="25" fill="white" stroke="#E5E7EB" strokeWidth="1" rx="4" />
-          <text x="400" y="177" textAnchor="middle" fontSize="12" fill="#374151">
-            ~500 km
-          </text>
-        </g>
-      </svg>
-
-      {/* Map legend */}
-      <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-md">
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-gray-700">Origin</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span className="text-gray-700">Destination</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-            <span className="text-gray-700">Carrier</span>
-          </div>
+    <div className="h-64 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg p-4 flex flex-col justify-between">
+      <div className="flex items-start gap-2">
+        <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0" />
+        <div>
+          <div className="text-sm font-semibold text-gray-900">Origin</div>
+          <div className="text-sm text-gray-700">{origin.address || 'Unknown'}</div>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-center">
+        <div className="text-center">
+          <Truck className="w-8 h-8 mx-auto text-blue-600 mb-1" />
+          <div className="text-xs text-gray-600">{selectedCarrier || 'No carrier selected'}</div>
+        </div>
+      </div>
+      
+      <div className="flex items-start gap-2">
+        <MapPin className="w-5 h-5 text-purple-600 flex-shrink-0" />
+        <div>
+          <div className="text-sm font-semibold text-gray-900">Destination</div>
+          <div className="text-sm text-gray-700">{destination.address || 'Unknown'}</div>
         </div>
       </div>
     </div>
   );
 };
 
-export default function CarrierSelectionView() {
+// Error Display Component
+const ErrorDisplay = ({ error, onRetry }) => (
+  <Alert variant="destructive" className="mb-4">
+    <AlertCircle className="h-4 w-4" />
+    <AlertDescription className="ml-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-semibold">Failed to load carrier data</p>
+          <p className="text-sm mt-1">{error?.message || 'Database connection error'}</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRetry}
+          className="ml-4"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Retry
+        </Button>
+      </div>
+    </AlertDescription>
+  </Alert>
+);
+
+// Loading Skeleton Component
+const LoadingSkeleton = () => (
+  <div className="space-y-4">
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <span className="ml-2 text-gray-600">Loading carrier data from database...</span>
+    </div>
+  </div>
+);
+
+// Main Component
+const CarrierSelectionView = ({ shipmentId }) => {
   const [selectedShipment, setSelectedShipment] = useState(null);
 
-  // Mock data - replace with actual API call
-  const mockData = {
-    carriers: [
-      { name: 'Colis Privé', price: 8.50, deliveryDays: 2, onTimeRate: 94, serviceLevel: 'Standard', aiScore: 92 },
-      { name: 'UPS', price: 12.30, deliveryDays: 1, onTimeRate: 98, serviceLevel: 'Express', aiScore: 89 },
-      { name: 'Chronopost', price: 15.00, deliveryDays: 1, onTimeRate: 97, serviceLevel: 'Express', aiScore: 85 },
-      { name: 'Colissimo', price: 7.80, deliveryDays: 3, onTimeRate: 91, serviceLevel: 'Economy', aiScore: 78 },
-    ],
-    selectedCarrier: 'Colis Privé',
-    decision: {
-      onTimeScore: 94,
-      costScore: 88,
-      qualityScore: 92,
-      reasoning: 'Colis Privé offers the best balance between cost (€8.50) and on-time delivery rate (94%). While UPS has a higher on-time rate, the 45% price premium doesn\'t justify the marginal improvement for this standard shipment.',
-      processingTime: 127,
+  // Fetch shipment data from Transport Agent API
+  const { data: shipmentData, isLoading, error, refetch } = useQuery({
+    queryKey: ['shipment', shipmentId],
+    queryFn: async () => {
+      if (!shipmentId) {
+        throw new Error('No shipment ID provided');
+      }
+
+      const response = await fetch(`http://localhost:8006/api/shipments/${shipmentId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Transport Agent API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
     },
-    origin: 'Paris',
-    destination: 'Lyon',
-  };
+    enabled: !!shipmentId,
+    retry: 2,
+    staleTime: 30000, // 30 seconds
+  });
+
+  // Fetch available carriers from Transport Agent API
+  const { data: carriersData, isLoading: carriersLoading, error: carriersError } = useQuery({
+    queryKey: ['carriers'],
+    queryFn: async () => {
+      const response = await fetch('http://localhost:8006/api/carriers');
+      
+      if (!response.ok) {
+        throw new Error(`Transport Agent API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    },
+    retry: 2,
+    staleTime: 60000, // 1 minute
+  });
+
+  // Handle loading state
+  if (isLoading || carriersLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  // Handle error state
+  if (error || carriersError) {
+    return (
+      <ErrorDisplay 
+        error={error || carriersError} 
+        onRetry={() => {
+          refetch();
+        }} 
+      />
+    );
+  }
+
+  // Handle no data state
+  if (!shipmentData && !carriersData) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No shipment or carrier data available. Please ensure the Transport Agent is running and connected to the database.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const carriers = carriersData?.carriers || [];
+  const selectedCarrier = shipmentData?.selectedCarrier || shipmentData?.carrier_name || null;
+  const origin = shipmentData?.origin || null;
+  const destination = shipmentData?.destination || null;
+  const decision = shipmentData?.aiDecision || shipmentData?.decision || null;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Truck className="w-8 h-8 text-blue-600" />
-            Carrier Selection Agent
-          </h1>
-          <p className="text-gray-600 mt-1">
-            AI-powered optimal carrier selection with real-time decision visualization
+          <h2 className="text-2xl font-bold text-gray-900">Carrier Selection</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            AI-powered carrier optimization for shipment {shipmentId || 'N/A'}
           </p>
         </div>
+        <Button onClick={() => refetch()} variant="outline" size="sm">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Selected Carrier
-            </CardTitle>
+            <CardDescription>Selected Carrier</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{mockData.selectedCarrier}</div>
+            <div className="text-2xl font-bold text-gray-900">{selectedCarrier || 'Not selected'}</div>
             <p className="text-xs text-gray-500 mt-1">AI recommended</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Estimated Cost
-            </CardTitle>
+            <CardDescription>Shipping Cost</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              €{mockData.carriers.find(c => c.name === mockData.selectedCarrier)?.price.toFixed(2)}
+              €{carriers.find(c => c.name === selectedCarrier)?.price?.toFixed(2) || '0.00'}
             </div>
             <p className="text-xs text-gray-500 mt-1">Best value</p>
           </CardContent>
@@ -290,13 +350,11 @@ export default function CarrierSelectionView() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Delivery Time
-            </CardTitle>
+            <CardDescription>Delivery Time</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {mockData.carriers.find(c => c.name === mockData.selectedCarrier)?.deliveryDays} days
+              {carriers.find(c => c.name === selectedCarrier)?.deliveryDays || 'N/A'} days
             </div>
             <p className="text-xs text-gray-500 mt-1">Estimated</p>
           </CardContent>
@@ -304,94 +362,73 @@ export default function CarrierSelectionView() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              On-Time Rate
-            </CardTitle>
+            <CardDescription>On-Time Rate</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {mockData.carriers.find(c => c.name === mockData.selectedCarrier)?.onTimeRate}%
+              {carriers.find(c => c.name === selectedCarrier)?.onTimeRate || 0}%
             </div>
             <p className="text-xs text-gray-500 mt-1">Historical</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Delivery Route Map */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="w-5 h-5" />
-            Delivery Route Visualization
-          </CardTitle>
-          <CardDescription>
-            Interactive map showing origin, destination, and selected carrier
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DeliveryMap 
-            origin={mockData.origin}
-            destination={mockData.destination}
-            selectedCarrier={mockData.selectedCarrier}
-          />
-        </CardContent>
-      </Card>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Delivery Route Map */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Delivery Route
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DeliveryMap 
+              origin={origin}
+              destination={destination}
+              selectedCarrier={selectedCarrier}
+            />
+          </CardContent>
+        </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Carrier Comparison */}
-        <div className="lg:col-span-2">
+        <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Carrier Comparison</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Carrier Comparison
+              </CardTitle>
               <CardDescription>
-                All available carriers ranked by AI decision score
+                {carriers.length} carriers analyzed
               </CardDescription>
             </CardHeader>
             <CardContent>
               <CarrierComparison 
-                carriers={mockData.carriers}
-                selectedCarrier={mockData.selectedCarrier}
+                carriers={carriers}
+                selectedCarrier={selectedCarrier}
               />
             </CardContent>
           </Card>
         </div>
 
         {/* AI Decision Analysis */}
-        <div>
-          <AIDecisionCard decision={mockData.decision} />
+        <div className="lg:col-span-2">
+          <AIDecisionCard decision={decision} />
         </div>
       </div>
 
-      {/* Package Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Package Details</CardTitle>
-          <CardDescription>
-            Factors considered in carrier selection
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Weight</p>
-              <p className="text-lg font-semibold text-gray-900">2.5 kg</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Dimensions</p>
-              <p className="text-lg font-semibold text-gray-900">30×20×15 cm</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Fragile</p>
-              <p className="text-lg font-semibold text-gray-900">No</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Dangerous Goods</p>
-              <p className="text-lg font-semibold text-gray-900">No</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Database Status Footer */}
+      <div className="text-xs text-gray-500 text-center py-2 border-t">
+        <div className="flex items-center justify-center gap-2">
+          <CheckCircle2 className="w-3 h-3 text-green-600" />
+          <span>Connected to Transport Agent (Port 8006) - Real-time database data</span>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default CarrierSelectionView;
 
