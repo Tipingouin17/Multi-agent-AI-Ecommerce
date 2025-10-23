@@ -538,8 +538,12 @@ class ProductAgent(BaseAgentV2):
         """Cleanup resources"""
         if hasattr(self, 'engine') and self.engine:
             await self.engine.dispose()
-        await super().cleanup()
-        logger.info("Product Agent cleaned up successfully")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process product-specific business logic"""
+        # This method is required by BaseAgentV2 but not actively used
+        # Product operations are handled via REST API endpoints
+        return {"status": "success", "message": "Product agent uses REST API for operations"}
 
 
 async def run_agent():

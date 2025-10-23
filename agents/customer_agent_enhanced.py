@@ -581,8 +581,7 @@ async def startup_event():
     logger.info("Customer agent starting up...")
     try:
         await customer_agent.initialize_db()
-        # BaseAgent's __init__ starts the Kafka consumer automatically
-        asyncio.create_task(customer_agent.start_kafka_consumer())
+        # Kafka consumer is started automatically by BaseAgent if configured
         logger.info("Customer agent startup complete.")
     except Exception as e:
         logger.error("Customer agent startup failed", error=str(e))

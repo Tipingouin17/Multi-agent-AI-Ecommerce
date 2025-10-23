@@ -50,7 +50,7 @@ INFO_COLOR = "\033[96m"  # Cyan
 # PRODUCTION Agent configuration - All 15 critical agents
 AGENTS = [
     # Core Business Agents
-    {"name": "order_agent_production", "display": "Order", "file": "agents/order_agent_production.py", "port": 8001},
+    {"name": "order_agent_production_v2", "display": "Order", "file": "agents/order_agent_production_v2.py", "port": 8001},
     {"name": "inventory_agent", "display": "Inventory", "file": "agents/inventory_agent.py", "port": 8002},
     {"name": "product_agent_production", "display": "Product", "file": "agents/product_agent_production.py", "port": 8003},
     {"name": "payment_agent_enhanced", "display": "Payment", "file": "agents/payment_agent_enhanced.py", "port": 8004},
@@ -58,16 +58,16 @@ AGENTS = [
     # Logistics & Fulfillment
     {"name": "warehouse_agent_production", "display": "Warehouse", "file": "agents/warehouse_agent_production.py", "port": 8005},
     {"name": "transport_agent_production", "display": "Transport", "file": "agents/transport_agent_production.py", "port": 8006},
-    {"name": "marketplace_connector_agent_production", "display": "Marketplace", "file": "agents/marketplace_connector_agent_production.py", "port": 8007},
+    {"name": "marketplace_connector_agent", "display": "Marketplace", "file": "agents/marketplace_connector_agent.py", "port": 8007},
     
     # Customer Service
     {"name": "customer_agent_enhanced", "display": "Customer", "file": "agents/customer_agent_enhanced.py", "port": 8008},
-    {"name": "after_sales_agent", "display": "AfterSales", "file": "agents/after_sales_agent.py", "port": 8009},
+    {"name": "after_sales_agent_production", "display": "AfterSales", "file": "agents/after_sales_agent_production.py", "port": 8009},
     {"name": "document_generation_agent", "display": "Documents", "file": "agents/document_generation_agent.py", "port": 8013},
     
     # Quality & Compliance
-    {"name": "quality_control_agent", "display": "Quality", "file": "agents/quality_control_agent.py", "port": 8010},
-    {"name": "backoffice_agent", "display": "Backoffice", "file": "agents/backoffice_agent.py", "port": 8011},
+    {"name": "quality_control_agent_production", "display": "Quality", "file": "agents/quality_control_agent_production.py", "port": 8010},
+    {"name": "backoffice_agent_production", "display": "Backoffice", "file": "agents/backoffice_agent_production.py", "port": 8011},
     {"name": "knowledge_management_agent", "display": "Knowledge", "file": "agents/knowledge_management_agent.py", "port": 8020},
     
     # Security & Monitoring

@@ -437,21 +437,26 @@ function Initialize-KafkaTopics {
     foreach ($topic in $topics) {
         Write-Host "  Creating topic: $topic..." -NoNewline
         
+        # Use kafka:9092 for internal Docker network communication
         $result = docker exec multi-agent-kafka kafka-topics --create `
-            --bootstrap-server localhost:9092 `
+            --bootstrap-server kafka:9092 `
             --topic $topic `
             --partitions 3 `
             --replication-factor 1 `
             --if-not-exists 2>&1
         
-        if ($result -match "Created topic") {
+        $resultStr = $result | Out-String
+        
+        if ($resultStr -match "Created topic") {
             $createCount++
             Write-Host " Created" -ForegroundColor Green
-        } elseif ($result -match "already exists") {
+        } elseif ($resultStr -match "already exists") {
             $skipCount++
             Write-Host " Already exists" -ForegroundColor Yellow
         } else {
             Write-Host " Failed" -ForegroundColor Red
+            # Log the actual error for debugging
+            Write-Log "Kafka topic creation error for $topic: $resultStr" "WARNING"
         }
     }
     
