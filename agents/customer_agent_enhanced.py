@@ -585,8 +585,8 @@ async def startup_event():
         logger.info("Customer agent startup complete.")
     except Exception as e:
         logger.error("Customer agent startup failed", error=str(e))
-        # Depending on criticality, you might want to re-raise or exit
-        sys.exit(1)
+        # Log error but don't exit - let the agent run in degraded mode
+        # The health endpoint will report the issue
 
 @app.on_event("shutdown")
 async def shutdown_event():

@@ -620,7 +620,7 @@ class QualityControlAgent(BaseAgentV2):
         except Exception as e:
             logger.error("Error in agent loop", error=str(e))
         finally:
-            await self.shutdown()
+            await self.cleanup()
     
     async def cleanup(self):
         """Cleanup agent resources"""
