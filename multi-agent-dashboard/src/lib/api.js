@@ -250,6 +250,58 @@ class ApiService {
     }
   }
 
+  // ==================== MERCHANT DASHBOARD APIs ====================
+  
+  async getMerchantKpis(timeRange = '7d') {
+    try {
+      const response = await clients.order.get('/analytics/kpis', { params: { timeRange } })
+      return response.data
+    } catch (error) {
+      console.warn('Merchant KPIs unavailable, using mock data')
+      return this.getMockMerchantKpis()
+    }
+  }
+  
+  async getRecentOrders(limit = 10) {
+    try {
+      const response = await clients.order.get('/orders/recent', { params: { limit } })
+      return response.data
+    } catch (error) {
+      console.warn('Recent orders unavailable, using mock data')
+      return this.getMockRecentOrders()
+    }
+  }
+  
+  async getInventoryAlerts() {
+    try {
+      const response = await clients.inventory.get('/alerts')
+      return response.data
+    } catch (error) {
+      console.warn('Inventory alerts unavailable, using mock data')
+      return this.getMockInventoryAlerts()
+    }
+  }
+  
+  async getMarketplacePerformance(timeRange = '7d') {
+    try {
+      const response = await clients.marketplace.get('/performance', { params: { timeRange } })
+      return response.data
+    } catch (error) {
+      console.warn('Marketplace performance unavailable, using mock data')
+      return this.getMockMarketplacePerformance()
+    }
+  }
+  
+  async getProductCategories() {
+    try {
+      const response = await clients.product.get('/categories')
+      return response.data
+    } catch (error) {
+      console.warn('Product categories unavailable, using mock data')
+      return this.getMockProductCategories()
+    }
+  }
+
   // ==================== MOCK DATA METHODS ====================
   // These provide fallback data when agents are unavailable
 
@@ -422,3 +474,115 @@ class ApiService {
 // Export singleton instance
 export const apiService = new ApiService()
 export default apiService
+
+
+  getMockMerchantKpis() {
+    return {
+      totalSales: 125847.50,
+      totalOrders: 1247,
+      averageOrderValue: 100.92,
+      conversionRate: 3.45,
+      salesGrowth: 12.5,
+      ordersGrowth: 8.3
+    }
+  }
+  
+  getMockRecentOrders() {
+    return [
+      {
+        id: 'ORD-2024-1247',
+        customer: 'John Doe',
+        total: 299.99,
+        status: 'processing',
+        created_at: new Date(Date.now() - 1800000).toISOString()
+      },
+      {
+        id: 'ORD-2024-1246',
+        customer: 'Jane Smith',
+        total: 149.50,
+        status: 'shipped',
+        created_at: new Date(Date.now() - 3600000).toISOString()
+      },
+      {
+        id: 'ORD-2024-1245',
+        customer: 'Bob Johnson',
+        total: 89.99,
+        status: 'delivered',
+        created_at: new Date(Date.now() - 7200000).toISOString()
+      }
+    ]
+  }
+  
+  getMockInventoryAlerts() {
+    return [
+      {
+        id: 'INV-001',
+        product: 'Wireless Headphones',
+        sku: 'SKU-001',
+        current_stock: 15,
+        reorder_point: 50,
+        severity: 'high',
+        message: 'Stock below reorder point'
+      },
+      {
+        id: 'INV-002',
+        product: 'Smart Watch',
+        sku: 'SKU-002',
+        current_stock: 8,
+        reorder_point: 20,
+        severity: 'critical',
+        message: 'Stock critically low'
+      }
+    ]
+  }
+  
+  getMockMarketplacePerformance() {
+    return [
+      {
+        marketplace: 'Amazon',
+        sales: 45230.50,
+        orders: 523,
+        growth: 15.2
+      },
+      {
+        marketplace: 'eBay',
+        sales: 32450.75,
+        orders: 412,
+        growth: 8.7
+      },
+      {
+        marketplace: 'Direct',
+        sales: 48166.25,
+        orders: 312,
+        growth: 22.1
+      }
+    ]
+  }
+  
+  getMockProductCategories() {
+    return [
+      { id: 'electronics', name: 'Electronics', count: 245 },
+      { id: 'clothing', name: 'Clothing', count: 189 },
+      { id: 'home', name: 'Home & Garden', count: 156 },
+      { id: 'sports', name: 'Sports & Outdoors', count: 98 }
+    ]
+  }
+
+  getMockSalesAnalytics() {
+    return {
+      daily_sales: [
+        { date: '2024-10-16', sales: 12450.50, orders: 124 },
+        { date: '2024-10-17', sales: 15230.75, orders: 156 },
+        { date: '2024-10-18', sales: 13890.25, orders: 142 },
+        { date: '2024-10-19', sales: 16540.00, orders: 168 },
+        { date: '2024-10-20', sales: 14230.50, orders: 145 },
+        { date: '2024-10-21', sales: 17890.75, orders: 182 },
+        { date: '2024-10-22', sales: 15615.75, orders: 159 }
+      ],
+      total_sales: 105847.50,
+      total_orders: 1076,
+      average_order_value: 98.37
+    }
+  }
+
+
