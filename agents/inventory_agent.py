@@ -284,28 +284,58 @@ class InventoryAgent(BaseAgentV2):
         self.register_handler(MessageType.WAREHOUSE_SELECTED, self._handle_warehouse_selected)
     
     async def initialize(self):
-        await super().initialize()
-
-        """Initialize the Inventory Agent.
+        """Initialize the Inventory Agent with robust error handling.
 
         This includes initializing database repositories, creating database tables,
         and starting background tasks for monitoring and cleanup.
         """
+        await super().initialize()
+        
         self.logger.info("Initializing Inventory Agent")
         
-        # Initialize database repositories
-        try:
-            db_manager = get_database_manager()
-        except RuntimeError:
-            # Create our own database manager
-            from shared.models import DatabaseConfig
-            db_config = DatabaseConfig()
-            db_manager = DatabaseManager(db_config)
-            await db_manager.initialize_async()
-        
-        await db_manager.create_tables()
-        self.repository = InventoryRepository(db_manager)
-        self.movement_repository = StockMovementRepository(db_manager)
+        # Initialize database repositories with retry logic
+        max_retries = 5
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Try to get global database manager
+                try:
+                    from shared.database_manager import get_database_manager
+                    db_manager = get_database_manager()
+                    self.logger.info("Using global database manager")
+                except (RuntimeError, ImportError):
+                    # Create enhanced database manager with retry logic
+                    from shared.models import DatabaseConfig
+                    from shared.database_manager import EnhancedDatabaseManager
+                    db_config = DatabaseConfig()
+                    db_manager = EnhancedDatabaseManager(db_config)
+                    await db_manager.initialize(max_retries=5)
+                    self.logger.info("Created new enhanced database manager")
+                
+                # Create tables (with retry built into manager)
+                await db_manager.create_tables()
+                
+                # Initialize repositories
+                self.repository = InventoryRepository(db_manager)
+                self.movement_repository = StockMovementRepository(db_manager)
+                
+                self.logger.info("Database initialization successful", attempt=attempt)
+                break
+                
+            except Exception as e:
+                self.logger.warning(
+                    "Database initialization failed",
+                    attempt=attempt,
+                    max_retries=max_retries,
+                    error=str(e)
+                )
+                
+                if attempt < max_retries:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    self.logger.info(f"Retrying in {wait_time} seconds...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    self.logger.error("Failed to initialize database after all retries")
+                    raise
         
         # Start background tasks
         asyncio.create_task(self._monitor_low_stock())
