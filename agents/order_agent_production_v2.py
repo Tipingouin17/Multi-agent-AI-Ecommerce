@@ -71,10 +71,7 @@ class OrderAgent(BaseAgent):
         Initializes the OrderAgent, setting up agent ID, type, database connection,
         FastAPI application, and routes.
         """
-        super().__init__(
-            agent_id="order_agent",
-            agent_type="order_management"
-        )
+        super().__init__(agent_id="order_agent")
         
         logger.info("Order Agent initialized")
         
