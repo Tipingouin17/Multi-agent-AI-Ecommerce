@@ -557,6 +557,199 @@ class InventoryAgent(BaseAgentV2):
             """
             return {"status": "ok", "agent_id": self.agent_id}
 
+        # =====================================================
+        # ANALYTICS ENDPOINTS
+        # =====================================================
+
+        @self.app.get("/analytics/low-stock", response_model=APIResponse)
+        async def get_low_stock_alerts():
+            """Get products that are below reorder point.
+            
+            Returns:
+                APIResponse: List of products with low stock levels.
+            """
+            try:
+                async with self.db_manager.get_session() as session:
+                    from sqlalchemy import select
+                    from shared.models import InventoryDB
+                    
+                    # Query products where quantity <= reorder_point
+                    result = await session.execute(
+                        select(InventoryDB)
+                        .where(InventoryDB.quantity <= InventoryDB.reorder_point)
+                        .order_by(InventoryDB.quantity.asc())
+                    )
+                    low_stock_items = result.scalars().all()
+                    
+                    alerts = [
+                        {
+                            "product_id": str(item.product_id),
+                            "warehouse_id": str(item.warehouse_id),
+                            "current_quantity": item.quantity,
+                            "reorder_point": item.reorder_point,
+                            "shortage": item.reorder_point - item.quantity,
+                            "last_updated": item.last_updated.isoformat() if item.last_updated else None
+                        }
+                        for item in low_stock_items
+                    ]
+                    
+                    return APIResponse(
+                        success=True,
+                        message=f"Found {len(alerts)} low stock alerts",
+                        data={"alerts": alerts, "count": len(alerts)}
+                    )
+            except Exception as e:
+                self.logger.error("Failed to get low stock alerts", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/analytics/inventory-value", response_model=APIResponse)
+        async def get_inventory_value():
+            """Calculate total inventory value across all warehouses.
+            
+            Returns:
+                APIResponse: Inventory value analytics by warehouse and product.
+            """
+            try:
+                async with self.db_manager.get_session() as session:
+                    from sqlalchemy import select, func
+                    from shared.models import InventoryDB
+                    
+                    # Total units across all warehouses
+                    total_units_result = await session.execute(
+                        select(func.sum(InventoryDB.quantity))
+                    )
+                    total_units = total_units_result.scalar() or 0
+                    
+                    # Total reserved units
+                    reserved_units_result = await session.execute(
+                        select(func.sum(InventoryDB.reserved_quantity))
+                    )
+                    reserved_units = reserved_units_result.scalar() or 0
+                    
+                    # Available units
+                    available_units = total_units - reserved_units
+                    
+                    # Units by warehouse
+                    warehouse_result = await session.execute(
+                        select(
+                            InventoryDB.warehouse_id,
+                            func.sum(InventoryDB.quantity),
+                            func.sum(InventoryDB.reserved_quantity),
+                            func.count(InventoryDB.product_id)
+                        )
+                        .group_by(InventoryDB.warehouse_id)
+                    )
+                    warehouses = [
+                        {
+                            "warehouse_id": str(row[0]),
+                            "total_units": row[1] or 0,
+                            "reserved_units": row[2] or 0,
+                            "available_units": (row[1] or 0) - (row[2] or 0),
+                            "unique_products": row[3]
+                        }
+                        for row in warehouse_result.all()
+                    ]
+                    
+                    return APIResponse(
+                        success=True,
+                        message="Inventory value calculated successfully",
+                        data={
+                            "total_units": total_units,
+                            "reserved_units": reserved_units,
+                            "available_units": available_units,
+                            "warehouses": warehouses,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                    )
+            except Exception as e:
+                self.logger.error("Failed to calculate inventory value", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/analytics/stock-movements", response_model=APIResponse)
+        async def get_stock_movement_analytics(
+            days: int = 30,
+            movement_type: Optional[str] = None
+        ):
+            """Get stock movement analytics for the specified period.
+            
+            Args:
+                days: Number of days to analyze (default 30)
+                movement_type: Filter by movement type (inbound, outbound, transfer, adjustment)
+            
+            Returns:
+                APIResponse: Stock movement analytics.
+            """
+            try:
+                from_date = datetime.utcnow() - timedelta(days=days)
+                
+                async with self.db_manager.get_session() as session:
+                    from sqlalchemy import select, func
+                    
+                    # Build base query
+                    query = select(StockMovementDB).where(
+                        StockMovementDB.created_at >= from_date
+                    )
+                    
+                    if movement_type:
+                        query = query.where(StockMovementDB.movement_type == movement_type)
+                    
+                    # Total movements
+                    total_result = await session.execute(
+                        select(func.count(StockMovementDB.movement_id))
+                        .where(StockMovementDB.created_at >= from_date)
+                    )
+                    total_movements = total_result.scalar() or 0
+                    
+                    # Movements by type
+                    type_result = await session.execute(
+                        select(
+                            StockMovementDB.movement_type,
+                            func.count(StockMovementDB.movement_id),
+                            func.sum(StockMovementDB.quantity_change)
+                        )
+                        .where(StockMovementDB.created_at >= from_date)
+                        .group_by(StockMovementDB.movement_type)
+                    )
+                    movements_by_type = {
+                        row[0]: {
+                            "count": row[1],
+                            "total_quantity": row[2] or 0
+                        }
+                        for row in type_result.all()
+                    }
+                    
+                    # Recent movements
+                    recent_result = await session.execute(
+                        query.order_by(StockMovementDB.created_at.desc()).limit(10)
+                    )
+                    recent_movements = [
+                        {
+                            "movement_id": str(item.movement_id),
+                            "product_id": str(item.product_id),
+                            "warehouse_id": str(item.warehouse_id),
+                            "movement_type": item.movement_type,
+                            "quantity_change": item.quantity_change,
+                            "created_at": item.created_at.isoformat()
+                        }
+                        for item in recent_result.scalars().all()
+                    ]
+                    
+                    return APIResponse(
+                        success=True,
+                        message="Stock movement analytics retrieved successfully",
+                        data={
+                            "period_days": days,
+                            "from_date": from_date.isoformat(),
+                            "total_movements": total_movements,
+                            "movements_by_type": movements_by_type,
+                            "recent_movements": recent_movements,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                    )
+            except Exception as e:
+                self.logger.error("Failed to get stock movement analytics", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
         @self.app.get("/", response_model=APIResponse)
         async def root():
             """Root endpoint providing basic agent information.
