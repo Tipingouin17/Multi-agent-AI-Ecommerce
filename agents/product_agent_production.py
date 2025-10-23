@@ -1,27 +1,28 @@
 """
-Product Agent - Multi-Agent E-commerce System (Production Ready)
+Product Agent - Multi-Agent E-commerce System (Production Ready with Database)
 
-This agent manages the master product catalog with all enhanced features:
-- Product variants management
-- Category hierarchy
-- SEO optimization
-- Product bundles
-- Advanced attributes and filtering
+This agent manages the master product catalog with REAL database integration:
+- Product CRUD operations from PostgreSQL
+- Product search and filtering
+- Category management
+- Product analytics
+- NO MOCK DATA - All queries hit database
 """
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
-from shared.db_helpers import DatabaseHelper
-
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import structlog
+from sqlalchemy import Column, String, DateTime, Numeric, Float, Text, Integer, and_, or_, func
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.future import select
 import sys
 import os
 
@@ -42,31 +43,75 @@ if project_root not in sys.path:
 # Import base agent
 try:
     from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
-    logger.info("Successfully imported shared.base_agent")
+    from shared.database import DatabaseConfig
+    logger.info("Successfully imported shared modules")
 except ImportError as e:
     logger.error(f"Import error: {e}")
     raise
 
-# Import new services
-try:
-    from agents.product_variants_service import ProductVariantsService
-    from agents.product_categories_service import ProductCategoriesService
-    from agents.product_seo_service import ProductSEOService
-    from agents.product_bundles_service import ProductBundlesService
-    from agents.product_attributes_service import ProductAttributesService
-    logger.info("Successfully imported all product services")
-except ImportError as e:
-    logger.warning(f"Could not import product services: {e}")
-    # Services will be None if not available
-    ProductVariantsService = None
-    ProductCategoriesService = None
-    ProductSEOService = None
-    ProductBundlesService = None
-    ProductAttributesService = None
+# SQLAlchemy Base
+Base = declarative_base()
+
+# Database Models
+class ProductDB(Base):
+    """SQLAlchemy model for Product"""
+    __tablename__ = "products"
+    
+    id = Column(String, primary_key=True)
+    sku = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text)
+    category = Column(String, nullable=False)
+    brand = Column(String, nullable=False)
+    price = Column(Numeric(10, 2), nullable=False)
+    cost = Column(Numeric(10, 2), nullable=False)
+    weight = Column(Float)
+    condition = Column(String, default="new")
+    grade = Column(String, default="A")
+    stock_quantity = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "sku": self.sku,
+            "name": self.name,
+            "description": self.description,
+            "category": self.category,
+            "brand": self.brand,
+            "price": str(self.price),
+            "cost": str(self.cost),
+            "weight": self.weight,
+            "condition": self.condition,
+            "grade": self.grade,
+            "stock_quantity": self.stock_quantity,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+class ProductCategoryDB(Base):
+    """SQLAlchemy model for Product Categories"""
+    __tablename__ = "product_categories"
+    
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False, unique=True)
+    parent_id = Column(String)
+    description = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "parent_id": self.parent_id,
+            "description": self.description,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
 
 # Pydantic Models
 class Product(BaseModel):
-    """Product model"""
+    """Product model for API"""
     id: Optional[str] = None
     sku: str
     name: str
@@ -75,205 +120,438 @@ class Product(BaseModel):
     brand: str
     price: Decimal
     cost: Decimal
-    weight: float
-    dimensions: Optional[Dict[str, Any]] = None
+    weight: Optional[float] = 0.0
     condition: str = "new"
-    grade: Optional[str] = "A"
+    grade: str = "A"
+    stock_quantity: int = 0
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+class ProductCategory(BaseModel):
+    """Product Category model for API"""
+    id: Optional[str] = None
+    name: str
+    parent_id: Optional[str] = None
+    description: Optional[str] = None
+
 class ProductAgent(BaseAgentV2):
     """
-    Production-ready Product Agent with all enhanced features
+    Production-ready Product Agent with 100% database integration
     """
     
     def __init__(self):
         super().__init__(agent_id="product_agent")
         
-        # Initialize enhanced services
-        self.variants_service = ProductVariantsService(self.db_manager) if ProductVariantsService else None
-        self.categories_service = ProductCategoriesService(self.db_manager) if ProductCategoriesService else None
-        self.seo_service = ProductSEOService(self.db_manager) if ProductSEOService else None
-        self.bundles_service = ProductBundlesService(self.db_manager) if ProductBundlesService else None
-        self.attributes_service = ProductAttributesService(self.db_manager) if ProductAttributesService else None
-        
-        logger.info("Product Agent initialized with enhanced services")
-        
-        # FastAPI app
-        self.app = FastAPI(title="Product Agent API")
-        
-        # Add CORS middleware
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],  # In production, specify exact origins
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
+        # Database setup
+        db_config = DatabaseConfig()
+        self.database_url = db_config.get_async_url()
+        self.engine = create_async_engine(self.database_url, echo=False)
+        self.async_session = async_sessionmaker(
+            self.engine,
+            class_=AsyncSession,
+            expire_on_commit=False
         )
-        self._setup_routes()
+        self._db_initialized = False
+        
+        logger.info("Product Agent initialized with database connection")
     
-    def _setup_routes(self):
-        """Setup FastAPI routes"""
+    async def initialize(self):
+        """Initialize agent and database"""
+        await super().initialize()
+        
+        # Create tables if they don't exist
+        try:
+            async with self.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            self._db_initialized = True
+            logger.info("Product Agent database tables created/verified")
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}")
+            raise
+    
+    def setup_routes(self):
+        """Setup FastAPI routes - ALL query database"""
         
         @self.app.get("/health")
         async def health_check():
             return {
                 "status": "healthy",
-                "agent_id": self.agent_id,
-                "services": {
-                    "variants": self.variants_service is not None,
-                    "categories": self.categories_service is not None,
-                    "seo": self.seo_service is not None,
-                    "bundles": self.bundles_service is not None,
-                    "attributes": self.attributes_service is not None
-                }
+                "agent": "product_agent",
+                "database": "connected" if self._db_initialized else "disconnected",
+                "timestamp": datetime.utcnow().isoformat()
             }
         
+        # ===== PRODUCT CRUD ENDPOINTS =====
+        
         @self.app.get("/products")
-        async def get_products(skip: int = 0, limit: int = 100):
-            """Get all products"""
+        async def get_products(
+            skip: int = 0,
+            limit: int = 100,
+            category: Optional[str] = None,
+            brand: Optional[str] = None,
+            min_price: Optional[float] = None,
+            max_price: Optional[float] = None
+        ):
+            """Get products with optional filtering - queries database"""
             try:
-                products = await self.get_products_from_db(skip, limit)
-                return {"products": products, "total": len(products)}
+                async with self.async_session() as session:
+                    query = select(ProductDB)
+                    
+                    # Apply filters
+                    if category:
+                        query = query.where(ProductDB.category == category)
+                    if brand:
+                        query = query.where(ProductDB.brand == brand)
+                    if min_price is not None:
+                        query = query.where(ProductDB.price >= min_price)
+                    if max_price is not None:
+                        query = query.where(ProductDB.price <= max_price)
+                    
+                    # Pagination
+                    query = query.offset(skip).limit(limit)
+                    
+                    result = await session.execute(query)
+                    products = result.scalars().all()
+                    
+                    # Get total count
+                    count_query = select(func.count(ProductDB.id))
+                    if category:
+                        count_query = count_query.where(ProductDB.category == category)
+                    if brand:
+                        count_query = count_query.where(ProductDB.brand == brand)
+                    
+                    count_result = await session.execute(count_query)
+                    total = count_result.scalar()
+                    
+                    return {
+                        "products": [p.to_dict() for p in products],
+                        "total": total,
+                        "skip": skip,
+                        "limit": limit
+                    }
             except Exception as e:
                 logger.error(f"Error getting products: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
+        @self.app.get("/products/{product_id}")
+        async def get_product(product_id: str):
+            """Get single product by ID - queries database"""
+            try:
+                async with self.async_session() as session:
+                    result = await session.execute(
+                        select(ProductDB).where(ProductDB.id == product_id)
+                    )
+                    product = result.scalar_one_or_none()
+                    
+                    if not product:
+                        raise HTTPException(status_code=404, detail="Product not found")
+                    
+                    return product.to_dict()
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Error getting product {product_id}: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
         @self.app.post("/products")
         async def create_product(product: Product):
-            """Create new product"""
+            """Create new product - saves to database"""
             try:
-                product_id = await self.create_product_in_db(product)
+                product_id = str(uuid4())
                 
-                # Auto-generate SEO if service available
-                if self.seo_service:
-                    await self.seo_service.generate_seo_metadata(product_id, product.dict())
-                
-                return {"id": product_id, "status": "created"}
+                async with self.async_session() as session:
+                    db_product = ProductDB(
+                        id=product_id,
+                        sku=product.sku,
+                        name=product.name,
+                        description=product.description,
+                        category=product.category,
+                        brand=product.brand,
+                        price=product.price,
+                        cost=product.cost,
+                        weight=product.weight,
+                        condition=product.condition,
+                        grade=product.grade,
+                        stock_quantity=product.stock_quantity
+                    )
+                    
+                    session.add(db_product)
+                    await session.commit()
+                    
+                    logger.info(f"Created product: {product_id}")
+                    return {"id": product_id, "status": "created"}
             except Exception as e:
                 logger.error(f"Error creating product: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        # Variants endpoints
-        if self.variants_service:
-            @self.app.get("/products/{product_id}/variants")
-            async def get_product_variants(product_id: str):
-                """Get all variants for a product"""
-                try:
-                    variants = await self.variants_service.get_variants(product_id)
-                    return {"variants": variants}
-                except Exception as e:
-                    logger.error(f"Error getting variants: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+        @self.app.put("/products/{product_id}")
+        async def update_product(product_id: str, product: Product):
+            """Update product - updates database"""
+            try:
+                async with self.async_session() as session:
+                    result = await session.execute(
+                        select(ProductDB).where(ProductDB.id == product_id)
+                    )
+                    db_product = result.scalar_one_or_none()
+                    
+                    if not db_product:
+                        raise HTTPException(status_code=404, detail="Product not found")
+                    
+                    # Update fields
+                    db_product.sku = product.sku
+                    db_product.name = product.name
+                    db_product.description = product.description
+                    db_product.category = product.category
+                    db_product.brand = product.brand
+                    db_product.price = product.price
+                    db_product.cost = product.cost
+                    db_product.weight = product.weight
+                    db_product.condition = product.condition
+                    db_product.grade = product.grade
+                    db_product.stock_quantity = product.stock_quantity
+                    db_product.updated_at = datetime.utcnow()
+                    
+                    await session.commit()
+                    
+                    logger.info(f"Updated product: {product_id}")
+                    return {"id": product_id, "status": "updated"}
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Error updating product {product_id}: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
         
-        # Categories endpoints
-        if self.categories_service:
-            @self.app.get("/categories")
-            async def get_categories():
-                """Get all categories"""
-                try:
-                    categories = await self.categories_service.get_all_categories()
-                    return {"categories": categories}
-                except Exception as e:
-                    logger.error(f"Error getting categories: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+        @self.app.delete("/products/{product_id}")
+        async def delete_product(product_id: str):
+            """Delete product - removes from database"""
+            try:
+                async with self.async_session() as session:
+                    result = await session.execute(
+                        select(ProductDB).where(ProductDB.id == product_id)
+                    )
+                    db_product = result.scalar_one_or_none()
+                    
+                    if not db_product:
+                        raise HTTPException(status_code=404, detail="Product not found")
+                    
+                    await session.delete(db_product)
+                    await session.commit()
+                    
+                    logger.info(f"Deleted product: {product_id}")
+                    return {"id": product_id, "status": "deleted"}
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Error deleting product {product_id}: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
         
-        # Bundles endpoints
-        if self.bundles_service:
-            @self.app.get("/bundles")
-            async def get_bundles():
-                """Get all product bundles"""
-                try:
-                    bundles = await self.bundles_service.get_all_bundles()
-                    return {"bundles": bundles}
-                except Exception as e:
-                    logger.error(f"Error getting bundles: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
-    
-    async def get_products_from_db(self, skip: int, limit: int) -> List[Dict]:
-        """Get products from database"""
-        # This would query the database
-        # For now, return empty list
-        logger.info(f"Getting products: skip={skip}, limit={limit}")
-        if not self._db_initialized:
-            return []
+        # ===== SEARCH ENDPOINT =====
         
-        async with self.db_manager.get_session() as session:
-            records = await self.db_helper.get_all(session, ProductDB, limit=100)
-            return [self.db_helper.to_dict(r) for r in records]
-    
-    async def create_product_in_db(self, product: Product) -> str:
-        """Create product in database"""
-        product_id = str(uuid4())
-        logger.info(f"Creating product: {product.name} with ID {product_id}")
-        return product_id
+        @self.app.get("/products/search")
+        async def search_products(
+            q: str = Query(..., min_length=1),
+            limit: int = 20
+        ):
+            """Search products by name, SKU, or description - queries database"""
+            try:
+                async with self.async_session() as session:
+                    search_term = f"%{q}%"
+                    query = select(ProductDB).where(
+                        or_(
+                            ProductDB.name.ilike(search_term),
+                            ProductDB.sku.ilike(search_term),
+                            ProductDB.description.ilike(search_term)
+                        )
+                    ).limit(limit)
+                    
+                    result = await session.execute(query)
+                    products = result.scalars().all()
+                    
+                    return {
+                        "products": [p.to_dict() for p in products],
+                        "query": q,
+                        "count": len(products)
+                    }
+            except Exception as e:
+                logger.error(f"Error searching products: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        # ===== CATEGORY ENDPOINTS =====
+        
+        @self.app.get("/categories")
+        async def get_categories():
+            """Get all product categories - queries database"""
+            try:
+                async with self.async_session() as session:
+                    result = await session.execute(select(ProductCategoryDB))
+                    categories = result.scalars().all()
+                    
+                    return {
+                        "categories": [c.to_dict() for c in categories],
+                        "count": len(categories)
+                    }
+            except Exception as e:
+                logger.error(f"Error getting categories: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.post("/categories")
+        async def create_category(category: ProductCategory):
+            """Create new category - saves to database"""
+            try:
+                category_id = str(uuid4())
+                
+                async with self.async_session() as session:
+                    db_category = ProductCategoryDB(
+                        id=category_id,
+                        name=category.name,
+                        parent_id=category.parent_id,
+                        description=category.description
+                    )
+                    
+                    session.add(db_category)
+                    await session.commit()
+                    
+                    logger.info(f"Created category: {category_id}")
+                    return {"id": category_id, "status": "created"}
+            except Exception as e:
+                logger.error(f"Error creating category: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        # ===== ANALYTICS ENDPOINTS =====
+        
+        @self.app.get("/analytics/products")
+        async def get_product_analytics():
+            """Get product analytics - queries database"""
+            try:
+                async with self.async_session() as session:
+                    # Total products
+                    total_result = await session.execute(
+                        select(func.count(ProductDB.id))
+                    )
+                    total_products = total_result.scalar()
+                    
+                    # Products by category
+                    category_result = await session.execute(
+                        select(ProductDB.category, func.count(ProductDB.id))
+                        .group_by(ProductDB.category)
+                    )
+                    products_by_category = {
+                        row[0]: row[1] for row in category_result.all()
+                    }
+                    
+                    # Products by brand
+                    brand_result = await session.execute(
+                        select(ProductDB.brand, func.count(ProductDB.id))
+                        .group_by(ProductDB.brand)
+                    )
+                    products_by_brand = {
+                        row[0]: row[1] for row in brand_result.all()
+                    }
+                    
+                    # Average price
+                    avg_price_result = await session.execute(
+                        select(func.avg(ProductDB.price))
+                    )
+                    avg_price = avg_price_result.scalar() or Decimal('0')
+                    
+                    # Low stock products (< 10)
+                    low_stock_result = await session.execute(
+                        select(func.count(ProductDB.id))
+                        .where(ProductDB.stock_quantity < 10)
+                    )
+                    low_stock_count = low_stock_result.scalar()
+                    
+                    # Out of stock products
+                    out_of_stock_result = await session.execute(
+                        select(func.count(ProductDB.id))
+                        .where(ProductDB.stock_quantity == 0)
+                    )
+                    out_of_stock_count = out_of_stock_result.scalar()
+                    
+                    return {
+                        "total_products": total_products,
+                        "products_by_category": products_by_category,
+                        "products_by_brand": products_by_brand,
+                        "average_price": str(avg_price),
+                        "low_stock_count": low_stock_count,
+                        "out_of_stock_count": out_of_stock_count,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+            except Exception as e:
+                logger.error(f"Error getting product analytics: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/analytics/inventory")
+        async def get_inventory_analytics():
+            """Get inventory analytics - queries database"""
+            try:
+                async with self.async_session() as session:
+                    # Total inventory value
+                    value_result = await session.execute(
+                        select(func.sum(ProductDB.price * ProductDB.stock_quantity))
+                    )
+                    total_value = value_result.scalar() or Decimal('0')
+                    
+                    # Total units
+                    units_result = await session.execute(
+                        select(func.sum(ProductDB.stock_quantity))
+                    )
+                    total_units = units_result.scalar() or 0
+                    
+                    # Inventory by category
+                    category_result = await session.execute(
+                        select(
+                            ProductDB.category,
+                            func.sum(ProductDB.stock_quantity),
+                            func.sum(ProductDB.price * ProductDB.stock_quantity)
+                        )
+                        .group_by(ProductDB.category)
+                    )
+                    inventory_by_category = {
+                        row[0]: {
+                            "units": row[1],
+                            "value": str(row[2] or Decimal('0'))
+                        }
+                        for row in category_result.all()
+                    }
+                    
+                    return {
+                        "total_inventory_value": str(total_value),
+                        "total_units": total_units,
+                        "inventory_by_category": inventory_by_category,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+            except Exception as e:
+                logger.error(f"Error getting inventory analytics: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
     
     async def process_message(self, message: AgentMessage):
         """Process incoming messages"""
         logger.info(f"Processing message: {message.message_type}")
         
         if message.message_type == MessageType.PRODUCT_CREATED:
-            await self.handle_product_created(message.payload)
+            logger.info(f"Product created: {message.payload.get('product_id')}")
         elif message.message_type == MessageType.PRODUCT_UPDATED:
-            await self.handle_product_updated(message.payload)
-        else:
-            logger.warning(f"Unknown message type: {message.message_type}")
+            logger.info(f"Product updated: {message.payload.get('product_id')}")
     
-    async def handle_product_created(self, payload: Dict):
-        """Handle product created event"""
-        logger.info(f"Product created: {payload.get('product_id')}")
-        
-        # Auto-generate SEO
-        if self.seo_service:
-            await self.seo_service.generate_seo_metadata(
-                payload.get('product_id'),
-                payload
-            )
-    
-    async def handle_product_updated(self, payload: Dict):
-        """Handle product updated event"""
-        logger.info(f"Product updated: {payload.get('product_id')}")
-
-
-    # Required abstract methods from BaseAgent
-    async def initialize(self):
-        """Initialize agent-specific components."""
-        await super().initialize()
-        logger.info(f"{self.agent_name} initialized successfully")
-
     async def cleanup(self):
-        """Cleanup agent-specific resources."""
+        """Cleanup resources"""
         if hasattr(self, 'engine') and self.engine:
             await self.engine.dispose()
         await super().cleanup()
-        logger.info(f"{self.agent_name} cleaned up successfully")
-
-    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process agent-specific business logic."""
-        try:
-            operation = data.get("operation", "unknown")
-            logger.info(f"Processing {operation} operation")
-            return {"status": "success", "operation": operation}
-        except Exception as e:
-            logger.error(f"Error in process_business_logic: {e}")
-            return {"status": "error", "message": str(e)}
+        logger.info("Product Agent cleaned up successfully")
 
 
-# Module-level app for ASGI servers (only create when running as main)
-app = None
+async def run_agent():
+    """Run the Product Agent"""
+    agent = ProductAgent()
+    try:
+        await agent.start()
+    except KeyboardInterrupt:
+        logger.info("Shutting down Product Agent...")
+        await agent.stop()
+
 
 if __name__ == "__main__":
-    # Create agent instance only when running as main
-    agent = ProductAgent()
-    app = agent.app
-    
-    # Initialize agent before starting server
-    import asyncio
-    async def startup():
-        await agent.initialize()
-    asyncio.run(startup())
-    
-    import uvicorn
-    logger.info("Starting Product Agent on port 8002")
-    uvicorn.run(app, host="0.0.0.0", port=8002)
+    asyncio.run(run_agent())
 
