@@ -46,6 +46,7 @@ const RULE_TYPES = [
 
 const BusinessRulesConfiguration = () => {
   const [rules, setRules] = useState([]);
+  const [error, setError] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
@@ -70,59 +71,21 @@ const BusinessRulesConfiguration = () => {
 
   const fetchRules = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/business-rules');
+      const response = await fetch('http://localhost:8011/api/rules');
+      if (!response.ok) {
+        throw new Error(`Backoffice Agent API error: ${response.status} ${response.statusText}`);
+      }
       const data = await response.json();
-      setRules(data);
+      setRules(data.rules || data || []);
+      setError(null);
     } catch (error) {
       console.error('Error fetching rules:', error);
-      // Fallback mock data
-      setRules([
-        {
-          rule_id: 1,
-          rule_name: 'Free Shipping Over $50',
-          category: 'shipping',
-          rule_type: 'condition',
-          description: 'Offer free shipping for orders over $50',
-          condition: 'order.total >= 50',
-          action: 'shipping_cost = 0',
-          priority: 100,
-          is_active: true,
-          applies_to: 'all',
-          execution_count: 1523,
-          success_rate: 99.8,
-          created_at: '2025-01-15T10:00:00Z'
-        },
-        {
-          rule_id: 2,
-          rule_name: 'Bulk Discount 10%',
-          category: 'pricing',
-          rule_type: 'condition',
-          description: 'Apply 10% discount for orders with 5+ items',
-          condition: 'order.item_count >= 5',
-          action: 'discount = order.subtotal * 0.10',
-          priority: 90,
-          is_active: true,
-          applies_to: 'all',
-          execution_count: 892,
-          success_rate: 100.0,
-          created_at: '2025-01-10T14:30:00Z'
-        },
-        {
-          rule_id: 3,
-          rule_name: 'Low Stock Alert',
-          category: 'inventory',
-          rule_type: 'condition',
-          description: 'Trigger alert when stock falls below 10 units',
-          condition: 'product.stock < 10',
-          action: 'send_alert("low_stock", product.id)',
-          priority: 200,
-          is_active: true,
-          applies_to: 'all',
-          execution_count: 345,
-          success_rate: 98.5,
-          created_at: '2025-01-05T09:15:00Z'
-        }
-      ]);
+      setError({
+        message: 'Failed to load business rules from database',
+        details: error.message,
+        retry: fetchRules
+      });
+      setRules([]); // Empty array, NO mock data
     }
   };
 
