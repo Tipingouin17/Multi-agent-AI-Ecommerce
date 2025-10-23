@@ -86,7 +86,7 @@ class UITestResult:
 class UITestSuite:
     """Comprehensive UI testing suite using browser automation"""
     
-    def __init__(self, base_url: str = "http://localhost:3000"):
+    def __init__(self, base_url: str = "http://localhost:5173"):
         self.base_url = base_url
         self.results: List[UITestResult] = []
         self.driver: Optional[webdriver.Chrome] = None
@@ -450,6 +450,46 @@ class UITestSuite:
     # MAIN TEST RUNNER
     # =====================================================
     
+    def login(self, username: str = "admin@example.com", password: str = "admin123"):
+        """Login to the dashboard before running tests"""
+        try:
+            logger.info(f"Attempting to login to {self.base_url}/login")
+            self.driver.get(f"{self.base_url}/login")
+            time.sleep(2)
+            
+            # Try to find and fill login form
+            try:
+                # Look for email/username field
+                email_field = self.driver.find_element(By.CSS_SELECTOR, "input[type='email'], input[name='email'], input[name='username']")
+                email_field.clear()
+                email_field.send_keys(username)
+                
+                # Look for password field
+                password_field = self.driver.find_element(By.CSS_SELECTOR, "input[type='password'], input[name='password']")
+                password_field.clear()
+                password_field.send_keys(password)
+                
+                # Submit form
+                password_field.send_keys(Keys.RETURN)
+                time.sleep(3)  # Wait for login to complete
+                
+                # Check if we're redirected away from login page
+                current_url = self.driver.current_url
+                if "/login" not in current_url:
+                    logger.info(f"✅ Login successful, redirected to {current_url}")
+                    return True
+                else:
+                    logger.warning("⚠️ Still on login page after submission, login may have failed")
+                    return False
+                    
+            except NoSuchElementException:
+                logger.warning("⚠️ Login form not found, assuming no authentication required")
+                return True
+                
+        except Exception as e:
+            logger.error(f"❌ Login failed: {str(e)}")
+            return False
+    
     async def run_all_tests(self):
         """Run all UI tests"""
         logger.info("=" * 80)
@@ -457,6 +497,14 @@ class UITestSuite:
         logger.info("=" * 80)
         
         self.setup_driver()
+        
+        # Try to login first
+        logger.info("\n🔐 Attempting authentication...")
+        login_success = self.login()
+        if not login_success:
+            logger.warning("⚠️ Login failed or not required, proceeding with tests...")
+        else:
+            logger.info("✅ Authentication successful\n")
         
         try:
             test_count = 0
