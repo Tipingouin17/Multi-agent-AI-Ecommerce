@@ -258,23 +258,15 @@ function Wait-ForPostgreSQL {
         Write-Host "  Attempt $attempt/$maxAttempts..." -NoNewline
         
         try {
-            # Check if port is open
-            $connection = Test-NetConnection -ComputerName localhost -Port 5432 -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+            # Check Docker logs directly (faster than Test-NetConnection)
+            $logs = docker logs multi-agent-postgres --tail 10 2>&1
             
-            if ($connection.TcpTestSucceeded) {
-                # Port is open, now check if PostgreSQL is actually ready by checking logs
-                $logs = docker logs multi-agent-postgres --tail 5 2>&1
-                
-                if ($logs -match "database system is ready to accept connections") {
-                    $ready = $true
-                    Write-Host " Ready!" -ForegroundColor Green
-                    Write-Log "[OK] PostgreSQL is ready and accepting connections" "SUCCESS"
-                } else {
-                    Write-Host " Starting..." -ForegroundColor Yellow
-                    Start-Sleep -Seconds 2
-                }
+            if ($logs -match "database system is ready to accept connections") {
+                $ready = $true
+                Write-Host " Ready!" -ForegroundColor Green
+                Write-Log "[OK] PostgreSQL is ready and accepting connections" "SUCCESS"
             } else {
-                Write-Host " Port not open" -ForegroundColor Yellow
+                Write-Host " Starting..." -ForegroundColor Yellow
                 Start-Sleep -Seconds 2
             }
         } catch {
