@@ -35,7 +35,7 @@ from shared.marketplace_apis import (
 logger = structlog.get_logger(__name__)
 
 
-class MarketplaceConnectorAgentProduction(BaseAgent):
+class MarketplaceConnectorAgentProduction(BaseAgentV2):
     """
     Marketplace Connector Agent - Production Ready
     
@@ -463,7 +463,7 @@ class MarketplaceConnectorAgentProduction(BaseAgent):
         finally:
             sync_task.cancel()
             await self.marketplace_manager.close_all()
-            await self.shutdown()
+            await self.cleanup()
 
     async def _periodic_sync(self):
         """Internal periodic task to sync orders and messages from marketplaces."""
