@@ -42,6 +42,7 @@ const REGIONS = [
 
 const CarrierConfiguration = () => {
   const [carriers, setCarriers] = useState([]);
+  const [error, setError] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPricelistDialogOpen, setIsPricelistDialogOpen] = useState(false);
   const [editingCarrier, setEditingCarrier] = useState(null);
@@ -72,7 +73,7 @@ const CarrierConfiguration = () => {
 
   const fetchCarriers = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/carriers');
+      const response = await fetch('http://localhost:8006/api/carriers/config');
       const data = await response.json();
       setCarriers(data);
     } catch (error) {

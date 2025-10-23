@@ -60,117 +60,39 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/users');
+      const response = await fetch('http://localhost:8011/api/users');
       const data = await response.json();
       setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
-      // Mock data
-      setUsers([
-        {
-          user_id: 1,
-          username: 'admin@company.com',
-          full_name: 'John Admin',
-          email: 'admin@company.com',
-          role: 'Admin',
-          is_active: true,
-          two_factor_enabled: true,
-          last_login: '2025-01-20 14:30:00',
-          created_at: '2024-01-01'
-        },
-        {
-          user_id: 2,
-          username: 'merchant@store.com',
-          full_name: 'Jane Merchant',
-          email: 'merchant@store.com',
-          role: 'Merchant',
-          is_active: true,
-          two_factor_enabled: false,
-          last_login: '2025-01-20 10:15:00',
-          created_at: '2024-03-15'
-        },
-        {
-          user_id: 3,
-          username: 'operator@company.com',
-          full_name: 'Bob Operator',
-          email: 'operator@company.com',
-          role: 'Operator',
-          is_active: true,
-          two_factor_enabled: true,
-          last_login: '2025-01-19 16:45:00',
-          created_at: '2024-06-01'
-        },
-        {
-          user_id: 4,
-          username: 'support@company.com',
-          full_name: 'Alice Support',
-          email: 'support@company.com',
-          role: 'Support',
-          is_active: false,
-          two_factor_enabled: false,
-          last_login: '2025-01-15 09:00:00',
-          created_at: '2024-08-20'
-        }
-      ]);
+      setError({
+        message: 'Failed to load users from database',
+        details: error.message,
+        retry: fetchUsers
+      });
+      setUsers([]); // Empty array, NO mock data
     }
   };
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/roles');
+      const response = await fetch('http://localhost:8011/api/users');
       const data = await response.json();
       setRoles(data);
     } catch (error) {
-      console.error('Error fetching roles:', error);
-      // Mock data
-      setRoles([
-        {
-          role_id: 1,
-          role_name: 'Admin',
-          description: 'Full system access',
-          user_count: 3,
-          is_system_role: true,
-          permissions_count: 50
-        },
-        {
-          role_id: 2,
-          role_name: 'Merchant',
-          description: 'Manage own store and products',
-          user_count: 12,
-          is_system_role: true,
-          permissions_count: 25
-        },
-        {
-          role_id: 3,
-          role_name: 'Operator',
-          description: 'Warehouse and fulfillment operations',
-          user_count: 8,
-          is_system_role: true,
-          permissions_count: 15
-        },
-        {
-          role_id: 4,
-          role_name: 'Support',
-          description: 'Customer support access',
-          user_count: 5,
-          is_system_role: true,
-          permissions_count: 10
-        },
-        {
-          role_id: 5,
-          role_name: 'Analyst',
-          description: 'Read-only access to reports',
-          user_count: 4,
-          is_system_role: false,
-          permissions_count: 5
-        }
-      ]);
+      console.error('Error fetching users:', error);
+      setError({
+        message: 'Failed to load users from database',
+        details: error.message,
+        retry: fetchRoles
+      });
+      setRoles([]); // Empty array, NO mock data
     }
   };
 
   const fetchPermissions = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/permissions');
+      const response = await fetch('http://localhost:8011/api/users');
       const data = await response.json();
       setPermissions(data);
     } catch (error) {

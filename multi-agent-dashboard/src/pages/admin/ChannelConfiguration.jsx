@@ -45,6 +45,7 @@ const PLATFORMS = {
 
 const ChannelConfiguration = () => {
   const [connections, setConnections] = useState([]);
+  const [error, setError] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState(null);
   const [selectedPlatform, setSelectedPlatform] = useState(null);
@@ -64,36 +65,17 @@ const ChannelConfiguration = () => {
 
   const fetchConnections = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/marketplace-connections');
+      const response = await fetch('http://localhost:8007/api/connections');
       const data = await response.json();
       setConnections(data);
     } catch (error) {
       console.error('Error fetching connections:', error);
-      // Fallback mock data
-      setConnections([
-        {
-          connection_id: 1,
-          marketplace_name: 'shopify',
-          marketplace_type: 'ecommerce',
-          store_name: 'My Shopify Store',
-          store_url: 'mystore.myshopify.com',
-          sync_frequency: 300,
-          is_active: true,
-          last_sync_at: '2025-01-20T10:30:00Z',
-          sync_status: 'active'
-        },
-        {
-          connection_id: 2,
-          marketplace_name: 'amazon',
-          marketplace_type: 'marketplace',
-          store_name: 'Amazon US Store',
-          store_url: 'amazon.com',
-          sync_frequency: 600,
-          is_active: true,
-          last_sync_at: '2025-01-20T10:25:00Z',
-          sync_status: 'active'
-        }
-      ]);
+      setError({
+        message: 'Failed to load connections from database',
+        details: error.message,
+        retry: fetchConnections
+      });
+      setConnections([]); // Empty array, NO mock data
     }
   };
 

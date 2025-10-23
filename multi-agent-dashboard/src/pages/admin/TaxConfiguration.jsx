@@ -26,6 +26,7 @@ import {
 
 const TaxConfiguration = () => {
   const [taxRules, setTaxRules] = useState([]);
+  const [error, setError] = useState(null);
   const [taxCategories, setTaxCategories] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState('rule'); // 'rule', 'category'
@@ -46,115 +47,33 @@ const TaxConfiguration = () => {
 
   const fetchTaxRules = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/tax-rules');
+      const response = await fetch('http://localhost:8011/api/tax/rules');
       const data = await response.json();
       setTaxRules(data);
     } catch (error) {
-      console.error('Error fetching tax rules:', error);
-      // Mock data
-      setTaxRules([
-        {
-          rule_id: 1,
-          rule_name: 'US Sales Tax - California',
-          country: 'United States',
-          region: 'California',
-          tax_type: 'Sales Tax',
-          tax_rate: 7.25,
-          is_compound: false,
-          is_active: true,
-          priority: 1,
-          applies_to: 'All Products'
-        },
-        {
-          rule_id: 2,
-          rule_name: 'UK VAT Standard Rate',
-          country: 'United Kingdom',
-          region: null,
-          tax_type: 'VAT',
-          tax_rate: 20.0,
-          is_compound: false,
-          is_active: true,
-          priority: 1,
-          applies_to: 'All Products'
-        },
-        {
-          rule_id: 3,
-          rule_name: 'Germany VAT',
-          country: 'Germany',
-          region: null,
-          tax_type: 'VAT',
-          tax_rate: 19.0,
-          is_compound: false,
-          is_active: true,
-          priority: 1,
-          applies_to: 'All Products'
-        },
-        {
-          rule_id: 4,
-          rule_name: 'Canada GST',
-          country: 'Canada',
-          region: null,
-          tax_type: 'GST',
-          tax_rate: 5.0,
-          is_compound: false,
-          is_active: true,
-          priority: 1,
-          applies_to: 'All Products'
-        },
-        {
-          rule_id: 5,
-          rule_name: 'UK VAT Reduced Rate (Food)',
-          country: 'United Kingdom',
-          region: null,
-          tax_type: 'VAT',
-          tax_rate: 5.0,
-          is_compound: false,
-          is_active: true,
-          priority: 2,
-          applies_to: 'Food & Beverages'
-        }
-      ]);
+      console.error('Error fetching taxRules:', error);
+      setError({
+        message: 'Failed to load taxRules from database',
+        details: error.message,
+        retry: fetchTaxRules
+      });
+      setTaxRules([]); // Empty array, NO mock data
     }
   };
 
   const fetchTaxCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/tax-categories');
+      const response = await fetch('http://localhost:8011/api/tax/rules');
       const data = await response.json();
       setTaxCategories(data);
     } catch (error) {
-      console.error('Error fetching tax categories:', error);
-      // Mock data
-      setTaxCategories([
-        {
-          category_id: 1,
-          category_name: 'Standard',
-          description: 'Standard tax rate for most products',
-          default_rate: 20.0,
-          product_count: 1234
-        },
-        {
-          category_id: 2,
-          category_name: 'Reduced',
-          description: 'Reduced rate for food, books, etc.',
-          default_rate: 5.0,
-          product_count: 456
-        },
-        {
-          category_id: 3,
-          category_name: 'Zero-Rated',
-          description: 'Zero-rated items (children\'s clothing, etc.)',
-          default_rate: 0.0,
-          product_count: 123
-        },
-        {
-          category_id: 4,
-          category_name: 'Exempt',
-          description: 'Tax-exempt items',
-          default_rate: 0.0,
-          product_count: 45
-        }
-      ]);
+      console.error('Error fetching taxRules:', error);
+      setError({
+        message: 'Failed to load taxRules from database',
+        details: error.message,
+        retry: fetchTaxCategories
+      });
+      setTaxCategories([]); // Empty array, NO mock data
     }
   };
 

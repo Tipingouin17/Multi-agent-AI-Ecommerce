@@ -27,6 +27,7 @@ import {
 
 const WarehouseConfiguration = () => {
   const [warehouses, setWarehouses] = useState([]);
+  const [error, setError] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState(null);
   const [formData, setFormData] = useState({
@@ -54,7 +55,7 @@ const WarehouseConfiguration = () => {
 
   const fetchWarehouses = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/warehouses');
+      const response = await fetch('http://localhost:8005/api/warehouses');
       const data = await response.json();
       setWarehouses(data);
     } catch (error) {

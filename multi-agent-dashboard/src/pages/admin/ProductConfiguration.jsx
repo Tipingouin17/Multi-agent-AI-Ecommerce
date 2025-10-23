@@ -27,6 +27,7 @@ import {
 
 const ProductConfiguration = () => {
   const [categories, setCategories] = useState([]);
+  const [error, setError] = useState(null);
   const [attributes, setAttributes] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -42,50 +43,23 @@ const ProductConfiguration = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/product-categories');
+      const response = await fetch('http://localhost:8003/api/categories');
       const data = await response.json();
       setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      // Mock data
-      setCategories([
-        {
-          category_id: 1,
-          category_name: 'Electronics',
-          parent_category_id: null,
-          description: 'Electronic devices and accessories',
-          slug: 'electronics',
-          is_active: true,
-          product_count: 156,
-          subcategories: 3
-        },
-        {
-          category_id: 2,
-          category_name: 'Smartphones',
-          parent_category_id: 1,
-          description: 'Mobile phones and accessories',
-          slug: 'smartphones',
-          is_active: true,
-          product_count: 45,
-          subcategories: 0
-        },
-        {
-          category_id: 3,
-          category_name: 'Laptops',
-          parent_category_id: 1,
-          description: 'Portable computers',
-          slug: 'laptops',
-          is_active: true,
-          product_count: 32,
-          subcategories: 0
-        }
-      ]);
+      setError({
+        message: 'Failed to load categories from database',
+        details: error.message,
+        retry: fetchCategories
+      });
+      setCategories([]); // Empty array, NO mock data
     }
   };
 
   const fetchAttributes = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/product-attributes');
+      const response = await fetch('http://localhost:8003/api/categories');
       const data = await response.json();
       setAttributes(data);
     } catch (error) {
@@ -134,7 +108,7 @@ const ProductConfiguration = () => {
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/product-templates');
+      const response = await fetch('http://localhost:8003/api/categories');
       const data = await response.json();
       setTemplates(data);
     } catch (error) {
