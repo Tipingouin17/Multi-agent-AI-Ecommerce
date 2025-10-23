@@ -456,7 +456,7 @@ function Initialize-KafkaTopics {
         } else {
             Write-Host " Failed" -ForegroundColor Red
             # Log the actual error for debugging
-            Write-Log "Kafka topic creation error for $topic: $resultStr" "WARNING"
+            Write-Log "Kafka topic creation error for $topic`: $resultStr" "WARNING"
         }
     }
     
