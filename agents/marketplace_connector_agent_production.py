@@ -637,15 +637,7 @@ async def create_product_listing(marketplace: str, listing: ProductListing):
 
 # Main execution block for running the agent and FastAPI app
 if __name__ == "__main__":
-    # Run the agent in a separate task
-    agent_instance = MarketplaceConnectorAgentProduction()
-    agent_task = asyncio.create_task(agent_instance.run())
-
-    # Run FastAPI app
-    port = int(os.getenv("API_PORT", 8014))
+    # Run FastAPI app (agent logic runs via FastAPI lifespan/startup events)
+    port = int(os.getenv("MARKETPLACE_AGENT_PORT", 8007))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-    # Ensure agent task is cancelled on shutdown
-    agent_task.cancel()
-    asyncio.run(agent_instance.shutdown())
 

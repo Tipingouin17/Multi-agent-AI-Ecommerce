@@ -481,8 +481,14 @@ async def get_service_dependency(db_manager: DatabaseManager = Depends(get_datab
 async def startup_event():
     """Startup event to initialize the database and agent."""
     logger.info("Knowledge Management Agent API starting up...")
-    db_manager = await get_database_manager()
-    await db_manager.create_all(Base) # Ensure all tables are created on startup
+    try:
+        db_manager = get_database_manager()
+    except RuntimeError:
+        # Create new database manager if global one doesn't exist
+        from shared.models import DatabaseConfig
+        db_manager = DatabaseManager(DatabaseConfig())
+        await db_manager.initialize_async()
+    await db_manager.create_tables() # Ensure all tables are created on startup
     
     global knowledge_agent
     knowledge_agent = KnowledgeManagementAgent(AGENT_ID, AGENT_TYPE, db_manager)
