@@ -6,6 +6,7 @@ Handles product inspection, damage verification, quality assurance, and defect t
 import os
 import sys
 import asyncio
+import json
 import structlog
 from datetime import datetime
 from typing import Optional, Dict, List, Any
@@ -145,15 +146,26 @@ class QualityControlAgent(BaseAgentV2):
     async def initialize(self):
         """Initialize agent"""
         await super().initialize()
-        self.kafka_producer = KafkaProducer()
-        self.kafka_consumer = KafkaConsumer(*[
-                "inventory_received",
-                "order_ready_to_ship",
-                "return_received",
-                "quality_inspection_requested"
-            ],
-            group_id="quality_control_agent"
+        
+        # Initialize Kafka producer
+        self.kafka_producer = KafkaProducer(
+            bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
         )
+        await self.kafka_producer.start()
+        
+        # Initialize Kafka consumer
+        self.kafka_consumer = KafkaConsumer(
+            "inventory_received",
+            "order_ready_to_ship",
+            "return_received",
+            "quality_inspection_requested",
+            bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
+            group_id="quality_control_agent",
+            value_deserializer=lambda m: json.loads(m.decode('utf-8'))
+        )
+        await self.kafka_consumer.start()
+        
         await self._load_quality_standards()
         logger.info("Quality Control Agent initialized")
     

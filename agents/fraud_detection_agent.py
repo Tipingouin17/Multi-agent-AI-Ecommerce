@@ -705,22 +705,9 @@ if __name__ == "__main__":
     Configuration is loaded from environment variables.
     """
     agent_id = os.getenv("AGENT_ID", "fraud_detection_agent_001")
-    agent_type = os.getenv("AGENT_TYPE", "fraud_detection")
 
-    # Initialize DatabaseManager with DATABASE_URL from environment variables
-    database_url = os.getenv("DATABASE_URL")
-    if not database_url:
-        logger.critical("DATABASE_URL environment variable not set. Exiting.")
-        sys.exit(1)
-
-    db_manager = DatabaseManager(database_url)
-
-    # Create the agent instance and assign the database manager
-    agent = FraudDetectionAgent(agent_id=agent_id, agent_type=agent_type)
-    agent.db_manager = db_manager
-    agent.db_helper = DatabaseHelper(db_manager)
-    agent.repository = FraudDetectionRepository(agent.db_helper)
-    agent.service = FraudDetectionService(agent.repository)
+    # Create the agent instance (db_manager, db_helper, repository, service initialized in __init__)
+    agent = FraudDetectionAgent(agent_id=agent_id)
 
     # Get port from environment variables
     port = int(os.getenv("PORT", "8000"))
