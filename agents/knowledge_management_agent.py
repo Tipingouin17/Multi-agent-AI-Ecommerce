@@ -491,9 +491,10 @@ async def startup_event():
     await db_manager.create_tables() # Ensure all tables are created on startup
     
     global knowledge_agent
-    knowledge_agent = KnowledgeManagementAgent(AGENT_ID, AGENT_TYPE, db_manager)
-    await knowledge_agent.setup()
-    asyncio.create_task(knowledge_agent.run()) # Start the agent's Kafka consumer in the background
+    knowledge_agent = KnowledgeManagementAgent()
+    await knowledge_agent.initialize()
+    # Note: The agent doesn't have a run() method for Kafka consumer
+    # It operates via FastAPI endpoints
     logger.info("Knowledge Management Agent and API ready.")
 
 @app.get("/health", response_model=Dict[str, str], summary="Health Check")

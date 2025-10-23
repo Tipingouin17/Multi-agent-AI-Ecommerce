@@ -13,14 +13,13 @@ from enum import Enum
 from pydantic import BaseModel, Field
 from decimal import Decimal
 
-from shared.db_helpers import DatabaseHelper
-
 # Add parent directory to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
+from shared.db_helpers import DatabaseHelper
 from shared.base_agent_v2 import BaseAgentV2
 from shared.kafka_config import KafkaProducer, KafkaConsumer
 

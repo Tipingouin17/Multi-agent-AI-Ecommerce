@@ -311,9 +311,7 @@ class InventoryAgent(BaseAgentV2):
                     await db_manager.initialize(max_retries=5)
                     self.logger.info("Created new enhanced database manager")
                 
-                # Create tables (with retry built into manager)
-                await db_manager.create_tables()
-                
+                # Tables are created by migrations, not by agents
                 # Initialize repositories
                 self.repository = InventoryRepository(db_manager)
                 self.movement_repository = StockMovementRepository(db_manager)
@@ -940,23 +938,16 @@ if __name__ == "__main__":
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
     
-    # Ensure the database is initialized before starting the agent and API
-    async def run_agent():
-        agent = InventoryAgent()
+    # Initialize agent
+    agent = InventoryAgent()
+    
+    # Initialize agent before starting server
+    async def startup():
         await agent.initialize()
-        
-        # Run FastAPI app in a separate task
-        config = uvicorn.Config(agent.app, host="0.0.0.0", port=int(os.getenv("INVENTORY_AGENT_PORT", 8002)))
-        server = uvicorn.Server(config)
-        
-        # Create a task for the Uvicorn server
-        api_task = asyncio.create_task(server.serve())
-        
-        # Run the agent's main loop
-        await agent.run()
-        
-        # Wait for the API task to complete (e.g., if server is stopped externally)
-        await api_task
-
-    asyncio.run(run_agent())
+    
+    asyncio.run(startup())
+    
+    port = int(os.getenv("INVENTORY_AGENT_PORT", 8002))
+    logger.info(f"Starting Inventory Agent on port {port}")
+    uvicorn.run(agent.app, host="0.0.0.0", port=port)
 
