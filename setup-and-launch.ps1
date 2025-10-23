@@ -6,12 +6,14 @@
 .DESCRIPTION
     This script performs a complete setup from scratch:
     1. Verifies prerequisites (Docker, Python, Node.js)
-    2. Sets up the database with all tables
+    2. Loads and validates .env configuration
     3. Starts infrastructure services (PostgreSQL, Kafka, Redis)
-    4. Initializes Kafka topics
-    5. Launches all 15 production agents
-    6. Starts the dashboard
-    7. Provides comprehensive logging
+    4. Waits for services to be fully ready
+    5. Initializes database with migrations
+    6. Creates Kafka topics
+    7. Launches all 15 production agents
+    8. Starts the dashboard
+    9. Provides comprehensive logging and monitoring
 
 .PARAMETER SkipInfrastructure
     Skip starting Docker infrastructure (use if already running)
@@ -47,6 +49,7 @@ $ProjectRoot = $PSScriptRoot
 $LogDir = Join-Path $ProjectRoot "logs"
 $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $LogFile = Join-Path $LogDir "setup_$Timestamp.log"
+$EnvFile = Join-Path $ProjectRoot ".env"
 
 # Create logs directory
 if (-not (Test-Path $LogDir)) {
@@ -79,12 +82,75 @@ function Write-Log {
 # Banner
 function Show-Banner {
     Write-Host ""
-    Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Magenta
+    Write-Host "===================================================================" -ForegroundColor Magenta
     Write-Host "   MULTI-AGENT E-COMMERCE PLATFORM - SETUP & LAUNCH" -ForegroundColor Magenta
-    Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Magenta
+    Write-Host "===================================================================" -ForegroundColor Magenta
     Write-Host ""
     Write-Log "Starting complete system setup and launch"
     Write-Log "Log file: $LogFile"
+    Write-Host ""
+}
+
+# Load .env file
+function Load-EnvFile {
+    Write-Log "Loading environment configuration..." "INFO"
+    
+    if (-not (Test-Path $EnvFile)) {
+        Write-Log "[ERROR] .env file not found at: $EnvFile" "ERROR"
+        Write-Log "Please create .env file with required configuration" "ERROR"
+        Write-Log "See .env.correct for template" "ERROR"
+        exit 1
+    }
+    
+    # Read .env file
+    Get-Content $EnvFile | ForEach-Object {
+        $line = $_.Trim()
+        
+        # Skip comments and empty lines
+        if ($line -and -not $line.StartsWith("#")) {
+            $parts = $line -split "=", 2
+            if ($parts.Length -eq 2) {
+                $key = $parts[0].Trim()
+                $value = $parts[1].Trim()
+                
+                # Remove quotes if present
+                $value = $value -replace '^["'']|["'']$', ''
+                
+                # Set environment variable
+                [Environment]::SetEnvironmentVariable($key, $value, "Process")
+            }
+        }
+    }
+    
+    Write-Log "[OK] Environment configuration loaded" "SUCCESS"
+    
+    # Validate critical variables
+    $requiredVars = @(
+        "DATABASE_URL",
+        "DATABASE_HOST",
+        "DATABASE_PORT",
+        "DATABASE_NAME",
+        "DATABASE_USER",
+        "DATABASE_PASSWORD"
+    )
+    
+    $missing = @()
+    foreach ($var in $requiredVars) {
+        if (-not [Environment]::GetEnvironmentVariable($var, "Process")) {
+            $missing += $var
+        }
+    }
+    
+    if ($missing.Count -gt 0) {
+        Write-Log "[ERROR] Missing required environment variables:" "ERROR"
+        foreach ($var in $missing) {
+            Write-Log "  - $var" "ERROR"
+        }
+        Write-Log "Please update your .env file. See ENV_FILE_FIX.md for help" "ERROR"
+        exit 1
+    }
+    
+    Write-Log "[OK] All required environment variables present" "SUCCESS"
     Write-Host ""
 }
 
@@ -99,6 +165,14 @@ function Test-Prerequisites {
         $dockerVersion = docker --version 2>$null
         if ($dockerVersion) {
             Write-Log "[OK] Docker: $dockerVersion" "SUCCESS"
+            
+            # Check if Docker is running
+            $dockerInfo = docker info 2>$null
+            if (-not $dockerInfo) {
+                Write-Log "[ERROR] Docker is installed but not running" "ERROR"
+                Write-Log "Please start Docker Desktop and try again" "ERROR"
+                $allOk = $false
+            }
         } else {
             Write-Log "[ERROR] Docker not found" "ERROR"
             $allOk = $false
@@ -147,7 +221,7 @@ function Test-Prerequisites {
 
 # Start infrastructure
 function Start-Infrastructure {
-    Write-Log "Starting infrastructure services (PostgreSQL, Kafka, Redis, Zookeeper)..." "INFO"
+    Write-Log "Starting infrastructure services..." "INFO"
     
     Set-Location (Join-Path $ProjectRoot "infrastructure")
     
@@ -157,10 +231,11 @@ function Start-Infrastructure {
     
     # Start services
     Write-Log "Starting Docker containers..." "INFO"
-    docker-compose up -d 2>&1 | Tee-Object -FilePath $LogFile -Append | Out-Null
+    docker-compose up -d 2>&1 | Tee-Object -FilePath $LogFile -Append
     
     if ($LASTEXITCODE -ne 0) {
         Write-Log "Failed to start infrastructure" "ERROR"
+        Set-Location $ProjectRoot
         exit 1
     }
     
@@ -168,63 +243,116 @@ function Start-Infrastructure {
     
     Write-Log "Infrastructure services started" "SUCCESS"
     Write-Host ""
+}
+
+# Wait for PostgreSQL
+function Wait-ForPostgreSQL {
+    Write-Log "Waiting for PostgreSQL to be ready..." "INFO"
     
-    # Wait for services to be ready
-    Write-Log "Waiting for services to initialize..." "INFO"
-    Write-Log "PostgreSQL: Waiting for port 5432..." "INFO"
-    
-    $maxAttempts = 30
+    $maxAttempts = 60
     $attempt = 0
-    $postgresReady = $false
+    $ready = $false
     
-    while ($attempt -lt $maxAttempts -and -not $postgresReady) {
+    while ($attempt -lt $maxAttempts -and -not $ready) {
         $attempt++
+        Write-Host "  Attempt $attempt/$maxAttempts..." -NoNewline
+        
         try {
-            $connection = Test-NetConnection -ComputerName localhost -Port 5432 -WarningAction SilentlyContinue
+            # Check if port is open
+            $connection = Test-NetConnection -ComputerName localhost -Port 5432 -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+            
             if ($connection.TcpTestSucceeded) {
-                $postgresReady = $true
-                Write-Log "[OK] PostgreSQL is ready" "SUCCESS"
+                # Port is open, now check if PostgreSQL is actually ready
+                $result = docker exec multi-agent-postgres pg_isready -U postgres 2>&1
+                
+                if ($result -match "accepting connections") {
+                    $ready = $true
+                    Write-Host " Ready!" -ForegroundColor Green
+                    Write-Log "[OK] PostgreSQL is ready and accepting connections" "SUCCESS"
+                } else {
+                    Write-Host " Starting..." -ForegroundColor Yellow
+                    Start-Sleep -Seconds 2
+                }
             } else {
+                Write-Host " Port not open" -ForegroundColor Yellow
                 Start-Sleep -Seconds 2
             }
         } catch {
+            Write-Host " Error" -ForegroundColor Red
             Start-Sleep -Seconds 2
         }
     }
     
-    if (-not $postgresReady) {
-        Write-Log "PostgreSQL did not start in time" "ERROR"
+    if (-not $ready) {
+        Write-Log "[ERROR] PostgreSQL did not become ready within timeout" "ERROR"
+        Write-Log "Check Docker logs: docker logs multi-agent-postgres" "ERROR"
         exit 1
     }
     
-    # Wait for Kafka (takes longer)
-    Write-Log "Kafka: Waiting for initialization (this takes 2-3 minutes)..." "INFO"
-    Start-Sleep -Seconds 120
+    Write-Host ""
+}
+
+# Wait for Kafka
+function Wait-ForKafka {
+    Write-Log "Waiting for Kafka to be ready (this takes 2-3 minutes)..." "INFO"
     
-    Write-Log "[OK] All infrastructure services ready" "SUCCESS"
+    $maxAttempts = 90
+    $attempt = 0
+    $ready = $false
+    
+    while ($attempt -lt $maxAttempts -and -not $ready) {
+        $attempt++
+        
+        if ($attempt % 10 -eq 0) {
+            Write-Host "  Waiting... ($attempt seconds)" -ForegroundColor Yellow
+        }
+        
+        try {
+            # Check if Kafka is responding
+            $result = docker exec multi-agent-kafka kafka-broker-api-versions --bootstrap-server localhost:9092 2>&1
+            
+            if ($result -match "ApiVersion") {
+                $ready = $true
+                Write-Log "[OK] Kafka is ready" "SUCCESS"
+            } else {
+                Start-Sleep -Seconds 1
+            }
+        } catch {
+            Start-Sleep -Seconds 1
+        }
+    }
+    
+    if (-not $ready) {
+        Write-Log "[WARNING] Kafka did not become ready within timeout" "WARNING"
+        Write-Log "Continuing anyway - Kafka may still be starting" "WARNING"
+    }
+    
     Write-Host ""
 }
 
 # Initialize database
 function Initialize-Database {
-    Write-Log "Initializing database with all tables..." "INFO"
+    Write-Log "Initializing database..." "INFO"
     
-    # Set environment variables
-    $env:DATABASE_HOST = "localhost"
-    $env:DATABASE_PORT = "5432"
-    $env:DATABASE_NAME = "multi_agent_ecommerce"
-    $env:DATABASE_USER = "postgres"
-    $env:DATABASE_PASSWORD = "postgres"
+    # Get database credentials from environment
+    $dbUser = [Environment]::GetEnvironmentVariable("DATABASE_USER", "Process")
+    $dbName = [Environment]::GetEnvironmentVariable("DATABASE_NAME", "Process")
     
     # Check if database exists
     Write-Log "Checking if database exists..." "INFO"
     
-    $dbExists = docker exec multi-agent-postgres psql -U postgres -lqt 2>$null | Select-String -Pattern "multi_agent_ecommerce"
+    $dbExists = docker exec multi-agent-postgres psql -U $dbUser -lqt 2>$null | Select-String -Pattern $dbName
     
     if (-not $dbExists) {
-        Write-Log "Creating database..." "INFO"
-        docker exec multi-agent-postgres psql -U postgres -c "CREATE DATABASE multi_agent_ecommerce;" 2>&1 | Tee-Object -FilePath $LogFile -Append | Out-Null
-        Write-Log "[OK] Database created" "SUCCESS"
+        Write-Log "Creating database '$dbName'..." "INFO"
+        docker exec multi-agent-postgres psql -U $dbUser -c "CREATE DATABASE $dbName;" 2>&1 | Tee-Object -FilePath $LogFile -Append | Out-Null
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Log "[OK] Database created" "SUCCESS"
+        } else {
+            Write-Log "[ERROR] Failed to create database" "ERROR"
+            exit 1
+        }
     } else {
         Write-Log "[OK] Database already exists" "SUCCESS"
     }
@@ -232,35 +360,55 @@ function Initialize-Database {
     # Run migrations
     Write-Log "Running database migrations..." "INFO"
     
-    $migrationFiles = Get-ChildItem -Path (Join-Path $ProjectRoot "database\migrations") -Filter "*.sql" | Sort-Object Name
+    $migrationsDir = Join-Path $ProjectRoot "database\migrations"
     
-    $migrationCount = 0
-    foreach ($migration in $migrationFiles) {
-        Write-Log "  Applying: $($migration.Name)" "INFO"
-        
-        $migrationPath = $migration.FullName
-        
-        # Execute migration by piping file content to docker exec
-        try {
-            $result = Get-Content $migrationPath -Raw | docker exec -i multi-agent-postgres psql -U postgres -d multi_agent_ecommerce 2>&1
-            
-            if ($LASTEXITCODE -eq 0) {
-                $migrationCount++
-                Write-Log "    [OK] Applied successfully" "SUCCESS"
-            } else {
-                # Check if error is "already exists" (which is OK)
-                if ($result -match "already exists") {
-                    Write-Log "    [WARNING] Already applied (skipping)" "WARNING"
-                } else {
-                    Write-Log "    [ERROR] Failed: $result" "ERROR"
-                }
-            }
-        } catch {
-            Write-Log "    [ERROR] Failed: $_" "ERROR"
-        }
+    if (-not (Test-Path $migrationsDir)) {
+        Write-Log "[ERROR] Migrations directory not found: $migrationsDir" "ERROR"
+        exit 1
     }
     
-    Write-Log "[OK] Database initialized ($migrationCount migrations applied)" "SUCCESS"
+    $migrationFiles = Get-ChildItem -Path $migrationsDir -Filter "*.sql" | Sort-Object Name
+    
+    if ($migrationFiles.Count -eq 0) {
+        Write-Log "[WARNING] No migration files found" "WARNING"
+    } else {
+        Write-Log "Found $($migrationFiles.Count) migration files" "INFO"
+        
+        $successCount = 0
+        $skipCount = 0
+        $failCount = 0
+        
+        foreach ($migration in $migrationFiles) {
+            Write-Host "  Applying: $($migration.Name)..." -NoNewline
+            
+            try {
+                $result = Get-Content $migration.FullName -Raw | docker exec -i multi-agent-postgres psql -U $dbUser -d $dbName 2>&1
+                
+                if ($LASTEXITCODE -eq 0) {
+                    $successCount++
+                    Write-Host " OK" -ForegroundColor Green
+                } else {
+                    # Check if error is "already exists" (which is OK)
+                    if ($result -match "already exists") {
+                        $skipCount++
+                        Write-Host " Skipped (already applied)" -ForegroundColor Yellow
+                    } else {
+                        $failCount++
+                        Write-Host " Failed" -ForegroundColor Red
+                        Write-Log "    Error: $result" "ERROR"
+                    }
+                }
+            } catch {
+                $failCount++
+                Write-Host " Failed" -ForegroundColor Red
+                Write-Log "    Error: $_" "ERROR"
+            }
+        }
+        
+        Write-Host ""
+        Write-Log "[OK] Migrations complete: $successCount applied, $skipCount skipped, $failCount failed" "SUCCESS"
+    }
+    
     Write-Host ""
 }
 
@@ -283,43 +431,46 @@ function Initialize-KafkaTopics {
         "document_events",
         "backoffice_events",
         "transport_events",
-        "knowledge_events"
+        "knowledge_events",
+        "inventory_received",
+        "order_ready_to_ship",
+        "return_received",
+        "quality_inspection_requested",
+        "return_inspected"
     )
     
+    $createCount = 0
+    $skipCount = 0
+    
     foreach ($topic in $topics) {
-        Write-Log "  Creating topic: $topic" "INFO"
+        Write-Host "  Creating topic: $topic..." -NoNewline
         
-        docker exec multi-agent-kafka kafka-topics --create `
+        $result = docker exec multi-agent-kafka kafka-topics --create `
             --bootstrap-server localhost:9092 `
             --topic $topic `
             --partitions 3 `
             --replication-factor 1 `
-            --if-not-exists 2>&1 | Out-Null
+            --if-not-exists 2>&1
         
-        if ($LASTEXITCODE -eq 0) {
-            Write-Log "    [OK] Created" "SUCCESS"
+        if ($result -match "Created topic") {
+            $createCount++
+            Write-Host " Created" -ForegroundColor Green
+        } elseif ($result -match "already exists") {
+            $skipCount++
+            Write-Host " Already exists" -ForegroundColor Yellow
         } else {
-            Write-Log "    [WARNING] Already exists or failed" "WARNING"
+            Write-Host " Failed" -ForegroundColor Red
         }
     }
     
-    Write-Log "[OK] Kafka topics initialized" "SUCCESS"
+    Write-Host ""
+    Write-Log "[OK] Kafka topics initialized: $createCount created, $skipCount already existed" "SUCCESS"
     Write-Host ""
 }
 
 # Start agents
 function Start-Agents {
     Write-Log "Starting all 15 production agents..." "INFO"
-    
-    # Set environment variables
-    $env:DATABASE_HOST = "localhost"
-    $env:DATABASE_PORT = "5432"
-    $env:DATABASE_NAME = "multi_agent_ecommerce"
-    $env:DATABASE_USER = "postgres"
-    $env:DATABASE_PASSWORD = "postgres"
-    $env:KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
-    $env:REDIS_HOST = "localhost"
-    $env:REDIS_PORT = "6379"
     
     # Start agent monitor
     Write-Log "Launching agent monitor..." "INFO"
@@ -333,34 +484,13 @@ function Start-Agents {
         -RedirectStandardError $agentMonitorErrorLog `
         -WindowStyle Hidden
     
-    Write-Log "[OK] Agent monitor started (logging to $agentMonitorLog)" "SUCCESS"
+    Write-Log "[OK] Agent monitor started" "SUCCESS"
+    Write-Log "Agent logs: $agentMonitorLog" "INFO"
+    Write-Log "Agent errors: $agentMonitorErrorLog" "INFO"
     
     # Wait for agents to start
     Write-Log "Waiting for agents to initialize (30 seconds)..." "INFO"
     Start-Sleep -Seconds 30
-    
-    # Check if agents are running
-    Write-Log "Verifying agent status..." "INFO"
-    
-    $agentPorts = @(8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010, 8011, 8012, 8013, 8020, 8021)
-    $runningAgents = 0
-    
-    foreach ($port in $agentPorts) {
-        try {
-            $connection = Test-NetConnection -ComputerName localhost -Port $port -WarningAction SilentlyContinue -InformationLevel Quiet
-            if ($connection) {
-                $runningAgents++
-            }
-        } catch {
-            # Port not accessible
-        }
-    }
-    
-    Write-Log "[OK] $runningAgents / $($agentPorts.Count) agents running" "SUCCESS"
-    
-    if ($runningAgents -lt 10) {
-        Write-Log "Warning: Less than 10 agents started. Check logs for details." "WARNING"
-    }
     
     Write-Host ""
 }
@@ -369,48 +499,101 @@ function Start-Agents {
 function Start-Dashboard {
     Write-Log "Starting dashboard..." "INFO"
     
-    Set-Location (Join-Path $ProjectRoot "multi-agent-dashboard")
+    $dashboardDir = Join-Path $ProjectRoot "multi-agent-dashboard"
     
-    # Install dependencies if needed
+    if (-not (Test-Path $dashboardDir)) {
+        Write-Log "[ERROR] Dashboard directory not found: $dashboardDir" "ERROR"
+        return
+    }
+    
+    Set-Location $dashboardDir
+    
+    # Check if node_modules exists
     if (-not (Test-Path "node_modules")) {
         Write-Log "Installing dashboard dependencies..." "INFO"
         npm install 2>&1 | Tee-Object -FilePath $LogFile -Append | Out-Null
     }
     
     # Start dashboard
-    Write-Log "Launching dashboard on http://localhost:5173..." "INFO"
-    
     $dashboardLog = Join-Path $LogDir "dashboard_$Timestamp.log"
     $dashboardErrorLog = Join-Path $LogDir "dashboard_$Timestamp.error.log"
     
     Start-Process npm -ArgumentList "run dev" `
-        -WorkingDirectory (Join-Path $ProjectRoot "multi-agent-dashboard") `
+        -WorkingDirectory $dashboardDir `
         -RedirectStandardOutput $dashboardLog `
         -RedirectStandardError $dashboardErrorLog `
-        -WindowStyle Normal
+        -WindowStyle Hidden
     
     Set-Location $ProjectRoot
     
-    Write-Log "[OK] Dashboard started (logging to $dashboardLog)" "SUCCESS"
+    Write-Log "[OK] Dashboard started" "SUCCESS"
+    Write-Log "Dashboard logs: $dashboardLog" "INFO"
+    Write-Log "Dashboard URL: http://localhost:5173" "INFO"
+    
+    Write-Host ""
+}
+
+# Show summary
+function Show-Summary {
+    Write-Host ""
+    Write-Host "===================================================================" -ForegroundColor Green
+    Write-Host "   SETUP COMPLETE - SYSTEM IS RUNNING" -ForegroundColor Green
+    Write-Host "===================================================================" -ForegroundColor Green
+    Write-Host ""
+    
+    Write-Host "Infrastructure Services:" -ForegroundColor Cyan
+    Write-Host "  PostgreSQL:  localhost:5432" -ForegroundColor White
+    Write-Host "  Kafka:       localhost:9092" -ForegroundColor White
+    Write-Host "  Redis:       localhost:6379" -ForegroundColor White
+    Write-Host "  Prometheus:  http://localhost:9090" -ForegroundColor White
+    Write-Host "  Grafana:     http://localhost:3000" -ForegroundColor White
+    Write-Host ""
+    
+    Write-Host "Application:" -ForegroundColor Cyan
+    Write-Host "  Dashboard:   http://localhost:5173" -ForegroundColor White
+    Write-Host "  Agents:      15 agents running on ports 8001-8021" -ForegroundColor White
+    Write-Host ""
+    
+    Write-Host "Logs:" -ForegroundColor Cyan
+    Write-Host "  Setup:       $LogFile" -ForegroundColor White
+    Write-Host "  Agents:      $LogDir\agents_$Timestamp.log" -ForegroundColor White
+    Write-Host "  Dashboard:   $LogDir\dashboard_$Timestamp.log" -ForegroundColor White
+    Write-Host ""
+    
+    Write-Host "Monitoring:" -ForegroundColor Cyan
+    Write-Host "  Agent status: python start-agents-monitor.py" -ForegroundColor White
+    Write-Host "  Logs:         Get-Content logs\agent_monitor_*.log -Tail 50" -ForegroundColor White
+    Write-Host ""
+    
+    Write-Host "To stop all services:" -ForegroundColor Cyan
+    Write-Host "  .\shutdown-all.ps1" -ForegroundColor White
+    Write-Host ""
+    
+    Write-Host "===================================================================" -ForegroundColor Green
     Write-Host ""
 }
 
 # Main execution
-function Main {
+try {
     Show-Banner
     
-    # Step 1: Check prerequisites
+    # Load environment configuration
+    Load-EnvFile
+    
+    # Check prerequisites
     Test-Prerequisites
     
-    # Step 2: Start infrastructure
+    # Start infrastructure
     if (-not $SkipInfrastructure) {
         Start-Infrastructure
+        Wait-ForPostgreSQL
+        Wait-ForKafka
     } else {
         Write-Log "Skipping infrastructure startup (already running)" "INFO"
         Write-Host ""
     }
     
-    # Step 3: Initialize database
+    # Initialize database
     if (-not $SkipDatabase) {
         Initialize-Database
         Initialize-KafkaTopics
@@ -419,7 +602,7 @@ function Main {
         Write-Host ""
     }
     
-    # Step 4: Start agents
+    # Start agents
     if (-not $SkipAgents) {
         Start-Agents
     } else {
@@ -427,7 +610,7 @@ function Main {
         Write-Host ""
     }
     
-    # Step 5: Start dashboard
+    # Start dashboard
     if (-not $SkipDashboard) {
         Start-Dashboard
     } else {
@@ -435,28 +618,14 @@ function Main {
         Write-Host ""
     }
     
-    # Final summary
-    Write-Host ""
-    Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
-    Write-Host "   SETUP COMPLETE - SYSTEM READY" -ForegroundColor Green
-    Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
-    Write-Host ""
-    Write-Log "System is now running!" "SUCCESS"
-    Write-Host ""
-    Write-Host "Access Points:" -ForegroundColor Cyan
-    Write-Host "  • Dashboard:  http://localhost:5173" -ForegroundColor White
-    Write-Host "  • API Gateway: http://localhost:8000" -ForegroundColor White
-    Write-Host "  • Order Agent: http://localhost:8001" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Logs:" -ForegroundColor Cyan
-    Write-Host "  • Setup Log:  $LogFile" -ForegroundColor White
-    Write-Host "  • Agent Logs: $LogDir\agents_$Timestamp.log" -ForegroundColor White
-    Write-Host "  • Dashboard:  $LogDir\dashboard_$Timestamp.log" -ForegroundColor White
-    Write-Host ""
-    Write-Host "To stop the system, run: .\shutdown-all.ps1" -ForegroundColor Yellow
-    Write-Host ""
+    # Show summary
+    Show-Summary
+    
+    Write-Log "Setup and launch completed successfully!" "SUCCESS"
+    
+} catch {
+    Write-Log "Setup failed with error: $_" "ERROR"
+    Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
+    exit 1
 }
-
-# Run main function
-Main
 
