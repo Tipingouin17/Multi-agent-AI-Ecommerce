@@ -37,6 +37,7 @@ COLORS = {
     "document_generation_agent": "\033[35m",  # Purple
     "knowledge_management_agent": "\033[36m",  # Teal
     "risk_anomaly_detection_agent": "\033[33m",  # Orange
+    "monitoring_agent": "\033[97m",  # White
 }
 
 RESET = "\033[0m"
@@ -72,6 +73,7 @@ AGENTS = [
     # Security & Monitoring
     {"name": "fraud_detection_agent", "display": "Fraud", "file": "agents/fraud_detection_agent.py", "port": 8012},
     {"name": "risk_anomaly_detection_agent", "display": "Risk", "file": "agents/risk_anomaly_detection_agent.py", "port": 8021},
+    {"name": "monitoring_agent", "display": "Monitoring", "file": "agents/monitoring_agent.py", "port": 8015},
 ]
 
 class AgentMonitor:
