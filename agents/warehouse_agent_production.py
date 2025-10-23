@@ -89,7 +89,7 @@ class WarehouseAgent(BaseAgentV2):
         """
         try:
             self.db_manager = DatabaseManager(self.db_url)
-            await self.db_manager.create_all()
+            await self.db_manager.create_tables()
             self._db_initialized = True
             logger.info("Warehouse Agent database initialized successfully.")
         except Exception as e:
@@ -443,8 +443,8 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    # Get port from environment variable, default to 8004
-    port = int(os.getenv("WAREHOUSE_AGENT_PORT", 8004))
+    # Get port from environment variable, default to 8005
+    port = int(os.getenv("WAREHOUSE_AGENT_PORT", 8005))
     logger.info(f"Starting Warehouse Agent on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 

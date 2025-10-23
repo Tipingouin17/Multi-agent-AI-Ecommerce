@@ -498,9 +498,9 @@ class FraudDetectionAgent(BaseAgentV2):
     This agent provides ML-based fraud detection, risk scoring, and anomaly detection
     for transactions, orders, and user behavior.
     """
-    def __init__(self):
+    def __init__(self, agent_id: str = "fraud_detection_agent", **kwargs):
         """Initializes the FraudDetectionAgent."""
-        super().__init__(agent_id="fraud_detection_agent")
+        super().__init__(agent_id=agent_id, **kwargs)
         # Initialize database manager with fallback
         try:
             self.db_manager = get_database_manager()
