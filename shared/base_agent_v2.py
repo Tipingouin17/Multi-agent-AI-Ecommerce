@@ -42,6 +42,28 @@ try:
 except ImportError:
     DATABASE_AVAILABLE = False
 
+# Import error handling and monitoring
+try:
+    from .error_handling import (
+        CircuitBreaker as EnhancedCircuitBreaker,
+        retry_with_backoff,
+        GracefulDegradation,
+        degradation_manager,
+        categorize_error,
+        safe_execute,
+        ErrorCategory,
+        ErrorSeverity
+    )
+    from .monitoring import (
+        get_metrics_collector,
+        get_alert_manager,
+        PerformanceMonitor,
+        AlertSeverity as MonitoringAlertSeverity
+    )
+    ERROR_HANDLING_AVAILABLE = True
+except ImportError:
+    ERROR_HANDLING_AVAILABLE = False
+
 
 class MessageType(str, Enum):
     """Standard message types for inter-agent communication."""
@@ -300,6 +322,19 @@ class BaseAgentV2(ABC):
         # Circuit breakers
         self.db_circuit_breaker = CircuitBreaker(name="database")
         self.kafka_circuit_breaker = CircuitBreaker(name="kafka")
+        
+        # Enhanced error handling and monitoring (if available)
+        if ERROR_HANDLING_AVAILABLE:
+            self.metrics_collector = get_metrics_collector(agent_id)
+            self.alert_manager = get_alert_manager(agent_id)
+            self.performance_monitor = PerformanceMonitor(self.metrics_collector)
+            self.degradation = degradation_manager
+            self.logger.info("Enhanced monitoring enabled", agent_id=agent_id)
+        else:
+            self.metrics_collector = None
+            self.alert_manager = None
+            self.performance_monitor = None
+            self.degradation = None
         
         # Shutdown event
         self.shutdown_event = asyncio.Event()
@@ -587,6 +622,10 @@ class BaseAgentV2(ABC):
             self.error_count += 1
             self.logger.error("Failed to start agent", error=str(e))
             raise
+    
+    async def shutdown(self):
+        """Shutdown the agent gracefully. Alias for stop().""" 
+        await self.stop()
     
     async def stop(self):
         """Stop the agent gracefully."""
