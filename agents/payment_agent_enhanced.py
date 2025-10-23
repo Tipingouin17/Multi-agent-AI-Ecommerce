@@ -1078,6 +1078,223 @@ async def health_check():
     return {"status": "healthy", "agent": "payment_agent_enhanced", "version": "1.0.0"}
 
 
+# =====================================================
+# ANALYTICS ENDPOINTS
+# =====================================================
+
+@app.get("/api/v1/payment/analytics/transactions")
+async def get_transaction_analytics(
+    days: int = Query(30, ge=1, le=365),
+    agent: PaymentAgent = Depends(get_payment_agent)
+):
+    """Get payment transaction analytics for the specified period."""
+    try:
+        from_date = datetime.utcnow() - timedelta(days=days)
+        
+        # Query transactions from database
+        async with agent.db_manager.get_session() as session:
+            from sqlalchemy import select, func
+            from agents.payment_repository import PaymentTransactionDB
+            
+            # Total transactions
+            total_result = await session.execute(
+                select(func.count(PaymentTransactionDB.transaction_id))
+                .where(PaymentTransactionDB.created_at >= from_date)
+            )
+            total_transactions = total_result.scalar() or 0
+            
+            # Total revenue
+            revenue_result = await session.execute(
+                select(func.sum(PaymentTransactionDB.amount))
+                .where(PaymentTransactionDB.created_at >= from_date)
+                .where(PaymentTransactionDB.status == TransactionStatus.COMPLETED)
+            )
+            total_revenue = revenue_result.scalar() or Decimal('0')
+            
+            # Transactions by status
+            status_result = await session.execute(
+                select(
+                    PaymentTransactionDB.status,
+                    func.count(PaymentTransactionDB.transaction_id)
+                )
+                .where(PaymentTransactionDB.created_at >= from_date)
+                .group_by(PaymentTransactionDB.status)
+            )
+            transactions_by_status = {
+                row[0]: row[1] for row in status_result.all()
+            }
+            
+            # Transactions by gateway
+            gateway_result = await session.execute(
+                select(
+                    PaymentTransactionDB.gateway_id,
+                    func.count(PaymentTransactionDB.transaction_id),
+                    func.sum(PaymentTransactionDB.amount)
+                )
+                .where(PaymentTransactionDB.created_at >= from_date)
+                .where(PaymentTransactionDB.status == TransactionStatus.COMPLETED)
+                .group_by(PaymentTransactionDB.gateway_id)
+            )
+            transactions_by_gateway = {
+                str(row[0]): {
+                    "count": row[1],
+                    "revenue": str(row[2] or Decimal('0'))
+                }
+                for row in gateway_result.all()
+            }
+            
+            # Success rate
+            success_count = transactions_by_status.get(TransactionStatus.COMPLETED, 0)
+            success_rate = (success_count / total_transactions * 100) if total_transactions > 0 else 0
+            
+            return {
+                "period_days": days,
+                "from_date": from_date.isoformat(),
+                "total_transactions": total_transactions,
+                "total_revenue": str(total_revenue),
+                "success_rate": round(success_rate, 2),
+                "transactions_by_status": transactions_by_status,
+                "transactions_by_gateway": transactions_by_gateway,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+    except Exception as e:
+        logger.error("get_transaction_analytics_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/payment/analytics/refunds")
+async def get_refund_analytics(
+    days: int = Query(30, ge=1, le=365),
+    agent: PaymentAgent = Depends(get_payment_agent)
+):
+    """Get refund analytics for the specified period."""
+    try:
+        from_date = datetime.utcnow() - timedelta(days=days)
+        
+        async with agent.db_manager.get_session() as session:
+            from sqlalchemy import select, func
+            from agents.payment_repository import PaymentRefundDB
+            
+            # Total refunds
+            total_result = await session.execute(
+                select(func.count(PaymentRefundDB.refund_id))
+                .where(PaymentRefundDB.created_at >= from_date)
+            )
+            total_refunds = total_result.scalar() or 0
+            
+            # Total refund amount
+            amount_result = await session.execute(
+                select(func.sum(PaymentRefundDB.refund_amount))
+                .where(PaymentRefundDB.created_at >= from_date)
+                .where(PaymentRefundDB.status == RefundStatus.COMPLETED)
+            )
+            total_refund_amount = amount_result.scalar() or Decimal('0')
+            
+            # Refunds by type
+            type_result = await session.execute(
+                select(
+                    PaymentRefundDB.refund_type,
+                    func.count(PaymentRefundDB.refund_id),
+                    func.sum(PaymentRefundDB.refund_amount)
+                )
+                .where(PaymentRefundDB.created_at >= from_date)
+                .where(PaymentRefundDB.status == RefundStatus.COMPLETED)
+                .group_by(PaymentRefundDB.refund_type)
+            )
+            refunds_by_type = {
+                row[0]: {
+                    "count": row[1],
+                    "amount": str(row[2] or Decimal('0'))
+                }
+                for row in type_result.all()
+            }
+            
+            # Refunds by status
+            status_result = await session.execute(
+                select(
+                    PaymentRefundDB.status,
+                    func.count(PaymentRefundDB.refund_id)
+                )
+                .where(PaymentRefundDB.created_at >= from_date)
+                .group_by(PaymentRefundDB.status)
+            )
+            refunds_by_status = {
+                row[0]: row[1] for row in status_result.all()
+            }
+            
+            return {
+                "period_days": days,
+                "from_date": from_date.isoformat(),
+                "total_refunds": total_refunds,
+                "total_refund_amount": str(total_refund_amount),
+                "refunds_by_type": refunds_by_type,
+                "refunds_by_status": refunds_by_status,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+    except Exception as e:
+        logger.error("get_refund_analytics_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/payment/analytics/revenue")
+async def get_revenue_analytics(
+    days: int = Query(30, ge=1, le=365),
+    agent: PaymentAgent = Depends(get_payment_agent)
+):
+    """Get revenue analytics with daily breakdown."""
+    try:
+        from_date = datetime.utcnow() - timedelta(days=days)
+        
+        async with agent.db_manager.get_session() as session:
+            from sqlalchemy import select, func, cast, Date
+            from agents.payment_repository import PaymentTransactionDB
+            
+            # Daily revenue
+            daily_result = await session.execute(
+                select(
+                    cast(PaymentTransactionDB.created_at, Date).label('date'),
+                    func.count(PaymentTransactionDB.transaction_id),
+                    func.sum(PaymentTransactionDB.amount)
+                )
+                .where(PaymentTransactionDB.created_at >= from_date)
+                .where(PaymentTransactionDB.status == TransactionStatus.COMPLETED)
+                .group_by('date')
+                .order_by('date')
+            )
+            daily_revenue = [
+                {
+                    "date": row[0].isoformat(),
+                    "transactions": row[1],
+                    "revenue": str(row[2] or Decimal('0'))
+                }
+                for row in daily_result.all()
+            ]
+            
+            # Total revenue
+            total_revenue = sum(
+                Decimal(day["revenue"]) for day in daily_revenue
+            )
+            
+            # Average transaction value
+            total_transactions = sum(day["transactions"] for day in daily_revenue)
+            avg_transaction_value = (
+                total_revenue / total_transactions if total_transactions > 0 else Decimal('0')
+            )
+            
+            return {
+                "period_days": days,
+                "from_date": from_date.isoformat(),
+                "total_revenue": str(total_revenue),
+                "total_transactions": total_transactions,
+                "average_transaction_value": str(avg_transaction_value),
+                "daily_revenue": daily_revenue,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+    except Exception as e:
+        logger.error("get_revenue_analytics_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PAYMENT_AGENT_PORT", 8004))
