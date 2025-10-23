@@ -168,6 +168,7 @@ class DatabaseManager:
         async with self.get_async_session() as session:
             yield session
     
+    @asynccontextmanager
     async def get_async_session(self) -> AsyncGenerator[AsyncSession, None]:
         """Get an async database session with automatic cleanup."""
         if not self._initialized:
