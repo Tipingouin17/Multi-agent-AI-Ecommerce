@@ -777,9 +777,7 @@ if __name__ == "__main__":
     DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/ecommerce")
     KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "localhost:9092").split(',')
     
-    # Initialize DatabaseManager with DATABASE_URL from environment
-    DatabaseManager.set_database_url(DATABASE_URL)
-
+    # DatabaseManager is initialized via get_database_manager() in the agent's __init__
     marketplace_agent = MarketplaceConnectorAgent(AGENT_ID, AGENT_TYPE)
     # The FastAPI app is already created within the agent's __init__
     app = marketplace_agent.fastapi_app

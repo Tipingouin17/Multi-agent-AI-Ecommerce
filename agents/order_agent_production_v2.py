@@ -31,7 +31,7 @@ if project_root not in sys.path:
 
 # Import base agent and models
 from shared.base_agent import BaseAgent, MessageType, AgentMessage
-from shared.db_manager import DBManager
+from shared.database import DatabaseManager
 from shared.db_helpers import DatabaseHelper
 from shared.models import OrderDB, OrderItemDB, OrderStatus, CustomerDB
 
@@ -80,7 +80,7 @@ class OrderAgent(BaseAgent):
         
         # Database setup
         self.DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/ecommerce")
-        self.db_manager = DBManager(self.DATABASE_URL)
+        self.db_manager = DatabaseManager(self.DATABASE_URL)
         self.db_helper = DatabaseHelper()
         self._db_initialized = False
         

@@ -144,7 +144,8 @@ class ProductAgent(BaseAgentV2):
         
         # Database setup
         db_config = DatabaseConfig()
-        self.database_url = db_config.get_async_url()
+        # Convert postgresql:// to postgresql+asyncpg:// for async support
+        self.database_url = db_config.url.replace('postgresql://', 'postgresql+asyncpg://')
         self.engine = create_async_engine(self.database_url, echo=False)
         self.async_session = async_sessionmaker(
             self.engine,
