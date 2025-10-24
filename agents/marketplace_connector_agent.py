@@ -486,10 +486,19 @@ class MarketplaceConnectorAgent(BaseAgentV2):
     async def _initialize_db(self):
         """Initializes the database manager connection."""
         if not self._db_initialized:
-            # Create new DatabaseManager instead of using global
-            from shared.database import DatabaseManager
-            self.db_manager = DatabaseManager()
-            await self.db_manager.initialize_async()
+            # Try to get global database manager first
+            try:
+                self.db_manager = get_database_manager()
+                self.logger.info("Using global database manager")
+            except (RuntimeError, ImportError):
+                # Create new database manager with config
+                from shared.models import DatabaseConfig
+                from shared.database_manager import EnhancedDatabaseManager
+                db_config = DatabaseConfig()
+                self.db_manager = EnhancedDatabaseManager(db_config)
+                await self.db_manager.initialize(max_retries=5)
+                self.logger.info("Created new enhanced database manager")
+            
             self.repo = MarketplaceRepository(self.db_manager)
             self.service = MarketplaceService(self.repo)
             self._db_initialized = True

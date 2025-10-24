@@ -171,8 +171,10 @@ class MonitoringAgent(BaseAgentV2):
             
             # Initialize database
             db_config = DatabaseConfig()
+            # Build database URL manually since DatabaseConfig doesn't have get_database_url()
+            db_url = f"postgresql+asyncpg://{db_config.username}:{db_config.password}@{db_config.host}:{db_config.port}/{db_config.database}"
             self.db_helper = DatabaseHelper(
-                db_config.get_database_url(),
+                db_url,
                 model=AgentHealthDB
             )
             
