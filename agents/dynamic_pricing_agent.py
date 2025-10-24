@@ -121,7 +121,7 @@ class DynamicPricingAgent(BaseAgentV2):
     
     def __init__(self, **kwargs):
         super().__init__(agent_id="dynamic_pricing_agent", **kwargs)
-        self.db_helper = DatabaseHelper() # Initialize DB Helper
+        self.db_helper: Optional[DatabaseHelper] = None
         self.db_manager: Optional[DatabaseManager] = None
         
         # Pricing data and strategies
@@ -139,12 +139,14 @@ class DynamicPricingAgent(BaseAgentV2):
         await super().initialize()
         self.logger.info("Initializing Dynamic Pricing Agent")
         
-        # Initialize database manager (assuming it's done elsewhere or via get_database_manager)
+        # Initialize database manager
         try:
             self.db_manager = get_database_manager()
             await self.db_manager.initialize(max_retries=5)
+            # Initialize DatabaseHelper AFTER DatabaseManager is ready
+            self.db_helper = DatabaseHelper(self.db_manager)
         except Exception as e:
-            self.logger.error("Failed to initialize database manager", error=str(e))
+            self.logger.error("Failed to initialize database manager or helper", error=str(e))
             # Continue without DB if not critical for initial tasks, but log error
             
         # Initialize pricing strategies
