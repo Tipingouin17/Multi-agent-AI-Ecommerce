@@ -79,7 +79,7 @@ class WarehouseAgent(BaseAgentV2):
         logger.info("Warehouse Agent initialized. Setting up database and FastAPI.")
 
         # FastAPI app setup
-        self.app = FastAPI(title="Warehouse Agent API")
+        self.app = FastAPI(title="Warehouse Agent API", lifespan=self.lifespan_context)
         
         # Add CORS middleware for dashboard integration
         
@@ -92,7 +92,7 @@ class WarehouseAgent(BaseAgentV2):
             allow_headers=["*"],
         )
         self._setup_routes()
-        self.setup_event_handlers()
+        # self.setup_event_handlers() # Logic moved to lifespan context manager
 
     async def _initialize_database(self):
         """
@@ -108,19 +108,22 @@ class WarehouseAgent(BaseAgentV2):
             logger.error(f"Failed to initialize database for Warehouse Agent: {e}")
             self._db_initialized = False
 
-    def setup_event_handlers(self):
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
         """
-        Sets up FastAPI startup and shutdown event handlers for database initialization.
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
         """
-        @self.app.on_event("startup")
-        async def startup_event():
-            await self._initialize_database()
-            logger.info("Warehouse Agent startup complete.")
-
-        @self.app.on_event("shutdown")
-        async def shutdown_event():
-            logger.info("Warehouse Agent shutting down.")
-            # Add any cleanup logic here if necessary
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Warehouse Agent")
+        await self._initialize_database()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Warehouse Agent")
+        # No specific cleanup logic in the original shutdown event, but we can call general cleanup
+        await self.cleanup()
+        logger.info("Warehouse Agent API shutdown complete")
 
     def _setup_routes(self):
         """
@@ -445,11 +448,7 @@ if __name__ == "__main__":
     agent = WarehouseAgent()
     app = agent.app
     
-    # Initialize agent before starting server
-    import asyncio
-    async def startup():
-        await agent.initialize()
-    asyncio.run(startup())
+    # The lifespan context manager now handles agent initialization.
     
     # Ensure environment variables are loaded if running directly
     from dotenv import load_dotenv
