@@ -524,12 +524,16 @@ class DatabaseConfig(BaseModel):
         import os
         # Support both DATABASE_* and POSTGRES_* prefixes for compatibility
         if not data:
+            # Read environment variables
+            db_password = os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD') or 'postgres'
+            print(f"[DatabaseConfig] DATABASE_PASSWORD from env: {os.getenv('DATABASE_PASSWORD')}")
+            print(f"[DatabaseConfig] Using password: {db_password}")
             data = {
-                'host': os.getenv('DATABASE_HOST') or os.getenv('POSTGRES_HOST', 'localhost'),
-                'port': int(os.getenv('DATABASE_PORT') or os.getenv('POSTGRES_PORT', '5432')),
-                'database': os.getenv('DATABASE_NAME') or os.getenv('POSTGRES_NAME', 'multi_agent_ecommerce'),
-                'username': os.getenv('DATABASE_USER') or os.getenv('POSTGRES_USER', 'postgres'),
-                'password': os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD', 'postgres'),
+                'host': os.getenv('DATABASE_HOST') or os.getenv('POSTGRES_HOST') or 'localhost',
+                'port': int(os.getenv('DATABASE_PORT') or os.getenv('POSTGRES_PORT') or '5432'),
+                'database': os.getenv('DATABASE_NAME') or os.getenv('POSTGRES_NAME') or 'multi_agent_ecommerce',
+                'username': os.getenv('DATABASE_USER') or os.getenv('POSTGRES_USER') or 'postgres',
+                'password': db_password,
             }
         super().__init__(**data)
     
