@@ -292,7 +292,7 @@ class PromotionAgent(BaseAgentV2):
         except RuntimeError:
             # Fallback to creating a new manager if global one is not set
             from shared.models import DatabaseConfig
-            self.db_manager = DatabaseManager(DatabaseConfig().database_url)
+            self.db_manager = DatabaseManager(DatabaseConfig().url)
         
         await self.db_manager.initialize_async()
         
