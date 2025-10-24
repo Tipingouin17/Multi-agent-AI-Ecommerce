@@ -457,16 +457,13 @@ class DynamicPricingAgent(BaseAgentV2):
         target_margin: float, 
         factors: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
-        """Use AI to generate price recommendation."""
-        try:
-            if not os.getenv("OPENAI_API_KEY"):
-                self.logger.warning("OpenAI API key not configured, using rule-based pricing")
-                if not self._db_initialized:
-                    pass
+        """Use AI to genera        if not os.getenv("OPENAI_API_KEY"):
+            self.logger.warning("OpenAI API key not configured, using rule-based pricing")
+            if not self._db_initialized:
+                pass
             return None
         
-        async with self.db_manager.get_session() as session:
-            pass
+        async with self.db_manager.get_session() as session:            pass
             pass
             pass
             pass
