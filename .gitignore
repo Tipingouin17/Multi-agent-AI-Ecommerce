@@ -1,5 +1,4 @@
 # Environment variables and secrets
-.env
 .env.local
 .env.*.local
 *.key
@@ -75,7 +74,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .venv
 env/
 venv/

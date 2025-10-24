@@ -19,7 +19,34 @@ This guide explains how to set up the infrastructure for the Multi-Agent E-comme
 3. **Python dependencies** must be installed
    ```bash
    pip install -r requirements.txt
+   pip install python-dotenv  # For .env file support
    ```
+
+## Configuration
+
+### Environment Variables
+
+The setup script reads configuration from `.env` file. A default `.env` file is provided with sensible defaults for local development.
+
+**Default configuration (`.env`):**
+```env
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=multi_agent_ecommerce
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+```
+
+**To customize:**
+1. Edit `.env` file directly, OR
+2. Create `.env.correct` or `.env.test` (loaded in priority order)
+
+The script will automatically load the first available file:
+- `.env` (default)
+- `.env.correct` (if exists)
+- `.env.test` (if exists)
 
 ## Quick Start
 
@@ -46,21 +73,22 @@ python setup_infrastructure.py --drop-existing --seed-data
 
 ## What Does the Setup Script Do?
 
-### 1. Database Setup
+### 1. Environment Loading
+- Automatically loads configuration from `.env` file
+- Falls back to `.env.correct` or `.env.test` if `.env` doesn't exist
+- Uses system environment variables if no `.env` file is found
+
+### 2. Database Setup
 - Creates PostgreSQL database tables for all agents
 - Tables include:
   - `orders`, `order_items`
   - `customers`
   - `products`, `inventory`
-  - `payments`
+  - `warehouses`, `carriers`
   - `shipments`
-  - `return_requests`, `warranty_claims`
-  - `quality_checks`
-  - `fraud_alerts`
-  - `notifications`
   - And more...
 
-### 2. Kafka Topics Setup
+### 3. Kafka Topics Setup
 - Creates all required Kafka topics with 3 partitions each
 - Topics include:
   - Order lifecycle: `order_created`, `order_confirmed`, `order_shipped`, etc.
@@ -82,13 +110,13 @@ python setup_infrastructure.py --drop-existing --seed-data
    docker ps | grep postgres
    ```
 
-2. Verify database credentials in `.env` or environment variables:
-   ```bash
-   export DB_HOST=localhost
-   export DB_PORT=5432
-   export DB_NAME=multi_agent_ecommerce
-   export DB_USER=postgres
-   export DB_PASSWORD=postgres
+2. Verify database credentials in `.env`:
+   ```env
+   DATABASE_HOST=localhost
+   DATABASE_PORT=5432
+   DATABASE_NAME=multi_agent_ecommerce
+   DATABASE_USER=postgres
+   DATABASE_PASSWORD=postgres
    ```
 
 3. Test connection manually:
@@ -106,9 +134,9 @@ python setup_infrastructure.py --drop-existing --seed-data
    docker ps | grep kafka
    ```
 
-2. Verify Kafka broker address:
-   ```bash
-   export KAFKA_BROKERS=localhost:9092
+2. Verify Kafka broker address in `.env`:
+   ```env
+   KAFKA_BOOTSTRAP_SERVERS=localhost:9092
    ```
 
 3. If Kafka is not available, the system will still work but without event streaming
@@ -139,6 +167,15 @@ python setup_infrastructure.py --drop-existing --seed-data
    CREATE SCHEMA public;
    ```
 
+### python-dotenv Not Installed
+
+**Warning:** `python-dotenv not installed. Using system environment variables only.`
+
+**Solution:**
+```bash
+pip install python-dotenv
+```
+
 ## Next Steps
 
 After successful setup:
@@ -159,34 +196,42 @@ After successful setup:
    - API docs: http://localhost:8001/docs (Order Agent)
    - Monitoring: http://localhost:8015/docs
 
-## Configuration
+## Configuration Reference
 
 ### Database Configuration
 
-Edit `shared/models.py` to change database settings:
+Edit `.env` to change database settings:
 
-```python
-class DatabaseConfig(BaseModel):
-    host: str = "localhost"
-    port: int = 5432
-    database: str = "multi_agent_ecommerce"
-    username: str = "postgres"
-    password: str = "postgres"
+```env
+DATABASE_HOST=localhost          # Database host
+DATABASE_PORT=5432               # Database port
+DATABASE_NAME=multi_agent_ecommerce  # Database name
+DATABASE_USER=postgres           # Database username
+DATABASE_PASSWORD=postgres       # Database password
 ```
 
 ### Kafka Configuration
 
-Set environment variable:
+Edit `.env` to change Kafka settings:
 
-```bash
-export KAFKA_BROKERS=localhost:9092
+```env
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 ```
 
 For multiple brokers:
 
-```bash
-export KAFKA_BROKERS=broker1:9092,broker2:9092,broker3:9092
+```env
+KAFKA_BOOTSTRAP_SERVERS=broker1:9092,broker2:9092,broker3:9092
 ```
+
+### Environment Variables Priority
+
+The script loads environment variables in this order (first found wins):
+
+1. `.env` (default, committed to repo)
+2. `.env.correct` (if exists)
+3. `.env.test` (if exists)
+4. System environment variables (fallback)
 
 ## Manual Setup (Alternative)
 

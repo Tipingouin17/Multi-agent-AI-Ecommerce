@@ -18,10 +18,26 @@ Options:
 import asyncio
 import sys
 import argparse
+import os
 from pathlib import Path
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    # Try to load .env file (look for .env, .env.correct, .env.test in order)
+    env_files = ['.env', '.env.correct', '.env.test']
+    for env_file in env_files:
+        env_path = Path(__file__).parent / env_file
+        if env_path.exists():
+            load_dotenv(env_path)
+            print(f"Loaded environment from: {env_file}")
+            break
+except ImportError:
+    print("python-dotenv not installed. Using system environment variables only.")
+    print("Install with: pip install python-dotenv")
 
 import structlog
 from sqlalchemy import text
@@ -90,12 +106,18 @@ async def setup_database(drop_existing: bool = False):
     logger.info("Setting up PostgreSQL database...")
     
     try:
-        # Initialize database manager
-        db_config = DatabaseConfig()
+        # Initialize database manager with config from environment
+        db_config = DatabaseConfig(
+            host=os.getenv('DATABASE_HOST', 'localhost'),
+            port=int(os.getenv('DATABASE_PORT', '5432')),
+            database=os.getenv('DATABASE_NAME', 'multi_agent_ecommerce'),
+            username=os.getenv('DATABASE_USER', 'postgres'),
+            password=os.getenv('DATABASE_PASSWORD', 'postgres')
+        )
         db_manager = EnhancedDatabaseManager(db_config)
         await db_manager.initialize(max_retries=5)
         
-        logger.info(f"Connected to database: {db_config.database}")
+        logger.info(f"Connected to database: {db_config.database} at {db_config.host}:{db_config.port}")
         
         # Drop existing tables if requested
         if drop_existing:
@@ -163,7 +185,8 @@ async def setup_kafka():
         import os
         
         # Get Kafka broker from environment or use default
-        kafka_brokers = os.getenv("KAFKA_BROKERS", "localhost:9092").split(',')
+        kafka_brokers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", os.getenv("KAFKA_BROKERS", "localhost:9092")).split(',')
+        logger.info(f"Connecting to Kafka brokers: {kafka_brokers}")
         
         # Create Kafka admin client
         admin_client = KafkaAdminClient(
