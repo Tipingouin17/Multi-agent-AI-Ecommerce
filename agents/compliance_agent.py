@@ -1,73 +1,3 @@
-
-"""
-Compliance Agent - Multi-Agent E-Commerce System
-
-This agent manages GDPR compliance, data retention policies, consent management,
-audit trail generation, and regulatory reporting.
-
-DATABASE SCHEMA (migration 018_compliance_agent.sql):
-
-CREATE TABLE data_subjects (
-    subject_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id VARCHAR(100) UNIQUE NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    consent_status JSONB NOT NULL, -- {marketing: true, analytics: false, ...}
-    data_processing_purposes JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE consent_records (
-    consent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    subject_id UUID REFERENCES data_subjects(subject_id),
-    consent_type VARCHAR(100) NOT NULL, -- 'marketing', 'analytics', 'profiling', 'third_party'
-    consent_given BOOLEAN NOT NULL,
-    consent_method VARCHAR(50), -- 'explicit', 'implicit', 'opt_in', 'opt_out'
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE data_access_requests (
-    request_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    subject_id UUID REFERENCES data_subjects(subject_id),
-    request_type VARCHAR(50) NOT NULL, -- 'access', 'rectification', 'erasure', 'portability', 'restriction'
-    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'in_progress', 'completed', 'rejected'
-    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP,
-    response_data JSONB
-);
-
-CREATE TABLE audit_logs (
-    audit_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    entity_type VARCHAR(100) NOT NULL, -- 'order', 'customer', 'product', 'payment'
-    entity_id VARCHAR(100) NOT NULL,
-    action VARCHAR(100) NOT NULL, -- 'create', 'read', 'update', 'delete'
-    actor_id VARCHAR(100) NOT NULL, -- User or system that performed action
-    actor_type VARCHAR(50), -- 'user', 'system', 'agent'
-    changes JSONB, -- Before/after values
-    ip_address VARCHAR(45),
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE retention_policies (
-    policy_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    data_type VARCHAR(100) NOT NULL, -- 'order', 'customer', 'payment', 'log'
-    retention_period_days INTEGER NOT NULL,
-    deletion_method VARCHAR(50), -- 'hard_delete', 'anonymize', 'archive'
-    is_active BOOLEAN DEFAULT true
-);
-
-CREATE TABLE compliance_reports (
-    report_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    report_type VARCHAR(100) NOT NULL, -- 'gdpr_audit', 'data_breach', 'consent_summary'
-    period_start DATE,
-    period_end DATE,
-    report_data JSONB NOT NULL,
-    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-"""
-
 import os
 import sys
 import uvicorn
@@ -77,9 +7,11 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import uuid4, UUID
 from enum import Enum
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body
 from pydantic import BaseModel, Field, EmailStr
+from starlette.middleware.cors import CORSMiddleware
 
 # Adjust the path to import from the project root
 current_file_path = os.path.abspath(__file__)
@@ -102,18 +34,6 @@ class RequestType(str, Enum):
     ERASURE = "erasure"
     PORTABILITY = "portability"
     RESTRICTION = "restriction"
-    async def initialize(self):
-        """Initialize agent."""
-        await super().initialize()
-        
-    async def cleanup(self):
-        """Cleanup agent."""
-        await super().cleanup()
-        
-    async def process_business_logic(self, data):
-        """Process business logic."""
-        return {"status": "success"}
-
 
 class RequestStatus(str, Enum):
     """Enumeration for the status of data access requests."""
@@ -232,14 +152,11 @@ class ComplianceRepository:
                 if not subject_id:
                     raise ValueError(f"Data subject not found for customer_id: {consent_data.customer_id}")
 
-                # Update consent_status in data_subjects
-                current_subject = await self.db_helper.get_by_id(session, "data_subjects", "subject_id", subject_id)
-                if current_subject:
-                    current_consent_status = current_subject.get("consent_status", {})
-                    current_consent_status[consent_data.consent_type] = consent_data.consent_given
-                    await self.db_helper.update(session, "data_subjects", subject_id, {"consent_status": current_consent_status, "updated_at": datetime.now()})
+                # Update consent status in data_subjects table
+                update_status = {consent_data.consent_type: consent_data.consent_given}
+                await self.db_helper.update_by_id(session, "data_subjects", subject_id, {"consent_status": update_status})
 
-                # Record consent in consent_records
+                # Record consent history
                 consent_record_data = {
                     "subject_id": subject_id,
                     "consent_type": consent_data.consent_type,
@@ -476,6 +393,22 @@ class ComplianceAgent(BaseAgentV2):
         self._db_initialized = False
         self.fastapi_app = self._create_fastapi_app()
 
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        """
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Compliance Agent")
+        await self.setup()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Compliance Agent")
+        await self.cleanup()
+        logger.info("Compliance Agent API shutdown complete")
+
     async def setup(self):
         """Sets up the database connection and initializes repository and service."""
         try:
@@ -494,6 +427,12 @@ class ComplianceAgent(BaseAgentV2):
             logger.error("ComplianceAgent setup failed", error=str(e))
             # Depending on the error, you might want to exit or retry
             raise
+
+    async def cleanup(self):
+        """Cleans up the database connection."""
+        if self.db_manager:
+            await self.db_manager.close()
+            logger.info("ComplianceAgent database connection closed.")
 
     async def process_message(self, message: AgentMessage):
         """Processes incoming messages for the Compliance Agent.
@@ -527,18 +466,16 @@ class ComplianceAgent(BaseAgentV2):
             await self.send_message(MessageType.ERROR, f"Failed to process message: {str(e)}", recipient_id=message.sender_id)
 
     def _create_fastapi_app(self) -> FastAPI:
-        """Creates and configures the FastAPI application for the agent."""
-        app = FastAPI(title="Compliance Agent API", version="1.0.0", description="API for managing GDPR compliance, consent, data access requests, and audit logging.")
+        """Creates and configures the FastAPI application."""
+        app = FastAPI(title="Compliance Agent API", version="v1", lifespan=self.lifespan_context, description="API for managing GDPR compliance, consent, data access requests, and audit logging.")
 
-        @app.on_event("startup")
-        async def startup_event():
-            await self.setup()
-
-        @app.on_event("shutdown")
-        async def shutdown_event():
-            if self.db_manager:
-                await self.db_manager.close()
-                logger.info("Database connection closed.")
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
         @app.get("/", summary="Root endpoint", tags=["General"])
         async def root():
@@ -677,11 +614,9 @@ if __name__ == "__main__":
     agent_type = os.getenv("AGENT_TYPE", "compliance")
     compliance_agent = ComplianceAgent(agent_id=agent_id, agent_type=agent_type)
 
-    # Run setup to initialize DB and services before starting FastAPI
-    # This is handled by @app.on_event("startup") now, so we just need to run the app.
+    # The lifespan context manager now handles agent setup.
 
     # Get port from environment variable, default to 8017
     port = int(os.getenv("COMPLIANCE_AGENT_PORT", 8017))
     logger.info("Starting Compliance Agent FastAPI server", port=port, agent_id=agent_id)
     uvicorn.run(compliance_agent.fastapi_app, host="0.0.0.0", port=port)
-
