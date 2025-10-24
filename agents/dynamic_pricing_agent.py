@@ -36,7 +36,7 @@ if project_root not in sys.path:
 from shared.openai_helper import chat_completion
 from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import APIResponse
-from shared.database_manager import DatabaseManager, get_database_manager
+from shared.database_manager import EnhancedDatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper # Assuming this is used for DB operations
 from shared.models import OrderDB # Assuming this model is used
 
