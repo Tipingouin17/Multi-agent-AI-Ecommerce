@@ -264,8 +264,26 @@ class AfterSalesRepository:
 # =====================================================
 # AGENT
 # =====================================================
+@asynccontextmanager
+async def lifespan_context(app: FastAPI):
+    """
+    FastAPI Lifespan Context Manager for agent startup and shutdown.
+    """
+    global agent_instance
+    # Startup
+    logger.info("FastAPI Lifespan Startup: After-Sales Agent")
+    agent_instance = AfterSalesAgent()
+    await agent_instance.initialize()
+    
+    yield
+    
+    # Shutdown
+    logger.info("FastAPI Lifespan Shutdown: After-Sales Agent")
+    if agent_instance:
+        await agent_instance.cleanup()
+    logger.info("After-Sales Agent API shutdown complete")
 
-class AfterSalesAgent(BaseAgentV2):
+class AfterSalesAgent:(BaseAgentV2):
     """
     After-Sales Agent - Production Ready
     
@@ -530,6 +548,8 @@ class AfterSalesAgent(BaseAgentV2):
 
 # FastAPI app moved to __init__ method as self.app
 
+app = FastAPI(title="After-Sales Agent API", lifespan=lifespan_context)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -539,25 +559,6 @@ app.add_middleware(
 )
 
 agent_instance: Optional[AfterSalesAgent] = None
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize agent on startup"""
-    global agent_instance
-    agent_instance = AfterSalesAgent()
-    await agent_instance.initialize()
-    logger.info("After-Sales Agent API started")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    global agent_instance
-    if agent_instance:
-        if agent_instance.db_manager:
-            await agent_instance.db_manager.close()
-    logger.info("After-Sales Agent API shutdown")
 
 
 @app.get("/health")
