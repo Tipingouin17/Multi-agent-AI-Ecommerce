@@ -170,13 +170,20 @@ class MonitoringAgent(BaseAgentV2):
             logger.info("Initializing Monitoring Agent...")
             
             # Initialize database
-            db_config = DatabaseConfig()
-            # Build database URL manually since DatabaseConfig doesn't have get_database_url()
-            db_url = f"postgresql+asyncpg://{db_config.username}:{db_config.password}@{db_config.host}:{db_config.port}/{db_config.database}"
-            self.db_helper = DatabaseHelper(
-                db_url,
-                model=AgentHealthDB
-            )
+            try:
+                from shared.database_manager import get_database_manager
+                self.db_manager = get_database_manager()
+                logger.info("Using global database manager")
+            except (RuntimeError, ImportError):
+                from shared.models import DatabaseConfig
+                from shared.database_manager import EnhancedDatabaseManager
+                db_config = DatabaseConfig()
+                self.db_manager = EnhancedDatabaseManager(db_config)
+                await self.db_manager.initialize(max_retries=5)
+                logger.info("Created new enhanced database manager")
+            
+            from shared.db_helpers import DatabaseHelper
+            self.db_helper = DatabaseHelper(self.db_manager)
             
             # Create tables
             await self.db_helper.create_tables()
