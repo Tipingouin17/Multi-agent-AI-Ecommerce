@@ -476,9 +476,9 @@ class MarketplaceConnectorAgent(BaseAgentV2):
     def __init__(self, agent_id: str, agent_type: str):
         """Initializes the MarketplaceConnectorAgent."""
         super().__init__(agent_id)
-        self.db_manager = get_database_manager()
-        self.repo = MarketplaceRepository(self.db_manager)
-        self.service = MarketplaceService(self.repo)
+        self.db_manager = None
+        self.repo = None
+        self.service = None
         self.fastapi_app = self._create_fastapi_app()
         self.logger = logger # Use the global structlog logger
         self._db_initialized = False # Flag for database initialization check
@@ -486,7 +486,10 @@ class MarketplaceConnectorAgent(BaseAgentV2):
     async def _initialize_db(self):
         """Initializes the database manager connection."""
         if not self._db_initialized:
+            self.db_manager = get_database_manager()
             await self.db_manager.initialize_async()
+            self.repo = MarketplaceRepository(self.db_manager)
+            self.service = MarketplaceService(self.repo)
             self._db_initialized = True
             self.logger.info("Database connection established for agent.")
 

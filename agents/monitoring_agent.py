@@ -98,7 +98,7 @@ class PerformanceMetricDB(Base):
     metric_value = Column(Float, nullable=False)
     agent_id = Column(String, nullable=True, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-    metadata = Column(Text, nullable=True)  # JSON metadata
+    metric_metadata = Column(Text, nullable=True)  # JSON metadata
 
 # Pydantic Models
 class AgentHealth(BaseModel):

@@ -595,6 +595,22 @@ async def mark_article_helpful_endpoint(
 
 
 
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        if hasattr(self, 'kafka_producer') and self.kafka_producer:
+            await self.kafka_producer.close()
+        if hasattr(self, 'kafka_consumer') and self.kafka_consumer:
+            await self.kafka_consumer.close()
+        if hasattr(self, 'db_manager') and self.db_manager:
+            await self.db_manager.close()
+        logger.info(f"{self.__class__.__name__} cleaned up")
+    
+    async def process_business_logic(self, data: dict) -> dict:
+        """Process business logic"""
+        logger.info(f"Processing business logic in {self.__class__.__name__}", data=data)
+        return {"status": "processed", "data": data}
+
+
 if __name__ == "__main__":
     # This block is for local development/testing and will not be run in the agent's async loop
     # The agent's run() method is started in the startup_event for the FastAPI application.

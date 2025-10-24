@@ -727,7 +727,7 @@ if __name__ == "__main__":
     agent = FraudDetectionAgent(agent_id=agent_id)
 
     # Get port from environment variables
-    port = int(os.getenv("PORT", "8000"))
+    port = int(os.getenv("PORT", "8011"))
 
     logger.info("Starting Fraud Detection Agent FastAPI server", port=port, agent_id=agent_id)
 

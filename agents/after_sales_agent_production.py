@@ -507,6 +507,21 @@ class AfterSalesAgent(BaseAgentV2):
         except Exception as e:
             logger.error("file_warranty_claim_failed", error=str(e))
             raise
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        if self.kafka_producer:
+            await self.kafka_producer.close()
+        if self.kafka_consumer:
+            await self.kafka_consumer.close()
+        if self.db_manager:
+            await self.db_manager.close()
+        logger.info("AfterSalesAgent cleaned up")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process business logic for after-sales operations"""
+        logger.info("Processing after-sales business logic", data=data)
+        return {"status": "processed", "data": data}
 
 
 # =====================================================
