@@ -30,6 +30,9 @@ from shared.db_helpers import DatabaseHelper
 
 logger = structlog.get_logger(__name__)
 
+# Create module-level FastAPI app
+app = FastAPI(title="Quality Control Agent Production API")
+
 
 # =====================================================
 # ENUMS
@@ -529,7 +532,7 @@ async def shutdown_event():
     logger.info("Quality Control Agent API shutdown")
 
 
-@self.app.get("/health")
+@app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
@@ -540,7 +543,7 @@ async def health_check():
     }
 
 
-@self.app.get("/")
+@app.get("/")
 async def root():
     """Root endpoint"""
     return {
@@ -558,7 +561,7 @@ async def root():
     }
 
 
-@self.app.post("/inspections/schedule", summary="Schedule Inspection")
+@app.post("/inspections/schedule", summary="Schedule Inspection")
 async def schedule_inspection(
     product_id: str = Body(...),
     inspection_type: InspectionType = Body(...),
@@ -584,7 +587,7 @@ async def schedule_inspection(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/inspections/{inspection_id}", summary="Get Inspection")
+@app.get("/inspections/{inspection_id}", summary="Get Inspection")
 async def get_inspection(inspection_id: str = Path(...)):
     """Get inspection by ID"""
     if not agent_instance:
@@ -602,7 +605,7 @@ async def get_inspection(inspection_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.post("/inspections/{inspection_id}/start", summary="Start Inspection")
+@app.post("/inspections/{inspection_id}/start", summary="Start Inspection")
 async def start_inspection(inspection_id: str = Path(...)):
     """Start an inspection"""
     if not agent_instance:
@@ -620,7 +623,7 @@ async def start_inspection(inspection_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.post("/inspections/{inspection_id}/complete", summary="Complete Inspection")
+@app.post("/inspections/{inspection_id}/complete", summary="Complete Inspection")
 async def complete_inspection(
     inspection_id: str = Path(...),
     result: InspectionResult = Body(...)
@@ -639,7 +642,7 @@ async def complete_inspection(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/products/{product_id}/defects", summary="Get Product Defects")
+@app.get("/products/{product_id}/defects", summary="Get Product Defects")
 async def get_product_defects(product_id: str = Path(...)):
     """Get all defects for a product"""
     if not agent_instance:
@@ -657,7 +660,7 @@ async def get_product_defects(product_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/products/{product_id}/metrics", summary="Get Product Quality Metrics")
+@app.get("/products/{product_id}/metrics", summary="Get Product Quality Metrics")
 async def get_product_metrics(product_id: str = Path(...)):
     """Get quality metrics for a product"""
     if not agent_instance:
@@ -676,5 +679,5 @@ async def get_product_metrics(product_id: str = Path(...)):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8022))
     logger.info(f"Starting Quality Control Agent on port {port}")
-    uvicorn.run(agent.app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
 

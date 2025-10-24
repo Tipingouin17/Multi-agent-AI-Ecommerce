@@ -37,6 +37,9 @@ from sqlalchemy.orm import relationship
 
 logger = structlog.get_logger(__name__)
 
+# Create module-level FastAPI app
+app = FastAPI(title="Knowledge Management Agent API")
+
 # Environment variables
 KAFKA_BROKER_URL = os.getenv("KAFKA_BROKER_URL", "localhost:9092")
 KAFKA_KNOWLEDGE_TOPIC = os.getenv("KAFKA_KNOWLEDGE_TOPIC", "knowledge_events")
@@ -501,17 +504,17 @@ async def startup_event():
     # It operates via FastAPI endpoints
     logger.info("Knowledge Management Agent and API ready.")
 
-@self.app.get("/health", response_model=Dict[str, str], summary="Health Check")
+@app.get("/health", response_model=Dict[str, str], summary="Health Check")
 async def health_check():
     """Check the health status of the Knowledge Management Agent API."""
     return {"status": "healthy", "agent": AGENT_ID, "type": AGENT_TYPE, "version": app.version}
 
-@self.app.get("/", response_model=Dict[str, str], summary="Root Endpoint")
+@app.get("/", response_model=Dict[str, str], summary="Root Endpoint")
 async def root():
     """Root endpoint providing basic information about the API."""
     return {"message": "Knowledge Management Agent API is running", "version": app.version}
 
-@self.app.post("/api/v1/knowledge/articles", response_model=ArticleResponse, status_code=status.HTTP_201_CREATED, summary="Create Article")
+@app.post("/api/v1/knowledge/articles", response_model=ArticleResponse, status_code=status.HTTP_201_CREATED, summary="Create Article")
 async def create_article_endpoint(
     article_data: ArticleCreate = Body(..., description="Data for the new knowledge base article."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -522,7 +525,7 @@ async def create_article_endpoint(
     """
     return await service.create_article(article_data)
 
-@self.app.get("/api/v1/knowledge/articles/{article_id}", response_model=ArticleResponse, summary="Get Article by ID")
+@app.get("/api/v1/knowledge/articles/{article_id}", response_model=ArticleResponse, summary="Get Article by ID")
 async def get_article_endpoint(
     article_id: UUID = Path(..., description="The UUID of the article to retrieve."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -536,7 +539,7 @@ async def get_article_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
     return article
 
-@self.app.put("/api/v1/knowledge/articles/{article_id}", response_model=ArticleResponse, summary="Update Article")
+@app.put("/api/v1/knowledge/articles/{article_id}", response_model=ArticleResponse, summary="Update Article")
 async def update_article_endpoint(
     article_id: UUID = Path(..., description="The UUID of the article to update."),
     update_data: ArticleUpdate = Body(..., description="Data to update the knowledge base article."),
@@ -551,7 +554,7 @@ async def update_article_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
     return updated_article
 
-@self.app.delete("/api/v1/knowledge/articles/{article_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete Article")
+@app.delete("/api/v1/knowledge/articles/{article_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete Article")
 async def delete_article_endpoint(
     article_id: UUID = Path(..., description="The UUID of the article to delete."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -565,7 +568,7 @@ async def delete_article_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
     return
 
-@self.app.post("/api/v1/knowledge/search", response_model=SearchResponse, summary="Search Articles")
+@app.post("/api/v1/knowledge/search", response_model=SearchResponse, summary="Search Articles")
 async def search_articles_endpoint(
     search_request: SearchRequest = Body(..., description="Search query and filters for articles."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -576,7 +579,7 @@ async def search_articles_endpoint(
     """
     return await service.search_articles(search_request)
 
-@self.app.post("/api/v1/knowledge/articles/{article_id}/helpful", response_model=ArticleResponse, summary="Mark Article as Helpful")
+@app.post("/api/v1/knowledge/articles/{article_id}/helpful", response_model=ArticleResponse, summary="Mark Article as Helpful")
 async def mark_article_helpful_endpoint(
     article_id: UUID = Path(..., description="The UUID of the article to mark as helpful."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -596,6 +599,6 @@ if __name__ == "__main__":
     # This block is for local development/testing and will not be run in the agent's async loop
     # The agent's run() method is started in the startup_event for the FastAPI application.
     logger.info("Starting Knowledge Management Agent API via uvicorn")
-    uvicorn.run(agent.app, host="0.0.0.0", port=API_PORT)
+    uvicorn.run(app, host="0.0.0.0", port=API_PORT)
 
 from sqlalchemy import func # Imported here to avoid circular dependency with DBArticle for func.count()

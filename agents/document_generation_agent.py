@@ -73,6 +73,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Create module-level FastAPI app
+app = FastAPI(title="Document Generation Agent API")
+
 
 class DocumentGenerationAgent(BaseAgentV2):
     """
@@ -761,7 +764,7 @@ async def shutdown_event():
         await agent_instance.cleanup()
         logger.info("DocumentGenerationAgent resources cleaned up.")
 
-@agent_instance.app.get("/health", summary="Health Check", response_description="Agent health status")
+@app.get("/health", summary="Health Check", response_description="Agent health status")
 async def health_check():
     """
     Checks the health status of the Document Generation Agent.
@@ -773,7 +776,7 @@ async def health_check():
         return {"status": "healthy", "agent": AGENT_TYPE, "agent_id": AGENT_ID}
     raise HTTPException(status_code=503, detail="Agent not fully initialized or unhealthy")
 
-@agent_instance.app.get("/", summary="Root Endpoint", response_description="Agent information")
+@app.get("/", summary="Root Endpoint", response_description="Agent information")
 async def root():
     """
     Provides basic information about the Document Generation Agent.
@@ -788,7 +791,7 @@ async def root():
         "agent_id": AGENT_ID
     }
 
-@agent_instance.app.post("/generate/invoice", summary="Generate Invoice", response_description="Result of invoice generation")
+@app.post("/generate/invoice", summary="Generate Invoice", response_description="Result of invoice generation")
 async def generate_invoice_api(order_id: int, format: str = 'PDF'):
     """
     API endpoint to trigger invoice generation.
@@ -806,7 +809,7 @@ async def generate_invoice_api(order_id: int, format: str = 'PDF'):
         raise HTTPException(status_code=500, detail=result.get('error', 'Failed to generate invoice'))
     return result
 
-@agent_instance.app.post("/generate/shipping_label", summary="Generate Shipping Label", response_description="Result of shipping label generation")
+@app.post("/generate/shipping_label", summary="Generate Shipping Label", response_description="Result of shipping label generation")
 async def generate_shipping_label_api(shipment_id: int, format: str = 'PDF'):
     """
     API endpoint to trigger shipping label generation.
@@ -824,7 +827,7 @@ async def generate_shipping_label_api(shipment_id: int, format: str = 'PDF'):
         raise HTTPException(status_code=500, detail=result.get('error', 'Failed to generate shipping label'))
     return result
 
-@agent_instance.app.post("/generate/packing_slip", summary="Generate Packing Slip", response_description="Result of packing slip generation")
+@app.post("/generate/packing_slip", summary="Generate Packing Slip", response_description="Result of packing slip generation")
 async def generate_packing_slip_api(order_id: int):
     """
     API endpoint to trigger packing slip generation.
@@ -854,5 +857,5 @@ if __name__ == '__main__':
     agent_instance.app.add_event_handler("startup", startup_event)
     agent_instance.app.add_event_handler("shutdown", shutdown_event)
     
-    uvicorn.run(agent_instance.app, host="0.0.0.0", port=API_PORT)
+    uvicorn.run(app, host="0.0.0.0", port=API_PORT)
 

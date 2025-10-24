@@ -30,6 +30,9 @@ from shared.db_helpers import DatabaseHelper
 
 logger = structlog.get_logger(__name__)
 
+# Create module-level FastAPI app
+app = FastAPI(title="Backoffice Agent Production API")
+
 
 # =====================================================
 # ENUMS
@@ -385,7 +388,7 @@ async def shutdown_event():
     logger.info("Backoffice Agent API shutdown")
 
 
-@self.app.get("/health")
+@app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
@@ -396,7 +399,7 @@ async def health_check():
     }
 
 
-@self.app.get("/")
+@app.get("/")
 async def root():
     """Root endpoint"""
     return {
@@ -414,7 +417,7 @@ async def root():
     }
 
 
-@self.app.post("/users", summary="Create User")
+@app.post("/users", summary="Create User")
 async def create_user(user: User):
     """Create a new user"""
     if not agent_instance:
@@ -428,7 +431,7 @@ async def create_user(user: User):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/users", summary="Get All Users")
+@app.get("/users", summary="Get All Users")
 async def get_all_users():
     """Get all users"""
     if not agent_instance:
@@ -445,7 +448,7 @@ async def get_all_users():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/users/{user_id}", summary="Get User")
+@app.get("/users/{user_id}", summary="Get User")
 async def get_user(user_id: str = Path(...)):
     """Get user by ID"""
     if not agent_instance:
@@ -463,7 +466,7 @@ async def get_user(user_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.put("/users/{user_id}", summary="Update User")
+@app.put("/users/{user_id}", summary="Update User")
 async def update_user(
     user_id: str = Path(...),
     updates: Dict[str, Any] = Body(...)
@@ -484,7 +487,7 @@ async def update_user(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.delete("/users/{user_id}", summary="Delete User")
+@app.delete("/users/{user_id}", summary="Delete User")
 async def delete_user(user_id: str = Path(...)):
     """Delete user"""
     if not agent_instance:
@@ -502,7 +505,7 @@ async def delete_user(user_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.post("/config", summary="Set Configuration")
+@app.post("/config", summary="Set Configuration")
 async def set_config(config: SystemConfig):
     """Set system configuration"""
     if not agent_instance:
@@ -516,7 +519,7 @@ async def set_config(config: SystemConfig):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/config", summary="Get All Configuration")
+@app.get("/config", summary="Get All Configuration")
 async def get_all_config():
     """Get all system configurations"""
     if not agent_instance:
@@ -533,7 +536,7 @@ async def get_all_config():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/config/{config_key}", summary="Get Configuration")
+@app.get("/config/{config_key}", summary="Get Configuration")
 async def get_config(config_key: str = Path(...)):
     """Get system configuration by key"""
     if not agent_instance:
@@ -551,7 +554,7 @@ async def get_config(config_key: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.post("/reports/sales", summary="Generate Sales Report")
+@app.post("/reports/sales", summary="Generate Sales Report")
 async def generate_sales_report(
     start_date: datetime = Body(...),
     end_date: datetime = Body(...),
@@ -571,7 +574,7 @@ async def generate_sales_report(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/dashboard/metrics", summary="Get Dashboard Metrics")
+@app.get("/dashboard/metrics", summary="Get Dashboard Metrics")
 async def get_dashboard_metrics():
     """Get dashboard metrics"""
     if not agent_instance:
@@ -590,5 +593,5 @@ async def get_dashboard_metrics():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8021))
     logger.info(f"Starting Backoffice Agent on port {port}")
-    uvicorn.run(agent.app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
 

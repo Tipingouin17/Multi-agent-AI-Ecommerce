@@ -30,6 +30,9 @@ from shared.db_helpers import DatabaseHelper
 
 logger = structlog.get_logger(__name__)
 
+# Create module-level FastAPI app
+app = FastAPI(title="After Sales Agent Production API")
+
 
 # =====================================================
 # ENUMS
@@ -542,7 +545,7 @@ async def shutdown_event():
     logger.info("After-Sales Agent API shutdown")
 
 
-@self.app.get("/health")
+@app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
@@ -553,7 +556,7 @@ async def health_check():
     }
 
 
-@self.app.get("/")
+@app.get("/")
 async def root():
     """Root endpoint"""
     return {
@@ -571,7 +574,7 @@ async def root():
     }
 
 
-@self.app.post("/returns/request", summary="Submit Return Request")
+@app.post("/returns/request", summary="Submit Return Request")
 async def submit_return_request(request: ReturnRequest):
     """Submit a return request"""
     if not agent_instance:
@@ -589,7 +592,7 @@ async def submit_return_request(request: ReturnRequest):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/returns/rma/{rma_number}", summary="Get RMA Authorization")
+@app.get("/returns/rma/{rma_number}", summary="Get RMA Authorization")
 async def get_rma_authorization(rma_number: str = Path(...)):
     """Get RMA authorization by RMA number"""
     if not agent_instance:
@@ -607,7 +610,7 @@ async def get_rma_authorization(rma_number: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.put("/returns/rma/{rma_number}/status", summary="Update RMA Status")
+@app.put("/returns/rma/{rma_number}/status", summary="Update RMA Status")
 async def update_rma_status_endpoint(
     rma_number: str = Path(...),
     status: RMAStatus = Body(...)
@@ -628,7 +631,7 @@ async def update_rma_status_endpoint(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.get("/returns/customer/{customer_id}", summary="Get Customer Returns")
+@app.get("/returns/customer/{customer_id}", summary="Get Customer Returns")
 async def get_customer_returns(customer_id: str = Path(...)):
     """Get all returns for a customer"""
     if not agent_instance:
@@ -646,7 +649,7 @@ async def get_customer_returns(customer_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.post("/surveys/submit", summary="Submit Satisfaction Survey")
+@app.post("/surveys/submit", summary="Submit Satisfaction Survey")
 async def submit_survey(survey: CustomerSatisfactionSurvey):
     """Submit customer satisfaction survey"""
     if not agent_instance:
@@ -662,7 +665,7 @@ async def submit_survey(survey: CustomerSatisfactionSurvey):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@self.app.post("/warranty/claim", summary="File Warranty Claim")
+@app.post("/warranty/claim", summary="File Warranty Claim")
 async def file_warranty_claim_endpoint(claim: WarrantyClaim):
     """File a warranty claim"""
     if not agent_instance:
@@ -681,5 +684,5 @@ async def file_warranty_claim_endpoint(claim: WarrantyClaim):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8020))
     logger.info(f"Starting After-Sales Agent on port {port}")
-    uvicorn.run(agent.app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
 

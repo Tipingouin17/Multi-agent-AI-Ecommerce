@@ -38,6 +38,9 @@ from shared.models import CarrierConfig, AgentMessage, MessageType # Assuming th
 
 logger = structlog.get_logger(__name__)
 
+# Create module-level FastAPI app
+app = FastAPI(title="Transport Agent Production API")
+
 
 class CarrierPriceUpload(BaseModel):
     """Carrier price list upload model"""
@@ -689,12 +692,12 @@ async def shutdown_event():
     if agent_instance:
         await agent_instance.shutdown()
 
-@agent_instance.app.get("/health", summary="Health check", response_description="Agent health status")
+@app.get("/health", summary="Health check", response_description="Agent health status")
 async def health_check():
     """Returns the health status of the agent."""
     return {"status": "healthy", "agent": "transport_agent_production"}
 
-@agent_instance.app.get("/", summary="Root endpoint", response_description="Agent information")
+@app.get("/", summary="Root endpoint", response_description="Agent information")
 async def root():
     """Returns basic information about the agent."""
     return {
@@ -703,7 +706,7 @@ async def root():
         "version": "1.0.0"
     }
 
-@agent_instance.app.post("/carriers/{carrier_code}/config", summary="Update carrier configuration", response_description="Updated carrier configuration")
+@app.post("/carriers/{carrier_code}/config", summary="Update carrier configuration", response_description="Updated carrier configuration")
 async def update_carrier_configuration_api(carrier_code: str, config_data: Dict[str, Any]):
     """
     Updates the configuration for a specific carrier.
@@ -721,7 +724,7 @@ async def update_carrier_configuration_api(carrier_code: str, config_data: Dict[
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
-@agent_instance.app.get("/carriers/{carrier_code}/config", summary="Get carrier configuration", response_description="Carrier configuration")
+@app.get("/carriers/{carrier_code}/config", summary="Get carrier configuration", response_description="Carrier configuration")
 async def get_carrier_configuration_api(carrier_code: str):
     """
     Retrieves the configuration for a specific carrier.
@@ -738,7 +741,7 @@ async def get_carrier_configuration_api(carrier_code: str):
         raise HTTPException(status_code=404, detail=f"Carrier config for {carrier_code} not found")
     return config
 
-@agent_instance.app.get("/carriers/config", summary="Get all carrier configurations", response_description="All carrier configurations")
+@app.get("/carriers/config", summary="Get all carrier configurations", response_description="All carrier configurations")
 async def get_all_carrier_configurations_api():
     """
     Retrieves all carrier configurations.
@@ -750,7 +753,7 @@ async def get_all_carrier_configurations_api():
     configs = await agent_instance.get_all_carrier_configs()
     return configs
 
-@agent_instance.app.delete("/carriers/{carrier_code}/config", summary="Delete carrier configuration", response_description="Deletion status")
+@app.delete("/carriers/{carrier_code}/config", summary="Delete carrier configuration", response_description="Deletion status")
 async def delete_carrier_configuration_api(carrier_code: str):
     """
     Deletes a specific carrier configuration.
@@ -782,5 +785,5 @@ if __name__ == "__main__":
     agent_instance.app.add_event_handler("startup", startup_event)
     agent_instance.app.add_event_handler("shutdown", shutdown_event)
     
-    uvicorn.run(agent_instance.app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
