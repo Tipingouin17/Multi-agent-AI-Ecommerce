@@ -149,7 +149,7 @@ class MonitoringAgent(BaseAgentV2):
         logger.info("Monitoring Agent constructor completed")
         
         # FastAPI app
-        self.app = FastAPI(title="Monitoring Agent API")
+        self.app = FastAPI(title="Monitoring Agent API", lifespan=self.lifespan_context)
         
         # Add CORS middleware for dashboard integration
         
@@ -163,6 +163,22 @@ class MonitoringAgent(BaseAgentV2):
         )
         
         self._setup_routes()
+
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        """
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Monitoring Agent")
+        await self.initialize()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Monitoring Agent")
+        await self.cleanup()
+        logger.info("Monitoring Agent API shutdown complete")
     
     async def initialize(self):
         """Initialize the monitoring agent"""
@@ -581,21 +597,14 @@ class MonitoringAgent(BaseAgentV2):
         logger.info("Processing monitoring business logic", data=data)
         return {"status": "processed", "data": data}
 
-async def run_agent():
-    """Run the monitoring agent"""
+if __name__ == "__main__":
     agent = MonitoringAgent()
-    await agent.initialize()
     
     import uvicorn
-    config = uvicorn.Config(
-        agent.app,
-        host="0.0.0.0",
-        port=8015,
-        log_level="info"
-    )
-    server = uvicorn.Server(config)
-    await server.serve()
-
-if __name__ == "__main__":
-    asyncio.run(run_agent())
+    # Use environment variable for port, default to 8015
+    port = int(os.getenv("MONITORING_AGENT_PORT", 8015))
+    host = os.getenv("MONITORING_AGENT_HOST", "0.0.0.0")
+    
+    logger.info(f"Starting Monitoring Agent API on {host}:{port}")
+    uvicorn.run(agent.app, host=host, port=port)
 
