@@ -12,6 +12,8 @@ Generates comprehensive production readiness report with detailed logs.
 """
 
 import asyncio
+import subprocess
+import time
 import json
 import logging
 from datetime import datetime
@@ -58,7 +60,8 @@ class ProductionValidationSuite:
             "ui_tests": None,
             "agent_health": None,
             "database_connectivity": None,
-            "kafka_integration": None
+            "kafka_integration": None,
+            "ui_connectivity": None
         }
     
     async def run_all_validations(self) -> Dict[str, Any]:
@@ -68,59 +71,62 @@ class ProductionValidationSuite:
         logger.info("=" * 100)
         logger.info(f"Start Time: {self.start_time}")
         logger.info("")
-        
-        # Phase 1: Workflow Tests
-        logger.info("\n" + "=" * 100)
-        logger.info("PHASE 1: WORKFLOW VALIDATION (100+ scenarios)")
-        logger.info("=" * 100)
-        
-        try:
-            async with WorkflowTestSuite() as workflow_suite:
-                self.results["workflow_tests"] = await workflow_suite.run_all_tests()
-                logger.info("[OK] Workflow tests completed")
-        except Exception as e:
-            logger.error(f"[ERROR] Workflow tests failed: {e}")
-            self.results["workflow_tests"] = {"error": str(e)}
-        
-        # Phase 2: UI Tests
-        logger.info("\n" + "=" * 100)
-        logger.info("PHASE 2: UI VALIDATION (70+ scenarios)")
-        logger.info("=" * 100)
-        
-        try:
-            ui_suite = UITestSuite()
-            self.results["ui_tests"] = await ui_suite.run_all_tests()
-            logger.info("[OK] UI tests completed")
-        except Exception as e:
-            logger.error(f"[ERROR] UI tests failed: {e}")
-            self.results["ui_tests"] = {"error": str(e)}
-        
-        # Phase 3: Agent Health Checks
-        logger.info("\n" + "=" * 100)
-        logger.info("PHASE 3: AGENT HEALTH VALIDATION")
-        logger.info("=" * 100)
-        
-        self.results["agent_health"] = await self.validate_agent_health()
-        
-        # Phase 4: Database Connectivity
-        logger.info("\n" + "=" * 100)
-        logger.info("PHASE 4: DATABASE CONNECTIVITY VALIDATION")
-        logger.info("=" * 100)
-        
-        self.results["database_connectivity"] = await self.validate_database_connectivity()
-        
-        # Phase 5: Kafka Integration
-        logger.info("\n" + "=" * 100)
-        logger.info("PHASE 5: KAFKA INTEGRATION VALIDATION")
-        logger.info("=" * 100)
-        
-        self.results["kafka_integration"] = await self.validate_kafka_integration()
-        
-        # Generate final report
-        return self.generate_production_readiness_report()
+	        
+	        # Phase 1: Infrastructure and Agent Health Checks (with Retries)
+	        logger.info("\n" + "=" * 100)
+	        logger.info("PHASE 1: INFRASTRUCTURE & AGENT HEALTH VALIDATION (with Retries)")
+	        logger.info("=" * 100)
+	        
+	        # 1.1 Agent Health Check (includes retry loop)
+	        self.results["agent_health"] = await self.validate_agent_health()
+	        
+	        # 1.2 Database Connectivity
+	        self.results["database_connectivity"] = await self.validate_database_connectivity()
+	        
+	        # 1.3 Kafka Integration
+	        self.results["kafka_integration"] = await self.validate_kafka_integration()
+	        
+	        # 1.4 UI (Vite) Connectivity
+	        self.results["ui_connectivity"] = await self.validate_ui_connectivity()
+
+	        # Check if critical components are up before running heavy tests
+	        if self.results["agent_health"]["health_rate"] < 90 or \
+	           self.results["database_connectivity"]["status"] != "connected" or \
+	           self.results["kafka_integration"]["status"] != "connected":
+	            logger.error("CRITICAL INFRASTRUCTURE FAILURE: Aborting workflow and UI tests.")
+	            return self.generate_production_readiness_report()
+
+	        # Phase 2: Workflow Tests
+	        logger.info("\n" + "=" * 100)
+	        logger.info("PHASE 2: WORKFLOW VALIDATION (100+ scenarios)")
+	        logger.info("=" * 100)
+	        
+	        try:
+	            async with WorkflowTestSuite() as workflow_suite:
+	                self.results["workflow_tests"] = await workflow_suite.run_all_tests()
+	                logger.info("[OK] Workflow tests completed")
+	        except Exception as e:
+	            logger.error(f"[ERROR] Workflow tests failed: {e}")
+	            self.results["workflow_tests"] = {"error": str(e)}
+	        
+	        # Phase 3: UI Tests
+	        logger.info("\n" + "=" * 100)
+	        logger.info("PHASE 3: UI VALIDATION (70+ scenarios)")
+	        logger.info("=" * 100)
+	        
+	        try:
+	            ui_suite = UITestSuite()
+	            self.results["ui_tests"] = await ui_suite.run_all_tests()
+	            logger.info("[OK] UI tests completed")
+	        except Exception as e:
+	            logger.error(f"[ERROR] UI tests failed: {e}")
+	            self.results["ui_tests"] = {"error": str(e)}
+	        
+	        # Generate final report
+	        return self.generate_production_readiness_report()
     
-    async def validate_agent_health(self) -> Dict[str, Any]:
-        """Validate health of all agents"""
+    async def validate_agent_health(self, max_retries=10, delay=5) -> Dict[str, Any]:
+        """Validate health of all agents with retries"""
         import aiohttp
         
         agents = {
@@ -142,38 +148,66 @@ class ProductionValidationSuite:
             "quality": 8022
         }
         
-        health_results = []
-        
-        async with aiohttp.ClientSession() as session:
-            for agent_name, port in agents.items():
-                try:
-                    url = f"http://localhost:{port}/health"
-                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
-                        if response.status == 200:
-                            data = await response.json()
-                            health_results.append({
-                                "agent": agent_name,
-                                "status": "healthy",
-                                "port": port,
-                                "response": data
-                            })
-                            logger.info(f"[OK] {agent_name}: healthy")
-                        else:
-                            health_results.append({
-                                "agent": agent_name,
-                                "status": "unhealthy",
-                                "port": port,
-                                "http_status": response.status
-                            })
-                            logger.warning(f"[WARNING]  {agent_name}: unhealthy (HTTP {response.status})")
-                except Exception as e:
-                    health_results.append({
-                        "agent": agent_name,
-                        "status": "offline",
-                        "port": port,
-                        "error": str(e)
-                    })
-                    logger.error(f"[ERROR] {agent_name}: offline ({e})")
+        # Initial check and retry loop
+        for attempt in range(max_retries):
+            logger.info(f"Agent Health Check Attempt {attempt + 1}/{max_retries}...")
+            
+            health_results = []
+            all_healthy = True
+            
+            async with aiohttp.ClientSession() as session:
+                for agent_name, port in agents.items():
+                    try:
+                        url = f"http://localhost:{port}/health"
+                        async with session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                health_results.append({
+                                    "agent": agent_name,
+                                    "status": "healthy",
+                                    "port": port,
+                                    "response": data
+                                })
+                            else:
+                                all_healthy = False
+                                health_results.append({
+                                    "agent": agent_name,
+                                    "status": "unhealthy",
+                                    "port": port,
+                                    "http_status": response.status
+                                })
+                    except Exception as e:
+                        all_healthy = False
+                        health_results.append({
+                            "agent": agent_name,
+                            "status": "offline",
+                            "port": port,
+                            "error": str(e)
+                        })
+
+            if all_healthy:
+                logger.info("[OK] All agents reported healthy.")
+                break
+            
+            # Log status for the current attempt
+            healthy_count = sum(1 for r in health_results if r["status"] == "healthy")
+            offline_count = sum(1 for r in health_results if r["status"] == "offline")
+            logger.warning(f"Status: {healthy_count}/{len(agents)} agents healthy. {offline_count} offline.")
+            
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {delay} seconds...")
+                await asyncio.sleep(delay)
+            else:
+                logger.error("FATAL: Max retries reached. Not all agents are healthy.")
+
+        # Final logging of results
+        for r in health_results:
+            if r["status"] == "healthy":
+                logger.info(f"[OK] {r['agent']}: healthy")
+            elif r["status"] == "unhealthy":
+                logger.warning(f"[WARNING] {r['agent']}: unhealthy (HTTP {r['http_status']})")
+            else:
+                logger.error(f"[ERROR] {r['agent']}: offline ({r['error']})")
         
         healthy_count = sum(1 for r in health_results if r["status"] == "healthy")
         total_count = len(health_results)
@@ -270,6 +304,31 @@ class ProductionValidationSuite:
                 "status": "error",
                 "error": str(e)
             }
+
+    async def validate_ui_connectivity(self, url: str = "http://localhost:5173", max_retries=5, delay=5) -> Dict[str, Any]:
+        """Validate UI (Vite) connectivity with retries"""
+        import aiohttp
+        
+        for attempt in range(max_retries):
+            logger.info(f"UI Connectivity Check Attempt {attempt + 1}/{max_retries}...")
+            try:
+                async with aiohttp.ClientSession() as session:
+                    # Use a short timeout for a quick check
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
+                        if response.status == 200:
+                            logger.info("[OK] UI connectivity: OK")
+                            return {"status": "connected", "url": url}
+                        else:
+                            logger.warning(f"[WARNING] UI returned HTTP {response.status}. Retrying.")
+            except Exception as e:
+                logger.warning(f"[WARNING] UI connection failed: {e}. Retrying.")
+            
+            if attempt < max_retries - 1:
+                await asyncio.sleep(delay)
+            else:
+                logger.error("FATAL: UI connectivity failed after max retries.")
+                return {"status": "error", "error": f"Failed to connect to UI at {url} after {max_retries} attempts."}
+
     
     def generate_production_readiness_report(self) -> Dict[str, Any]:
         """Generate comprehensive production readiness report"""
@@ -293,10 +352,11 @@ class ProductionValidationSuite:
         # Calculate overall production readiness score
         overall_score = (
             workflow_pass_rate * 0.40 +  # 40% weight
-            ui_pass_rate * 0.30 +         # 30% weight
+            ui_pass_rate * 0.25 +         # 25% weight
             agent_health_rate * 0.20 +    # 20% weight
             (100 if self.results["database_connectivity"]["status"] == "connected" else 0) * 0.05 +  # 5% weight
-            (100 if self.results["kafka_integration"]["status"] == "connected" else 0) * 0.05  # 5% weight
+            (100 if self.results["kafka_integration"]["status"] == "connected" else 0) * 0.05 +  # 5% weight
+            (100 if self.results["ui_connectivity"]["status"] == "connected" else 0) * 0.05  # 5% weight
         )
         
         # Determine production readiness status
@@ -345,9 +405,10 @@ class ProductionValidationSuite:
                     "offline": self.results["agent_health"]["offline"]
                 },
                 "infrastructure": {
-                    "database": self.results["database_connectivity"]["status"],
-                    "kafka": self.results["kafka_integration"]["status"]
-                }
+            "database": self.results["database_connectivity"]["status"],
+            "kafka": self.results["kafka_integration"]["status"],
+            "ui_app": self.results["ui_connectivity"]["status"]
+        }
             },
             "detailed_results": self.results
         }
@@ -370,6 +431,7 @@ class ProductionValidationSuite:
         logger.info(f"Agent Health: {agent_health_rate:.1f}% healthy")
         logger.info(f"Database: {self.results['database_connectivity']['status']}")
         logger.info(f"Kafka: {self.results['kafka_integration']['status']}")
+        logger.info(f"UI App: {self.results['ui_connectivity']['status']}")
         logger.info("")
         logger.info(f"Report saved: {report_file}")
         logger.info("=" * 100)
@@ -381,10 +443,53 @@ class ProductionValidationSuite:
 # MAIN EXECUTION
 # =====================================================
 
+async def start_local_environment():
+    """Starts the local development environment using the shell script."""
+    script_path = Path(__file__).parent.parent / "scripts" / "start_local_dev.sh"
+    logger.info(f"Attempting to start local environment using: {script_path}")
+    
+    try:
+        # Use subprocess.Popen to run the script in the background
+        # Note: This assumes the script is designed to start background processes (e.g., using 'nohup' or similar)
+        # For a clean test environment, we'll rely on the shell script to start the agents.
+        process = subprocess.Popen(
+            ["/bin/bash", str(script_path)],
+            cwd=script_path.parent.parent, # Run from the project root
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        logger.info(f"Local environment startup script started with PID: {process.pid}")
+        # Give the script a moment to start the background processes
+        await asyncio.sleep(5) 
+        return process
+    except Exception as e:
+        logger.error(f"Failed to execute startup script: {e}")
+        return None
+
 async def main():
     """Main validation execution"""
+    
+    # 1. Start Local Environment
+    startup_process = await start_local_environment()
+    if startup_process is None:
+        logger.error("FATAL: Could not start local environment. Aborting validation.")
+        return
+    
+    # 2. Run Validation Suite
     suite = ProductionValidationSuite()
     report = await suite.run_all_validations()
+    
+    # 3. Cleanup (Optional, but good practice to stop processes if possible)
+    # The start_local_dev.sh script is assumed to start background services.
+    # Stopping them cleanly is difficult from a Python script without knowing their PIDs.
+    # For now, we rely on the user to manually stop the services after the test.
+    # logger.info("Please remember to stop the local environment services manually.")
+    
+    # 3. Cleanup (Optional, but good practice to stop processes if possible)
+    # The start_local_dev.sh script is assumed to start background services.
+    # Stopping them cleanly is difficult from a Python script without knowing their PIDs.
+    # For now, we rely on the user to manually stop the services after the test.
+    # logger.info("Please remember to stop the local environment services manually.")
     
     print("\n" + "=" * 100)
     print("PRODUCTION VALIDATION COMPLETE")
