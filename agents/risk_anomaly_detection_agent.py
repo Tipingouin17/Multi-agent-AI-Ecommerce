@@ -210,7 +210,7 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         Initializes the Risk Anomaly Detection Agent.
         """
         super().__init__(agent_id="risk_anomaly_detection_agent")
-        self.app = FastAPI(title="Risk and Anomaly Detection Agent API", version="1.0.0")
+        self.app = FastAPI(title="Risk and Anomaly Detection Agent API", version="1.0.0", lifespan=self.lifespan_context)
         
         # Add CORS middleware for dashboard integration
         
@@ -338,6 +338,22 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
                 # Alert lifecycle logic here
             except Exception as e:
                 self.logger.error(f"Error in alert lifecycle management: {e}")
+
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        """
+        # Startup
+        self.logger.info("FastAPI Lifespan Startup: Risk Anomaly Detection Agent")
+        await self.initialize()
+        
+        yield
+        
+        # Shutdown
+        self.logger.info("FastAPI Lifespan Shutdown: Risk Anomaly Detection Agent")
+        await self.cleanup()
+        self.logger.info("Risk Anomaly Detection Agent API shutdown complete")
 
     async def initialize(self):
         await super().initialize()
@@ -1263,18 +1279,17 @@ if __name__ == "__main__":
     """Main entry point for the Risk Anomaly Detection Agent."""
     agent = RiskAnomalyDetectionAgent()
 
-    async def run_agent_and_server():
-        await agent.initialize()
-        try:
-            # Start the agent's Kafka consumer in the background
-            asyncio.create_task(agent.start())
-            config = uvicorn.Config(agent.app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
-            server = uvicorn.Server(config)
-            await server.serve()
-        except asyncio.CancelledError:
-            agent.logger.info("Agent and server shutdown initiated.")
-        finally:
-            await agent.cleanup()
+    # The lifespan context manager now handles agent initialization and cleanup.
+    # The agent's start() method (Kafka consumer) should be called within initialize()
+    # or by a dedicated background task started in initialize().
+    # The uvicorn server will now be run directly.
+    
+    # Get port from environment variables
+    port = int(os.getenv("PORT", 8080))
+    host = os.getenv("HOST", "0.0.0.0")
 
-    asyncio.run(run_agent_and_server())
+    logger.info(f"Starting Risk Anomaly Detection Agent FastAPI server on {host}:{port}")
+
+    # Run the FastAPI server
+    uvicorn.run(agent.app, host=host, port=port, log_level="info")
 
