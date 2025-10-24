@@ -347,6 +347,63 @@ class ApiService {
     }
   }
 
+  // ==================== WAREHOUSE AGENT APIs ====================
+  
+  async getWarehouses() {
+    try {
+      const response = await clients.warehouse.get('/warehouses')
+      return response.data
+    } catch (error) {
+      console.warn('Warehouses unavailable, using mock data')
+      return this.getMockWarehouses()
+    }
+  }
+  
+  async getWarehouse(warehouseId) {
+    try {
+      const response = await clients.warehouse.get(`/warehouses/${warehouseId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get warehouse: ${error.message}`)
+    }
+  }
+  
+  // ==================== MARKETPLACE AGENT APIs ====================
+  
+  async getMarketplaces() {
+    try {
+      const response = await clients.marketplace.get('/marketplaces')
+      return response.data
+    } catch (error) {
+      console.warn('Marketplaces unavailable, using mock data')
+      return this.getMockMarketplaces()
+    }
+  }
+  
+  async getConnectedMarketplaces() {
+    // Alias for getMarketplaces
+    return this.getMarketplaces()
+  }
+  
+  async getAvailableMarketplaces() {
+    try {
+      const response = await clients.marketplace.get('/marketplaces/available')
+      return response.data
+    } catch (error) {
+      console.warn('Available marketplaces unavailable, using mock data')
+      return this.getMockAvailableMarketplaces()
+    }
+  }
+  
+  async getMarketplace(marketplaceId) {
+    try {
+      const response = await clients.marketplace.get(`/marketplaces/${marketplaceId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get marketplace: ${error.message}`)
+    }
+  }
+
   // ==================== MOCK DATA METHODS ====================
   // These provide fallback data when agents are unavailable
 
@@ -718,6 +775,148 @@ class ApiService {
       total_orders: 1076,
       average_order_value: 98.37
     }
+  }
+
+  getMockWarehouses() {
+    return [
+      {
+        id: 'WH-001',
+        name: 'Main Distribution Center',
+        location: 'Paris, France',
+        capacity: 50000,
+        current_stock: 32450,
+        utilization: 64.9,
+        status: 'active',
+        address: '123 Rue de la Logistique, 75001 Paris'
+      },
+      {
+        id: 'WH-002',
+        name: 'North Regional Warehouse',
+        location: 'Lille, France',
+        capacity: 25000,
+        current_stock: 18750,
+        utilization: 75.0,
+        status: 'active',
+        address: '456 Avenue du Commerce, 59000 Lille'
+      },
+      {
+        id: 'WH-003',
+        name: 'South Regional Warehouse',
+        location: 'Marseille, France',
+        capacity: 30000,
+        current_stock: 21200,
+        utilization: 70.7,
+        status: 'active',
+        address: '789 Boulevard de la Distribution, 13001 Marseille'
+      },
+      {
+        id: 'WH-004',
+        name: 'Returns Processing Center',
+        location: 'Lyon, France',
+        capacity: 15000,
+        current_stock: 5400,
+        utilization: 36.0,
+        status: 'active',
+        address: '321 Rue des Retours, 69001 Lyon'
+      }
+    ]
+  }
+  
+  getMockMarketplaces() {
+    return [
+      {
+        id: 'MKT-001',
+        name: 'Amazon France',
+        platform: 'Amazon',
+        status: 'connected',
+        active_listings: 1245,
+        monthly_sales: 45230.50,
+        monthly_orders: 523,
+        commission_rate: 15,
+        last_sync: new Date(Date.now() - 300000).toISOString(),
+        integration_status: 'healthy'
+      },
+      {
+        id: 'MKT-002',
+        name: 'eBay France',
+        platform: 'eBay',
+        status: 'connected',
+        active_listings: 892,
+        monthly_sales: 32450.75,
+        monthly_orders: 412,
+        commission_rate: 12,
+        last_sync: new Date(Date.now() - 600000).toISOString(),
+        integration_status: 'healthy'
+      },
+      {
+        id: 'MKT-003',
+        name: 'CDiscount',
+        platform: 'CDiscount',
+        status: 'connected',
+        active_listings: 567,
+        monthly_sales: 18900.25,
+        monthly_orders: 234,
+        commission_rate: 10,
+        last_sync: new Date(Date.now() - 900000).toISOString(),
+        integration_status: 'healthy'
+      },
+      {
+        id: 'MKT-004',
+        name: 'BackMarket',
+        platform: 'BackMarket',
+        status: 'connected',
+        active_listings: 234,
+        monthly_sales: 12340.00,
+        monthly_orders: 156,
+        commission_rate: 8,
+        last_sync: new Date(Date.now() - 1200000).toISOString(),
+        integration_status: 'healthy'
+      },
+      {
+        id: 'MKT-005',
+        name: 'Refurbed',
+        platform: 'Refurbed',
+        status: 'pending',
+        active_listings: 0,
+        monthly_sales: 0,
+        monthly_orders: 0,
+        commission_rate: 9,
+        last_sync: null,
+        integration_status: 'pending_setup'
+      }
+    ]
+  }
+  
+  getMockAvailableMarketplaces() {
+    return [
+      {
+        id: 'available-1',
+        name: 'Fnac',
+        platform: 'Fnac',
+        description: 'Major French retailer',
+        commission_rate: 12,
+        setup_complexity: 'medium',
+        estimated_reach: 'high'
+      },
+      {
+        id: 'available-2',
+        name: 'Rakuten France',
+        platform: 'Rakuten',
+        description: 'E-commerce marketplace',
+        commission_rate: 10,
+        setup_complexity: 'easy',
+        estimated_reach: 'medium'
+      },
+      {
+        id: 'available-3',
+        name: 'Vinted',
+        platform: 'Vinted',
+        description: 'Second-hand marketplace',
+        commission_rate: 5,
+        setup_complexity: 'easy',
+        estimated_reach: 'high'
+      }
+    ]
   }
 }
 
