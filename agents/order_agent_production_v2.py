@@ -86,11 +86,28 @@ class OrderAgent(BaseAgent):
         self._db_initialized = False
         
         # FastAPI app
-        self.app = FastAPI(title="Order Agent API")
+        self.app = FastAPI(title="Order Agent API", lifespan=self.lifespan_context)
         
         # Add CORS middleware for dashboard integration
         
         self._setup_routes()
+
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        """
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Order Agent")
+        await self._init_db_connection()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Order Agent")
+        if self.db_manager:
+            await self.db_manager.close()
+        logger.info("Order Agent API shutdown complete")
 
     async def _init_db_connection(self):
         """
@@ -570,8 +587,7 @@ class OrderAgent(BaseAgent):
     async def cleanup(self):
         """Cleanup agent resources"""
         try:
-            if hasattr(self, 'db_manager') and self.db_manager:
-                await self.db_manager.close()
+            # The lifespan context manager handles db_manager.close()
             await super().cleanup()
             logger.info(f"{self.agent_name} cleaned up successfully")
         except Exception as e:
@@ -620,6 +636,7 @@ if __name__ == "__main__":
     agent = OrderAgent()
     # Use environment variable for port, default to 8000
     port = int(os.getenv("ORDER_AGENT_PORT", 8000))
-    logger.info(f"Starting Order Agent API on port {port}")
-    uvicorn.run(agent.app, host="0.0.0.0", port=port)
+    host = os.getenv("ORDER_AGENT_HOST", "0.0.0.0")
+    logger.info(f"Starting Order Agent API on {host}:{port}")
+    uvicorn.run(agent.app, host=host, port=port)
 
