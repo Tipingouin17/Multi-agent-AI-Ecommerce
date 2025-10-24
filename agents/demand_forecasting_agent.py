@@ -165,7 +165,7 @@ class DemandForecastingAgent(BaseAgentV2):
         agent_id = os.getenv("AGENT_ID", "demand_forecasting_agent")
         agent_type = os.getenv("AGENT_TYPE", "demand_forecasting")  # Default agent_type
         super().__init__(agent_id=agent_id, **kwargs)
-        self.app = FastAPI(title="Demand Forecasting Agent API", version="1.0.0")
+        self.app = FastAPI(title="Demand Forecasting Agent API", version="1.0.0", lifespan=self.lifespan_context)
         self.setup_routes()
 
         # ML models and data
@@ -199,6 +199,22 @@ class DemandForecastingAgent(BaseAgentV2):
         asyncio.create_task(self._monitor_forecast_accuracy())
 
         self.logger.info("Demand Forecasting Agent initialized successfully")
+
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        """
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Demand Forecasting Agent")
+        await self.initialize()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Demand Forecasting Agent")
+        await self.cleanup()
+        logger.info("Demand Forecasting Agent API shutdown complete")
 
     async def cleanup(self):
         """Cleanup resources.
@@ -1381,8 +1397,7 @@ if __name__ == "__main__":
 
     # Run the agent's initialize method in an asyncio event loop
     # This is necessary for the agent to connect to the DB and set up models
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(agent.initialize())
+    # The lifespan context manager now handles agent initialization.
 
     # Get port from environment variable, default to 8000
     port = int(os.getenv("AGENT_PORT", 8000))
