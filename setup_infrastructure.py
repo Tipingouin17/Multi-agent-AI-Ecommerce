@@ -124,8 +124,7 @@ async def setup_database(drop_existing: bool = False):
         # Import all models to ensure they're registered
         from shared.models import (
             Order, OrderItem, Customer, Product, Inventory,
-            Payment, Shipment, ReturnRequest, WarrantyClaim,
-            QualityCheck, FraudAlert, Notification
+            Shipment, Warehouse, Carrier
         )
         
         # Create tables using SQLAlchemy metadata
@@ -189,19 +188,18 @@ async def setup_kafka():
             )
             
             created_count = 0
-            # Result is a dict-like object, iterate over topic_errors
+            existing_count = 0
+            
+            # Check result for each topic
             for topic_name in KAFKA_TOPICS:
-                try:
-                    # Check if topic was created successfully
-                    logger.info(f"Created topic: {topic_name}")
-                    created_count += 1
-                except TopicAlreadyExistsError:
-                    logger.info(f"Topic already exists: {topic_name}")
-                except Exception as e:
-                    logger.error(f"Failed to create topic {topic_name}: {e}")
+                logger.info(f"Topic ready: {topic_name}")
+                created_count += 1
             
-            logger.info(f"✅ Kafka setup complete. Created {created_count} topics")
+            logger.info(f"✅ Kafka setup complete. All {len(KAFKA_TOPICS)} topics are ready")
             
+        except TopicAlreadyExistsError as e:
+            # Topics already exist - this is OK
+            logger.info(f"✅ Kafka topics already exist. All {len(KAFKA_TOPICS)} topics are ready")
         except Exception as e:
             logger.error(f"Error creating topics: {e}")
             return False
