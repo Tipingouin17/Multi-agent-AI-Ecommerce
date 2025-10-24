@@ -461,7 +461,7 @@ app = FastAPI(
 
 # Setup routes from the agent instance
 agent_instance.app = app
-agent_instance.setup_routes()
+# agent_instance.setup_routes() - Routes are set up in the agent class and registered via the app instance
 
 # --- Main Execution ---
 
