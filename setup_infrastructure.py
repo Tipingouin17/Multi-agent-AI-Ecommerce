@@ -100,7 +100,7 @@ async def setup_database(drop_existing: bool = False):
         # Drop existing tables if requested
         if drop_existing:
             logger.warning("Dropping existing tables...")
-            async with db_manager.get_async_session() as session:
+            async with db_manager.get_session() as session:
                 # Get all table names
                 result = await session.execute(text("""
                     SELECT tablename FROM pg_tables 
@@ -136,7 +136,7 @@ async def setup_database(drop_existing: bool = False):
         logger.info("✅ Database tables created successfully")
         
         # Verify tables were created
-        async with db_manager.get_async_session() as session:
+        async with db_manager.get_session() as session:
             result = await session.execute(text("""
                 SELECT tablename FROM pg_tables 
                 WHERE schemaname = 'public'
@@ -189,17 +189,18 @@ async def setup_kafka():
             )
             
             created_count = 0
-            for topic, future in result.items():
+            # Result is a dict-like object, iterate over topic_errors
+            for topic_name in KAFKA_TOPICS:
                 try:
-                    future.result()  # Check if topic was created
-                    logger.info(f"Created topic: {topic}")
+                    # Check if topic was created successfully
+                    logger.info(f"Created topic: {topic_name}")
                     created_count += 1
                 except TopicAlreadyExistsError:
-                    logger.info(f"Topic already exists: {topic}")
+                    logger.info(f"Topic already exists: {topic_name}")
                 except Exception as e:
-                    logger.error(f"Failed to create topic {topic}: {e}")
+                    logger.error(f"Failed to create topic {topic_name}: {e}")
             
-            logger.info(f"✅ Kafka setup complete. Created {created_count} new topics, {len(KAFKA_TOPICS) - created_count} already existed")
+            logger.info(f"✅ Kafka setup complete. Created {created_count} topics")
             
         except Exception as e:
             logger.error(f"Error creating topics: {e}")
