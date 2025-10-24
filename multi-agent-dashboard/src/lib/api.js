@@ -469,12 +469,6 @@ class ApiService {
       return null
     }
   }
-}
-
-// Export singleton instance
-export const apiService = new ApiService()
-export default apiService
-
 
   getMockMerchantKpis() {
     return {
@@ -584,5 +578,8 @@ export default apiService
       average_order_value: 98.37
     }
   }
+}
 
-
+// Export singleton instance
+export const apiService = new ApiService()
+export default apiService
