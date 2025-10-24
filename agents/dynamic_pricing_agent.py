@@ -165,6 +165,27 @@ class DynamicPricingAgent(BaseAgentV2):
         self.logger.info("Cleaning up Dynamic Pricing Agent")
         await super().cleanup()
 
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process dynamic pricing business logic (inherited from BaseAgentV2)."""
+        action = data.get("action")
+        
+        if action == "optimize_price":
+            return await self._optimize_price(data["request"])
+        elif action == "get_price_recommendation":
+            return await self._get_price_recommendation(data["request"])
+        elif action == "update_competitor_prices":
+            # Assuming the original code had a method for this
+            # return await self._update_competitor_prices(data["product_id"], data["prices"])
+            raise NotImplementedError("update_competitor_prices not fully implemented in agent logic.")
+        elif action == "get_pricing_analytics":
+            return await self._get_pricing_analytics(data.get("product_id"))
+        elif action == "apply_promotional_pricing":
+            # Assuming the original code had a method for this
+            # return await self._apply_promotional_pricing(data["promotion_config"])
+            raise NotImplementedError("apply_promotional_pricing not fully implemented in agent logic.")
+        else:
+            raise ValueError(f"Unknown action: {action}")
+
     # --- Business Logic Methods (Simplified from original for clean rewrite) ---
     
     async def _optimize_price(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
