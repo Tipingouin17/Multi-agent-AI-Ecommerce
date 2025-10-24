@@ -517,12 +517,10 @@ class FraudDetectionAgent(BaseAgentV2):
         self.db_helper = DatabaseHelper(self.db_manager)
         self.repository = FraudDetectionRepository(self.db_helper)
         self.service = FraudDetectionService(self.repository)
+
         self.app = FastAPI(title="FraudDetectionAgent",
                            description="Agent for detecting and managing fraudulent activities.",
-                           on_startup=[self.on_startup],
-                           on_shutdown=[self.on_shutdown])
-        
-        # Add CORS middleware for dashboard integration
+                           lifespan=self.lifespan_context) # Use lifespan context manager
         
         # Add CORS middleware
         self.app.add_middleware(
@@ -535,6 +533,22 @@ class FraudDetectionAgent(BaseAgentV2):
         self._db_initialized = False
 
         self.setup_routes()
+
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        """
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Fraud Detection Agent")
+        await self.initialize()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Fraud Detection Agent")
+        await self.cleanup()
+        logger.info("Fraud Detection Agent API shutdown complete")
 
     async def initialize(self):
         """Initializes the agent with robust error handling."""
