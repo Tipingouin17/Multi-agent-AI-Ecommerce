@@ -963,7 +963,7 @@ async def get_payment_agent() -> PaymentAgent:
 # API ENDPOINTS
 # =====================================================
 
-@self.app.get("/api/v1/payment/gateways", response_model=List[PaymentGateway])
+@agent.app.get("/api/v1/payment/gateways", response_model=List[PaymentGateway])
 async def get_payment_gateways(
     agent: PaymentAgent = Depends(get_payment_agent)
 ):
@@ -976,7 +976,7 @@ async def get_payment_gateways(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.post("/api/v1/payment/methods", response_model=PaymentMethod)
+@agent.app.post("/api/v1/payment/methods", response_model=PaymentMethod)
 async def create_payment_method(
     payment_method: PaymentMethodCreate = Body(...),
     agent: PaymentAgent = Depends(get_payment_agent)
@@ -990,7 +990,7 @@ async def create_payment_method(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.get("/api/v1/payment/methods/{customer_id}", response_model=List[PaymentMethod])
+@agent.app.get("/api/v1/payment/methods/{customer_id}", response_model=List[PaymentMethod])
 async def get_customer_payment_methods(
     customer_id: str = Path(...),
     agent: PaymentAgent = Depends(get_payment_agent)
@@ -1004,7 +1004,7 @@ async def get_customer_payment_methods(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.post("/api/v1/payment/process", response_model=Dict[str, Any])
+@agent.app.post("/api/v1/payment/process", response_model=Dict[str, Any])
 async def process_payment(
     transaction: PaymentTransactionCreate = Body(...),
     agent: PaymentAgent = Depends(get_payment_agent)
@@ -1020,7 +1020,7 @@ async def process_payment(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.get("/api/v1/payment/transactions/{transaction_id}", response_model=PaymentTransaction)
+@agent.app.get("/api/v1/payment/transactions/{transaction_id}", response_model=PaymentTransaction)
 async def get_transaction(
     transaction_id: UUID = Path(...),
     agent: PaymentAgent = Depends(get_payment_agent)
@@ -1038,7 +1038,7 @@ async def get_transaction(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.post("/api/v1/payment/refund", response_model=Dict[str, Any])
+@agent.app.post("/api/v1/payment/refund", response_model=Dict[str, Any])
 async def process_refund(
     refund: PaymentRefundCreate = Body(...),
     agent: PaymentAgent = Depends(get_payment_agent)
@@ -1054,7 +1054,7 @@ async def process_refund(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.post("/api/v1/payment/authorize", response_model=PaymentAuthorization)
+@agent.app.post("/api/v1/payment/authorize", response_model=PaymentAuthorization)
 async def authorize_payment(
     authorization: PaymentAuthorizationCreate = Body(...),
     agent: PaymentAgent = Depends(get_payment_agent)
@@ -1068,12 +1068,12 @@ async def authorize_payment(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.get("/")
+@agent.app.get("/")
 async def read_root():
     """Root endpoint for the Payment Agent API."""
     return {"message": "Payment Agent Enhanced API is running!"}
 
-@self.app.get("/health")
+@agent.app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "agent": "payment_agent_enhanced", "version": "1.0.0"}
@@ -1083,7 +1083,7 @@ async def health_check():
 # ANALYTICS ENDPOINTS
 # =====================================================
 
-@self.app.get("/api/v1/payment/analytics/transactions")
+@agent.app.get("/api/v1/payment/analytics/transactions")
 async def get_transaction_analytics(
     days: int = Query(30, ge=1, le=365),
     agent: PaymentAgent = Depends(get_payment_agent)
@@ -1163,7 +1163,7 @@ async def get_transaction_analytics(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.get("/api/v1/payment/analytics/refunds")
+@agent.app.get("/api/v1/payment/analytics/refunds")
 async def get_refund_analytics(
     days: int = Query(30, ge=1, le=365),
     agent: PaymentAgent = Depends(get_payment_agent)
@@ -1237,7 +1237,7 @@ async def get_refund_analytics(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@self.app.get("/api/v1/payment/analytics/revenue")
+@agent.app.get("/api/v1/payment/analytics/revenue")
 async def get_revenue_analytics(
     days: int = Query(30, ge=1, le=365),
     agent: PaymentAgent = Depends(get_payment_agent)

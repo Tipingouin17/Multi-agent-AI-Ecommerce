@@ -672,17 +672,8 @@ class TransportAgentProduction(BaseAgentV2):
 # FastAPI Server Setup
 # FastAPI app moved to __init__ method as self.app
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 agent_instance: Optional[TransportAgentProduction] = None
 
-@app.on_event("startup")
 async def startup_event():
     """Initializes the agent instance on FastAPI startup."""
     global agent_instance
@@ -690,7 +681,6 @@ async def startup_event():
     await agent_instance.initialize()
     asyncio.create_task(agent_instance.run()) # Run the agent's Kafka consumer in the background
 
-@app.on_event("shutdown")
 async def shutdown_event():
     """
     Shuts down the agent instance on FastAPI shutdown.
@@ -699,12 +689,12 @@ async def shutdown_event():
     if agent_instance:
         await agent_instance.shutdown()
 
-@self.app.get("/health", summary="Health check", response_description="Agent health status")
+@agent_instance.app.get("/health", summary="Health check", response_description="Agent health status")
 async def health_check():
     """Returns the health status of the agent."""
     return {"status": "healthy", "agent": "transport_agent_production"}
 
-@self.app.get("/", summary="Root endpoint", response_description="Agent information")
+@agent_instance.app.get("/", summary="Root endpoint", response_description="Agent information")
 async def root():
     """Returns basic information about the agent."""
     return {
@@ -713,7 +703,7 @@ async def root():
         "version": "1.0.0"
     }
 
-@self.app.post("/carriers/{carrier_code}/config", summary="Update carrier configuration", response_description="Updated carrier configuration")
+@agent_instance.app.post("/carriers/{carrier_code}/config", summary="Update carrier configuration", response_description="Updated carrier configuration")
 async def update_carrier_configuration_api(carrier_code: str, config_data: Dict[str, Any]):
     """
     Updates the configuration for a specific carrier.
@@ -731,7 +721,7 @@ async def update_carrier_configuration_api(carrier_code: str, config_data: Dict[
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
-@self.app.get("/carriers/{carrier_code}/config", summary="Get carrier configuration", response_description="Carrier configuration")
+@agent_instance.app.get("/carriers/{carrier_code}/config", summary="Get carrier configuration", response_description="Carrier configuration")
 async def get_carrier_configuration_api(carrier_code: str):
     """
     Retrieves the configuration for a specific carrier.
@@ -748,7 +738,7 @@ async def get_carrier_configuration_api(carrier_code: str):
         raise HTTPException(status_code=404, detail=f"Carrier config for {carrier_code} not found")
     return config
 
-@self.app.get("/carriers/config", summary="Get all carrier configurations", response_description="All carrier configurations")
+@agent_instance.app.get("/carriers/config", summary="Get all carrier configurations", response_description="All carrier configurations")
 async def get_all_carrier_configurations_api():
     """
     Retrieves all carrier configurations.
@@ -760,7 +750,7 @@ async def get_all_carrier_configurations_api():
     configs = await agent_instance.get_all_carrier_configs()
     return configs
 
-@self.app.delete("/carriers/{carrier_code}/config", summary="Delete carrier configuration", response_description="Deletion status")
+@agent_instance.app.delete("/carriers/{carrier_code}/config", summary="Delete carrier configuration", response_description="Deletion status")
 async def delete_carrier_configuration_api(carrier_code: str):
     """
     Deletes a specific carrier configuration.
@@ -783,5 +773,14 @@ if __name__ == "__main__":
     # This __main__ block is primarily for running the FastAPI server.
     port = int(os.getenv("PORT", 8017))
     logger.info(f"Starting FastAPI server on port {port}")
-    uvicorn.run(agent.app, host="0.0.0.0", port=port)
+    # Initialize agent first
+    import asyncio
+    agent_instance = TransportAgentProduction()
+    asyncio.run(agent_instance.initialize())
+    
+    # Register event handlers
+    agent_instance.app.add_event_handler("startup", startup_event)
+    agent_instance.app.add_event_handler("shutdown", shutdown_event)
+    
+    uvicorn.run(agent_instance.app, host="0.0.0.0", port=port)
 
