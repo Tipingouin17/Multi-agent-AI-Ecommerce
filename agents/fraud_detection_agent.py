@@ -555,7 +555,6 @@ class FraudDetectionAgent(BaseAgentV2):
                     # Create enhanced database manager with retry logic
                     from shared.models import DatabaseConfig
                     from shared.database_manager import EnhancedDatabaseManager
-from shared.cors_middleware import add_cors_middleware
                     db_config = DatabaseConfig()
                     self.db_manager = EnhancedDatabaseManager(db_config)
                     await self.db_manager.initialize(max_retries=5)

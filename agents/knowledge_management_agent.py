@@ -491,7 +491,6 @@ async def startup_event():
     except RuntimeError:
         # Create new database manager if global one doesn't exist
         from shared.models import DatabaseConfig
-from shared.cors_middleware import add_cors_middleware
         db_manager = DatabaseManager(DatabaseConfig())
         await db_manager.initialize_async()
     await db_manager.create_tables() # Ensure all tables are created on startup

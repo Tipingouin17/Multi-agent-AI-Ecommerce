@@ -736,7 +736,6 @@ class DocumentGenerationAgent(BaseAgentV2):
 # Agent instance (global for FastAPI to access)
 agent_instance: Optional[DocumentGenerationAgent] = None
 
-@app.on_event("startup")
 async def startup_event():
     """
     FastAPI startup event to initialize the DocumentGenerationAgent.
@@ -754,7 +753,6 @@ async def startup_event():
         # Depending on criticality, you might want to exit or disable endpoints
         raise HTTPException(status_code=500, detail=f"Agent initialization failed: {e}")
 
-@app.on_event("shutdown")
 async def shutdown_event():
     """
     FastAPI shutdown event to clean up agent resources.
@@ -765,7 +763,7 @@ async def shutdown_event():
         await agent_instance.cleanup()
         logger.info("DocumentGenerationAgent resources cleaned up.")
 
-@self.app.get("/health", summary="Health Check", response_description="Agent health status")
+@agent_instance.app.get("/health", summary="Health Check", response_description="Agent health status")
 async def health_check():
     """
     Checks the health status of the Document Generation Agent.
@@ -777,7 +775,7 @@ async def health_check():
         return {"status": "healthy", "agent": AGENT_TYPE, "agent_id": AGENT_ID}
     raise HTTPException(status_code=503, detail="Agent not fully initialized or unhealthy")
 
-@self.app.get("/", summary="Root Endpoint", response_description="Agent information")
+@agent_instance.app.get("/", summary="Root Endpoint", response_description="Agent information")
 async def root():
     """
     Provides basic information about the Document Generation Agent.
@@ -792,7 +790,7 @@ async def root():
         "agent_id": AGENT_ID
     }
 
-@self.app.post("/generate/invoice", summary="Generate Invoice", response_description="Result of invoice generation")
+@agent_instance.app.post("/generate/invoice", summary="Generate Invoice", response_description="Result of invoice generation")
 async def generate_invoice_api(order_id: int, format: str = 'PDF'):
     """
     API endpoint to trigger invoice generation.
@@ -810,7 +808,7 @@ async def generate_invoice_api(order_id: int, format: str = 'PDF'):
         raise HTTPException(status_code=500, detail=result.get('error', 'Failed to generate invoice'))
     return result
 
-@self.app.post("/generate/shipping_label", summary="Generate Shipping Label", response_description="Result of shipping label generation")
+@agent_instance.app.post("/generate/shipping_label", summary="Generate Shipping Label", response_description="Result of shipping label generation")
 async def generate_shipping_label_api(shipment_id: int, format: str = 'PDF'):
     """
     API endpoint to trigger shipping label generation.
@@ -828,7 +826,7 @@ async def generate_shipping_label_api(shipment_id: int, format: str = 'PDF'):
         raise HTTPException(status_code=500, detail=result.get('error', 'Failed to generate shipping label'))
     return result
 
-@self.app.post("/generate/packing_slip", summary="Generate Packing Slip", response_description="Result of packing slip generation")
+@agent_instance.app.post("/generate/packing_slip", summary="Generate Packing Slip", response_description="Result of packing slip generation")
 async def generate_packing_slip_api(order_id: int):
     """
     API endpoint to trigger packing slip generation.
@@ -849,5 +847,14 @@ async def generate_packing_slip_api(order_id: int):
 if __name__ == '__main__':
     # The main entry point for running the FastAPI application with Uvicorn.
     # This block ensures that the Uvicorn server is started when the script is executed directly.
-    uvicorn.run(agent.app, host="0.0.0.0", port=API_PORT)
+    # Initialize agent first
+    import asyncio
+    agent_instance = DocumentGenerationAgent()
+    asyncio.run(agent_instance.initialize_agent())
+    
+    # Register event handlers
+    agent_instance.app.add_event_handler("startup", startup_event)
+    agent_instance.app.add_event_handler("shutdown", shutdown_event)
+    
+    uvicorn.run(agent_instance.app, host="0.0.0.0", port=API_PORT)
 

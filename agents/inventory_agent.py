@@ -626,7 +626,6 @@ class InventoryAgent(BaseAgentV2):
                 async with self.db_manager.get_session() as session:
                     from sqlalchemy import select, func
                     from shared.models import InventoryDB
-from shared.cors_middleware import add_cors_middleware
                     
                     # Total units across all warehouses
                     total_units_result = await session.execute(

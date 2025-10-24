@@ -48,7 +48,6 @@ if project_root not in sys.path:
 try:
     from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     from shared.db_connection import get_async_database_url
-from shared.cors_middleware import add_cors_middleware
     logger.info("Successfully imported shared modules")
 except ImportError as e:
     logger.error(f"Import error: {e}")
