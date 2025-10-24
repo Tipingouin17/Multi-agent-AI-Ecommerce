@@ -12,6 +12,10 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
 from uuid import UUID, uuid4
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel

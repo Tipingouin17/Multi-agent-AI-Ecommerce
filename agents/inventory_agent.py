@@ -9,6 +9,10 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
