@@ -78,7 +78,7 @@ class TestResult:
 class WorkflowTestSuite:
     """Comprehensive workflow testing suite"""
     
-    def __init__(self, base_url: str = "http://localhost"):
+    def __init__(self, base_url: str = "http://127.0.0.1"):
         self.base_url = base_url
         self.results: List[TestResult] = []
         self.session: Optional[aiohttp.ClientSession] = None
@@ -181,9 +181,9 @@ class WorkflowTestSuite:
             self.results.append(test_result)
             
             if test_result.status == TestStatus.PASSED:
-                logger.info(f"✅ PASSED: {test_name} ({duration:.2f}ms)")
+                logger.info(f"PASSED: {test_name} ({duration:.2f}ms)")
             else:
-                logger.error(f"❌ FAILED: {test_name} - {result.get('error')}")
+                logger.error(f"FAILED: {test_name} - {result.get('error')}")
             
             return test_result
             
@@ -205,7 +205,7 @@ class WorkflowTestSuite:
             )
             
             self.results.append(test_result)
-            logger.error(f"💥 ERROR: {test_name} - {e}")
+            logger.error(f"ERROR: {test_name} - {e}")
             
             return test_result
     
@@ -611,7 +611,7 @@ class WorkflowTestSuite:
         test_count = 0
         
         # Category 1: Health Checks (16 tests)
-        logger.info("\n📋 CATEGORY 1: HEALTH CHECK TESTS")
+        logger.info("\nCATEGORY 1: HEALTH CHECK TESTS")
         for agent in self.agent_ports.keys():
             test_count += 1
             await self.run_test(
@@ -623,7 +623,7 @@ class WorkflowTestSuite:
             )
         
         # Category 2: Product Management (15 tests)
-        logger.info("\n📦 CATEGORY 2: PRODUCT MANAGEMENT TESTS")
+        logger.info("\nCATEGORY 2: PRODUCT MANAGEMENT TESTS")
         for i in range(5):
             test_count += 1
             await self.run_test(
@@ -634,7 +634,7 @@ class WorkflowTestSuite:
             )
         
         # Category 3: Order Workflows (20 tests)
-        logger.info("\n🛒 CATEGORY 3: ORDER WORKFLOW TESTS")
+        logger.info("\nCATEGORY 3: ORDER WORKFLOW TESTS")
         for i in range(10):
             test_count += 1
             await self.run_test(
@@ -645,7 +645,7 @@ class WorkflowTestSuite:
             )
         
         # Category 4: Inventory Management (15 tests)
-        logger.info("\n📊 CATEGORY 4: INVENTORY MANAGEMENT TESTS")
+        logger.info("\nCATEGORY 4: INVENTORY MANAGEMENT TESTS")
         for i in range(10):
             test_count += 1
             await self.run_test(
@@ -656,7 +656,7 @@ class WorkflowTestSuite:
             )
         
         # Category 5: Return/RMA Workflows (10 tests)
-        logger.info("\n↩️ CATEGORY 5: RETURN/RMA WORKFLOW TESTS")
+        logger.info("\nCATEGORY 5: RETURN/RMA WORKFLOW TESTS")
         for i in range(10):
             test_count += 1
             await self.run_test(
@@ -667,7 +667,7 @@ class WorkflowTestSuite:
             )
         
         # Category 6: Quality Control (10 tests)
-        logger.info("\n✅ CATEGORY 6: QUALITY CONTROL TESTS")
+        logger.info("\nCATEGORY 6: QUALITY CONTROL TESTS")
         for i in range(10):
             test_count += 1
             await self.run_test(
@@ -678,7 +678,7 @@ class WorkflowTestSuite:
             )
         
         # Category 7: Fraud Detection (8 tests)
-        logger.info("\n🔒 CATEGORY 7: FRAUD DETECTION TESTS")
+        logger.info("\nCATEGORY 7: FRAUD DETECTION TESTS")
         for i in range(8):
             test_count += 1
             await self.run_test(
@@ -747,10 +747,10 @@ class WorkflowTestSuite:
         with open(report_file, 'w') as f:
             json.dump(report, f, indent=2, default=str)
         
-        logger.info(f"\n📊 TEST REPORT SAVED: {report_file}")
-        logger.info(f"\n✅ Passed: {passed}/{total_tests} ({passed/total_tests*100:.1f}%)")
-        logger.info(f"❌ Failed: {failed}/{total_tests}")
-        logger.info(f"💥 Errors: {errors}/{total_tests}")
+        logger.info(f"\nTEST REPORT SAVED: {report_file}")
+        logger.info(f"\nPassed: {passed}/{total_tests} ({passed/total_tests*100:.1f}%)")
+        logger.info(f"Failed: {failed}/{total_tests}")
+        logger.info(f"Errors: {errors}/{total_tests}")
         
         return report
 

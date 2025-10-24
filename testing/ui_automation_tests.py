@@ -174,9 +174,9 @@ class UITestSuite:
             self.results.append(test_result)
             
             if test_result.status == UITestStatus.PASSED:
-                logger.info(f"✅ PASSED: {test_name} ({duration:.2f}ms)")
+                logger.info(f"PASSED: {test_name} ({duration:.2f}ms)")
             else:
-                logger.error(f"❌ FAILED: {test_name} - {result.get('error')}")
+                logger.error(f"FAILED: {test_name} - {result.get('error')}")
             
             return test_result
             
@@ -204,7 +204,7 @@ class UITestSuite:
             )
             
             self.results.append(test_result)
-            logger.error(f"💥 ERROR: {test_name} - {e}")
+            logger.error(f"ERROR: {test_name} - {e}")
             
             return test_result
     
@@ -476,18 +476,18 @@ class UITestSuite:
                 # Check if we're redirected away from login page
                 current_url = self.driver.current_url
                 if "/login" not in current_url:
-                    logger.info(f"✅ Login successful, redirected to {current_url}")
+                    logger.info(f"Login successful, redirected to {current_url}")
                     return True
                 else:
-                    logger.warning("⚠️ Still on login page after submission, login may have failed")
+                    logger.warning("Still on login page after submission, login may have failed")
                     return False
                     
             except NoSuchElementException:
-                logger.warning("⚠️ Login form not found, assuming no authentication required")
+                logger.warning("Login form not found, assuming no authentication required")
                 return True
                 
         except Exception as e:
-            logger.error(f"❌ Login failed: {str(e)}")
+            logger.error(f"Login failed: {str(e)}")
             return False
     
     async def run_all_tests(self):
@@ -499,18 +499,18 @@ class UITestSuite:
         self.setup_driver()
         
         # Try to login first
-        logger.info("\n🔐 Attempting authentication...")
+        logger.info("\nAttempting authentication...")
         login_success = self.login()
         if not login_success:
             logger.warning("⚠️ Login failed or not required, proceeding with tests...")
         else:
-            logger.info("✅ Authentication successful\n")
+            logger.info("Authentication successful\n")
         
         try:
             test_count = 0
             
             # Category 1: Page Load Tests (10 tests)
-            logger.info("\n📄 CATEGORY 1: PAGE LOAD TESTS")
+            logger.info("\nCATEGORY 1: PAGE LOAD TESTS")
             pages = [
                 ("Home", "/"),
                 ("Products", "/products"),
@@ -536,7 +536,7 @@ class UITestSuite:
                 )
             
             # Category 2: Navigation Tests (15 tests)
-            logger.info("\n🧭 CATEGORY 2: NAVIGATION TESTS")
+            logger.info("\nCATEGORY 2: NAVIGATION TESTS")
             navigation_tests = [
                 ("/", "/products", "Products"),
                 ("/", "/orders", "Orders"),
@@ -558,7 +558,7 @@ class UITestSuite:
                 )
             
             # Category 3: Form Tests (20 tests)
-            logger.info("\n📝 CATEGORY 3: FORM TESTS")
+            logger.info("\nCATEGORY 3: FORM TESTS")
             form_tests = [
                 {
                     "page": "/products/new",
@@ -592,7 +592,7 @@ class UITestSuite:
                 )
             
             # Category 4: API Integration Tests (15 tests)
-            logger.info("\n🔌 CATEGORY 4: API INTEGRATION TESTS")
+            logger.info("\nCATEGORY 4: API INTEGRATION TESTS")
             api_tests = [
                 ("/products", ".product-list", True),
                 ("/orders", ".order-list", True),
@@ -676,10 +676,10 @@ class UITestSuite:
         with open(report_file, 'w') as f:
             json.dump(report, f, indent=2, default=str)
         
-        logger.info(f"\n📊 UI TEST REPORT SAVED: {report_file}")
-        logger.info(f"\n✅ Passed: {passed}/{total_tests} ({passed/total_tests*100:.1f}%)")
-        logger.info(f"❌ Failed: {failed}/{total_tests}")
-        logger.info(f"💥 Errors: {errors}/{total_tests}")
+        logger.info(f"\nUI TEST REPORT SAVED: {report_file}")
+        logger.info(f"\nPassed: {passed}/{total_tests} ({passed/total_tests*100:.1f}%)")
+        logger.info(f"Failed: {failed}/{total_tests}")
+        logger.info(f"Errors: {errors}/{total_tests}")
         
         return report
 

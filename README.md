@@ -71,29 +71,29 @@ A comprehensive AI-powered multi-agent system for warehouse and marketplace inte
 - **Apache Kafka 2.8+** (optional, for full messaging)
 - **Redis 6.0+** (optional, for caching)
 
-### Quick Start (Windows)
+### Quick Start (Local Development)
 
-1. **Extract the system**
-   ```cmd
-   # Extract to desired location, e.g., C:\multi-agent-ecommerce\
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Tipingouin17/Multi-agent-AI-Ecommerce.git
+   cd Multi-agent-AI-Ecommerce
    ```
 
-2. **Run the installer**
-   ```cmd
-   cd C:\multi-agent-ecommerce
-   install.bat
+2. **Set up environment**
+   ```bash
+   # Install dependencies (including testing tools)
+   pip install -r requirements.txt
+   cp .env.example .env
+   # Edit .env with your configuration
    ```
 
-3. **Configure the system**
-   ```cmd
-   # Edit .env with your settings
-   notepad .env
+3. **Start the system**
+   ```bash
+   # Use the new local development script
+   ./scripts/start_local_dev.sh
    ```
 
-4. **Start the system**
-   ```cmd
-   start-system.bat
-   ```
+
 
 ### Manual Installation
 
@@ -177,15 +177,28 @@ python -m multi_agent_ecommerce.cli init-db
 python -m multi_agent_ecommerce.cli start
 ```
 
-### Windows Batch Scripts
+### Scripts and Validation
 
-After installation, these scripts are available:
+The `./scripts` directory contains utilities for local development and deployment:
 
-- `start-system.bat` - Start the multi-agent system
-- `check-status.bat` - Check system status
-- `check-health.bat` - Run health checks
-- `init-database.bat` - Initialize database tables
-- `view-config.bat` - View current configuration
+- `./scripts/start_local_dev.sh`: Starts all agents, Kafka, and PostgreSQL locally.
+- `./scripts/deploy_to_k8s.sh`: Builds and deploys the system to a Kubernetes cluster.
+
+### Production Validation
+
+The system now includes a comprehensive, score-based validation suite located in the `./testing` directory.
+
+- **`./testing/production_validation_suite.py`**: The single entry point to run all tests and generate a **Production Readiness Score** (0-100).
+
+To run the full validation suite:
+
+```bash
+# Ensure all agents and infrastructure are running
+./scripts/start_local_dev.sh
+
+# Run the validation
+python ./testing/production_validation_suite.py
+```
 
 ## 🔧 Development
 
@@ -214,15 +227,16 @@ async with db_manager.get_async_session() as session:
 
 ## 🚀 Deployment
 
-### Windows Deployment
+### Kubernetes Deployment
 
-The system includes Windows-specific deployment scripts:
+The system is configured for containerized deployment using the provided Kubernetes deployment script:
 
-1. **Run installer**: `install.bat`
-2. **Start system**: `start-system.bat`
-3. **Check status**: `check-status.bat`
-4. **Check health**: `check-health.bat`
-5. **Initialize database**: `init-database.bat`
+1. **Ensure K8s cluster is configured.**
+2. **Execute the deployment script:**
+   ```bash
+   ./scripts/deploy_to_k8s.sh
+   ```
+This script handles image building, tagging with the current Git SHA, and deployment via `kubectl`.
 
 ## 🔒 Security
 

@@ -77,9 +77,9 @@ class ProductionValidationSuite:
         try:
             async with WorkflowTestSuite() as workflow_suite:
                 self.results["workflow_tests"] = await workflow_suite.run_all_tests()
-                logger.info("✅ Workflow tests completed")
+                logger.info("[OK] Workflow tests completed")
         except Exception as e:
-            logger.error(f"❌ Workflow tests failed: {e}")
+            logger.error(f"[ERROR] Workflow tests failed: {e}")
             self.results["workflow_tests"] = {"error": str(e)}
         
         # Phase 2: UI Tests
@@ -90,9 +90,9 @@ class ProductionValidationSuite:
         try:
             ui_suite = UITestSuite()
             self.results["ui_tests"] = await ui_suite.run_all_tests()
-            logger.info("✅ UI tests completed")
+            logger.info("[OK] UI tests completed")
         except Exception as e:
-            logger.error(f"❌ UI tests failed: {e}")
+            logger.error(f"[ERROR] UI tests failed: {e}")
             self.results["ui_tests"] = {"error": str(e)}
         
         # Phase 3: Agent Health Checks
@@ -157,7 +157,7 @@ class ProductionValidationSuite:
                                 "port": port,
                                 "response": data
                             })
-                            logger.info(f"✅ {agent_name}: healthy")
+                            logger.info(f"[OK] {agent_name}: healthy")
                         else:
                             health_results.append({
                                 "agent": agent_name,
@@ -165,7 +165,7 @@ class ProductionValidationSuite:
                                 "port": port,
                                 "http_status": response.status
                             })
-                            logger.warning(f"⚠️  {agent_name}: unhealthy (HTTP {response.status})")
+                            logger.warning(f"[WARNING]  {agent_name}: unhealthy (HTTP {response.status})")
                 except Exception as e:
                     health_results.append({
                         "agent": agent_name,
@@ -173,7 +173,7 @@ class ProductionValidationSuite:
                         "port": port,
                         "error": str(e)
                     })
-                    logger.error(f"❌ {agent_name}: offline ({e})")
+                    logger.error(f"[ERROR] {agent_name}: offline ({e})")
         
         healthy_count = sum(1 for r in health_results if r["status"] == "healthy")
         total_count = len(health_results)
@@ -212,7 +212,7 @@ class ProductionValidationSuite:
                 row = result.fetchone()
                 
                 if row and row[0] == 1:
-                    logger.info("✅ Database connectivity: OK")
+                    logger.info("[OK] Database connectivity: OK")
                     return {
                         "status": "connected",
                         "database": db_config.database,
@@ -220,13 +220,13 @@ class ProductionValidationSuite:
                         "port": db_config.port
                     }
                 else:
-                    logger.error("❌ Database connectivity: Failed (unexpected result)")
+                    logger.error("[ERROR] Database connectivity: Failed (unexpected result)")
                     return {
                         "status": "error",
                         "error": "Unexpected query result"
                     }
         except Exception as e:
-            logger.error(f"❌ Database connectivity: Failed ({e})")
+            logger.error(f"[ERROR] Database connectivity: Failed ({e})")
             return {
                 "status": "error",
                 "error": str(e)
@@ -257,7 +257,7 @@ class ProductionValidationSuite:
             
             await producer.send("test_topic", test_message)
             
-            logger.info("✅ Kafka integration: OK")
+            logger.info("[OK] Kafka integration: OK")
             
             return {
                 "status": "connected",
@@ -265,7 +265,7 @@ class ProductionValidationSuite:
                 "test_message_sent": True
             }
         except Exception as e:
-            logger.error(f"❌ Kafka integration: Failed ({e})")
+            logger.error(f"[ERROR] Kafka integration: Failed ({e})")
             return {
                 "status": "error",
                 "error": str(e)
@@ -301,16 +301,16 @@ class ProductionValidationSuite:
         
         # Determine production readiness status
         if overall_score >= 95:
-            readiness_status = "PRODUCTION READY ✅"
+            readiness_status = "PRODUCTION READY [OK]"
             recommendation = "System is ready for production deployment"
         elif overall_score >= 80:
-            readiness_status = "MOSTLY READY ⚠️"
+            readiness_status = "MOSTLY READY [WARNING]"
             recommendation = "System is mostly ready, but some issues need attention"
         elif overall_score >= 60:
-            readiness_status = "NEEDS WORK ⚠️"
+            readiness_status = "NEEDS WORK [WARNING]"
             recommendation = "Significant issues need to be resolved before production"
         else:
-            readiness_status = "NOT READY ❌"
+            readiness_status = "NOT READY [ERROR]"
             recommendation = "System is not ready for production deployment"
         
         report = {
