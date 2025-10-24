@@ -3,70 +3,23 @@ Promotion Agent - Multi-Agent E-Commerce System
 
 This agent manages promotions, discounts, coupons, and marketing campaigns
 with dynamic pricing and eligibility rules.
-
-DATABASE SCHEMA (migration 013_promotion_agent.sql):
-
-CREATE TABLE promotions (
-    promotion_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    promotion_code VARCHAR(50) UNIQUE NOT NULL,
-    promotion_name VARCHAR(200) NOT NULL,
-    promotion_type VARCHAR(50) NOT NULL, -- 'percentage', 'fixed_amount', 'bogo', 'free_shipping', 'bundle'
-    discount_value DECIMAL(10, 2),
-    discount_percentage DECIMAL(5, 2),
-    min_purchase_amount DECIMAL(10, 2),
-    max_discount_amount DECIMAL(10, 2),
-    applicable_products JSONB DEFAULT '[]',
-    applicable_categories JSONB DEFAULT '[]',
-    excluded_products JSONB DEFAULT '[]',
-    customer_eligibility JSONB DEFAULT '{}', -- {min_orders, loyalty_tier, etc}
-    usage_limit INTEGER,
-    usage_per_customer INTEGER DEFAULT 1,
-    start_date TIMESTAMP NOT NULL,
-    end_date TIMESTAMP NOT NULL,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE promotion_usage (
-    usage_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    promotion_id UUID REFERENCES promotions(promotion_id),
-    customer_id VARCHAR(100) NOT NULL,
-    order_id VARCHAR(100) NOT NULL,
-    discount_amount DECIMAL(10, 2) NOT NULL,
-    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE campaigns (
-    campaign_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    campaign_name VARCHAR(200) NOT NULL,
-    campaign_type VARCHAR(50) NOT NULL, -- 'email', 'sms', 'push', 'banner'
-    target_audience JSONB NOT NULL, -- Segmentation criteria
-    promotion_id UUID REFERENCES promotions(promotion_id),
-    start_date TIMESTAMP NOT NULL,
-    end_date TIMESTAMP NOT NULL,
-    budget DECIMAL(10, 2),
-    spent DECIMAL(10, 2) DEFAULT 0,
-    impressions INTEGER DEFAULT 0,
-    clicks INTEGER DEFAULT 0,
-    conversions INTEGER DEFAULT 0,
-    is_active BOOLEAN DEFAULT true
-);
 """
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, AsyncGenerator
 from uuid import uuid4, UUID
 from enum import Enum
-
-from shared.db_helpers import DatabaseHelper
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body
 from pydantic import BaseModel, Field
 import structlog
 import sys
 import os
+import uvicorn
 
+# Add project root to path
 current_file_path = os.path.abspath(__file__)
 current_dir = os.path.dirname(current_file_path)
 project_root = os.path.dirname(current_dir)
@@ -75,6 +28,7 @@ if project_root not in sys.path:
 
 from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.database import DatabaseManager, get_database_manager
+from shared.db_helpers import DatabaseHelper
 
 logger = structlog.get_logger(__name__)
 
@@ -103,18 +57,6 @@ class PromotionCreate(BaseModel):
     usage_per_customer: int = 1
     start_date: datetime
     end_date: datetime
-    async def initialize(self):
-        """Initialize agent."""
-        await super().initialize()
-        
-    async def cleanup(self):
-        """Cleanup agent."""
-        await super().cleanup()
-        
-    async def process_business_logic(self, data):
-        """Process business logic."""
-        return {"status": "success"}
-
 
 class Promotion(BaseModel):
     promotion_id: UUID
@@ -159,6 +101,8 @@ class PromotionRepository:
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING *
         """
+        # Note: The original code used raw string conversions for JSONB fields. 
+        # This is preserved but should ideally be handled by a proper ORM or driver.
         result = await self.db.fetch_one(
             query, promo_data.promotion_code, promo_data.promotion_name,
             promo_data.promotion_type.value, promo_data.discount_value,
@@ -317,73 +261,149 @@ class PromotionService:
             reason=None
         )
 
-# FASTAPI APP
-app = FastAPI(title="Promotion Agent API", version="1.0.0")
+# AGENT CLASS
+class PromotionAgent(BaseAgentV2):
+    """
+    Promotion Agent with FastAPI for API exposure and database management via lifespan.
+    """
+    def __init__(self, agent_id: str = "promotion_agent"):
+        super().__init__(agent_id=agent_id)
+        self.agent_name = "Promotion Agent"
+        self.db_manager: Optional[DatabaseManager] = None
+        self.repo: Optional[PromotionRepository] = None
+        self.service: Optional[PromotionService] = None
+        
+        # Initialize FastAPI app with lifespan
+        self.app = FastAPI(title=f"{self.agent_name} API", lifespan=self.lifespan_context)
+        self._setup_routes()
 
-async def get_promotion_service() -> PromotionService:
-    db_manager = await get_database_manager()
-    repo = PromotionRepository(db_manager)
-    return PromotionService(repo)
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI) -> AsyncGenerator[None, None]:
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        Initializes the database connection and the agent's services.
+        """
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Promotion Agent")
+        
+        # 1. Initialize Database Manager
+        try:
+            self.db_manager = get_database_manager()
+        except RuntimeError:
+            # Fallback to creating a new manager if global one is not set
+            from shared.models import DatabaseConfig
+            self.db_manager = DatabaseManager(DatabaseConfig().database_url)
+        
+        await self.db_manager.initialize_async()
+        
+        # 2. Initialize Repository and Service
+        self.repo = PromotionRepository(self.db_manager)
+        self.service = PromotionService(self.repo)
+        
+        # 3. Call BaseAgentV2 initialize (for Kafka, etc.)
+        await self.initialize()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Promotion Agent")
+        await self.cleanup()
 
-# ENDPOINTS
-@app.post("/api/v1/promotions", response_model=Promotion)
-async def create_promotion(
-    promo_data: PromotionCreate = Body(...),
-    service: PromotionService = Depends(get_promotion_service)
-):
-    try:
-        promotion = await service.repo.create_promotion(promo_data)
-        logger.info("promotion_created", promotion_id=str(promotion.promotion_id))
-        return promotion
-    except Exception as e:
-        logger.error("create_promotion_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    async def initialize(self):
+        """Initialize agent-specific components"""
+        await super().initialize()
+        logger.info(f"{self.agent_name} initialized successfully")
 
-@app.get("/api/v1/promotions/active")
-async def get_active_promotions(
-    service: PromotionService = Depends(get_promotion_service)
-):
-    try:
-        promotions = await service.repo.get_active_promotions()
-        return {"promotions": promotions}
-    except Exception as e:
-        logger.error("get_active_promotions_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        if self.db_manager:
+            await self.db_manager.close()
+        await super().cleanup()
+        logger.info(f"{self.agent_name} cleaned up successfully")
 
-@app.post("/api/v1/promotions/validate", response_model=PromotionValidationResponse)
-async def validate_promotion(
-    request: PromotionValidationRequest = Body(...),
-    service: PromotionService = Depends(get_promotion_service)
-):
-    try:
-        response = await service.validate_promotion(request)
-        return response
-    except Exception as e:
-        logger.error("validate_promotion_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process promotion-specific business logic"""
+        # This can be used for internal agent-to-agent communication
+        logger.info("Processing promotion business logic", data=data)
+        return {"status": "processed", "data": data}
 
-@app.post("/api/v1/promotions/{promotion_id}/use")
-async def record_usage(
-    promotion_id: UUID = Path(...),
-    customer_id: str = Body(..., embed=True),
-    order_id: str = Body(..., embed=True),
-    discount_amount: Decimal = Body(..., embed=True),
-    service: PromotionService = Depends(get_promotion_service)
-):
-    try:
-        usage_id = await service.repo.record_promotion_usage(
-            promotion_id, customer_id, order_id, discount_amount
-        )
-        return {"usage_id": usage_id, "message": "Promotion usage recorded"}
-    except Exception as e:
-        logger.error("record_usage_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    def _setup_routes(self):
+        """Setup FastAPI routes for the Promotion Agent API."""
+        
+        # Dependency to get the initialized service
+        def get_promotion_service_dependency() -> PromotionService:
+            if not self.service:
+                raise HTTPException(status_code=503, detail="Service not initialized")
+            return self.service
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "agent": "promotion_agent", "version": "1.0.0"}
+        @self.app.post("/api/v1/promotions", response_model=Promotion)
+        async def create_promotion(
+            promo_data: PromotionCreate = Body(...),
+            service: PromotionService = Depends(get_promotion_service_dependency)
+        ):
+            try:
+                promotion = await service.repo.create_promotion(promo_data)
+                logger.info("promotion_created", promotion_id=str(promotion.promotion_id))
+                return promotion
+            except Exception as e:
+                logger.error("create_promotion_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/api/v1/promotions/active")
+        async def get_active_promotions(
+            service: PromotionService = Depends(get_promotion_service_dependency)
+        ):
+            try:
+                promotions = await service.repo.get_active_promotions()
+                return {"promotions": promotions}
+            except Exception as e:
+                logger.error("get_active_promotions_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.post("/api/v1/promotions/validate", response_model=PromotionValidationResponse)
+        async def validate_promotion(
+            request: PromotionValidationRequest = Body(...),
+            service: PromotionService = Depends(get_promotion_service_dependency)
+        ):
+            try:
+                response = await service.validate_promotion(request)
+                return response
+            except Exception as e:
+                logger.error("validate_promotion_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.post("/api/v1/promotions/{promotion_id}/use")
+        async def record_usage(
+            promotion_id: UUID = Path(...),
+            customer_id: str = Body(..., embed=True),
+            order_id: str = Body(..., embed=True),
+            discount_amount: Decimal = Body(..., embed=True),
+            service: PromotionService = Depends(get_promotion_service_dependency)
+        ):
+            try:
+                usage_id = await service.repo.record_promotion_usage(
+                    promotion_id, customer_id, order_id, discount_amount
+                )
+                return {"usage_id": usage_id, "message": "Promotion usage recorded"}
+            except Exception as e:
+                logger.error("record_usage_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/health")
+        async def health_check():
+            return {
+                "status": "healthy", 
+                "agent": "promotion_agent", 
+                "version": "1.0.0",
+                "db_connected": self.db_manager is not None and self.db_manager.is_initialized
+            }
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8012)
-
+    agent = PromotionAgent()
+    
+    # Use environment variable for port, default to 8012
+    port = int(os.getenv("PROMOTION_AGENT_PORT", 8012))
+    host = os.getenv("PROMOTION_AGENT_HOST", "0.0.0.0")
+    
+    logger.info(f"Starting Promotion Agent API on {host}:{port}")
+    uvicorn.run(agent.app, host=host, port=port)
