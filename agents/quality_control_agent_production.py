@@ -8,14 +8,15 @@ import sys
 import asyncio
 import structlog
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, AsyncGenerator
 from enum import Enum
 from pydantic import BaseModel, Field
 from decimal import Decimal
-from fastapi import FastAPI, HTTPException, Query, Path, Body
+from fastapi import FastAPI, HTTPException, Query, Path, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from uuid import uuid4
 import uvicorn
+from contextlib import asynccontextmanager
 
 # Add parent directory to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,13 +26,10 @@ if parent_dir not in sys.path:
 
 from shared.base_agent_v2 import BaseAgentV2
 from shared.kafka_config import KafkaProducer, KafkaConsumer
-from shared.database import DatabaseManager
+from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
 
 logger = structlog.get_logger(__name__)
-
-# Create module-level FastAPI app
-app = FastAPI(title="Quality Control Agent Production API")
 
 
 # =====================================================
@@ -126,11 +124,6 @@ class QualityControlRepository:
     """Handles all database operations for the quality control agent"""
     
     def __init__(self, db_manager: DatabaseManager):
-        # FastAPI app for REST API
-        self.app = FastAPI(title="Quality Control Agent API")
-        
-        # Add CORS middleware for dashboard integration
-        
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
     
@@ -272,37 +265,52 @@ class QualityControlAgent(BaseAgentV2):
     - Alert on quality issues
     """
     
-    def __init__(self):
-        super().__init__(agent_id="QualityControlAgent")
+    def __init__(self, agent_id: str = "QualityControlAgent"):
+        super().__init__(agent_id=agent_id)
+        self.agent_name = "Quality Control Agent"
         self.kafka_producer: Optional[KafkaProducer] = None
         self.kafka_consumer: Optional[KafkaConsumer] = None
         self.db_manager: Optional[DatabaseManager] = None
-        self.db_helper: Optional[DatabaseHelper] = None
         self.repository: Optional[QualityControlRepository] = None
-        self._db_initialized = False
         
-    async def initialize(self):
-        """Initialize agent with database and Kafka"""
-        await super().initialize()
+        # Initialize FastAPI app with lifespan
+        self.app = FastAPI(
+            title=f"{self.agent_name} API",
+            lifespan=self.lifespan_context
+        )
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        self._setup_routes()
+
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI) -> AsyncGenerator[None, None]:
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        Initializes the database connection and the agent's services.
+        """
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Quality Control Agent")
         
-        # Initialize Database
+        # 1. Initialize Database Manager
         try:
-            from shared.database_manager import get_database_manager
             self.db_manager = get_database_manager()
-            logger.info("Using global database manager")
-        except (RuntimeError, ImportError):
+        except RuntimeError:
+            # Fallback to creating a new manager if global one is not set
             from shared.models import DatabaseConfig
-            from shared.database_manager import EnhancedDatabaseManager
-            db_config = DatabaseConfig()
-            self.db_manager = EnhancedDatabaseManager(db_config)
-            await self.db_manager.initialize(max_retries=5)
-            logger.info("Created new enhanced database manager")
+            from shared.database import EnhancedDatabaseManager
+            self.db_manager = EnhancedDatabaseManager(DatabaseConfig().database_url)
         
-        self.db_helper = DatabaseHelper(self.db_manager)
+        await self.db_manager.initialize_async()
+        
+        # 2. Initialize Repository and Services
         self.repository = QualityControlRepository(self.db_manager)
-        self._db_initialized = True
         
-        # Initialize Kafka
+        # 3. Initialize Kafka
         self.kafka_producer = KafkaProducer()
         self.kafka_consumer = KafkaConsumer(
             "product_received",
@@ -311,7 +319,30 @@ class QualityControlAgent(BaseAgentV2):
             group_id="quality_control_agent"
         )
         
-        logger.info("Quality Control Agent initialized successfully")
+        # 4. Call BaseAgentV2 initialize
+        await self.initialize()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Quality Control Agent")
+        await self.cleanup()
+
+    async def initialize(self):
+        """Initialize agent-specific components"""
+        await super().initialize()
+        logger.info(f"{self.agent_name} initialized successfully")
+
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        if self.kafka_producer:
+            await self.kafka_producer.close()
+        if self.kafka_consumer:
+            await self.kafka_consumer.close()
+        if self.db_manager:
+            await self.db_manager.close()
+        await super().cleanup()
+        logger.info(f"{self.agent_name} cleaned up successfully")
     
     async def schedule_inspection(
         self,
@@ -321,8 +352,8 @@ class QualityControlAgent(BaseAgentV2):
         scheduled_at: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """Schedule a quality inspection"""
-        if not self._db_initialized:
-            raise ValueError("Database not initialized")
+        if not self.repository:
+            raise ValueError("Repository not initialized")
         
         try:
             inspection = QualityInspection(
@@ -362,8 +393,8 @@ class QualityControlAgent(BaseAgentV2):
     
     async def start_inspection(self, inspection_id: str) -> Dict[str, Any]:
         """Start an inspection"""
-        if not self._db_initialized:
-            raise ValueError("Database not initialized")
+        if not self.repository:
+            raise ValueError("Repository not initialized")
         
         try:
             success = await self.repository.update_inspection_status(
@@ -394,8 +425,8 @@ class QualityControlAgent(BaseAgentV2):
         result: InspectionResult
     ) -> Dict[str, Any]:
         """Complete an inspection with results"""
-        if not self._db_initialized:
-            raise ValueError("Database not initialized")
+        if not self.repository:
+            raise ValueError("Repository not initialized")
         
         try:
             # Save inspection result
@@ -459,11 +490,11 @@ class QualityControlAgent(BaseAgentV2):
         except Exception as e:
             logger.error("complete_inspection_failed", error=str(e))
             raise
-    
+
     async def get_product_quality_metrics(self, product_id: str) -> QualityMetrics:
         """Get quality metrics for a product"""
-        if not self._db_initialized:
-            raise ValueError("Database not initialized")
+        if not self.repository:
+            raise ValueError("Repository not initialized")
         
         try:
             inspections = await self.repository.get_product_inspections(product_id)
@@ -495,205 +526,87 @@ class QualityControlAgent(BaseAgentV2):
             logger.error("get_product_quality_metrics_failed", error=str(e))
             raise
 
-
-    async def cleanup(self):
-        """Cleanup agent resources"""
-        if hasattr(self, 'kafka_producer') and self.kafka_producer:
-            await self.kafka_producer.close()
-        if hasattr(self, 'kafka_consumer') and self.kafka_consumer:
-            await self.kafka_consumer.close()
-        if hasattr(self, 'db_manager') and self.db_manager:
-            await self.db_manager.close()
-        logger.info(f"{self.__class__.__name__} cleaned up")
-    
     async def process_business_logic(self, data: dict) -> dict:
         """Process business logic"""
-        logger.info(f"Processing business logic in {self.__class__.__name__}", data=data)
+        logger.info(f"Processing business logic in {self.agent_name}", data=data)
         return {"status": "processed", "data": data}
 
+    def _setup_routes(self):
+        """Setup FastAPI routes for the Quality Control Agent API."""
+        
+        # Dependency to get the initialized repository
+        def get_repository_dependency() -> QualityControlRepository:
+            if not self.repository:
+                raise HTTPException(status_code=503, detail="Repository not initialized")
+            return self.repository
 
-# =====================================================
-# FASTAPI APP
-# =====================================================
+        @self.app.post("/api/v1/inspections/schedule")
+        async def schedule_inspection_endpoint(
+            product_id: str = Body(..., embed=True),
+            inspection_type: InspectionType = Body(..., embed=True),
+            inspector_id: str = Body(..., embed=True),
+            scheduled_at: Optional[datetime] = Body(None, embed=True)
+        ):
+            try:
+                result = await self.schedule_inspection(
+                    product_id, inspection_type, inspector_id, scheduled_at
+                )
+                return result
+            except Exception as e:
+                logger.error("schedule_inspection_endpoint_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
 
-# FastAPI app moved to __init__ method as self.app
+        @self.app.post("/api/v1/inspections/{inspection_id}/start")
+        async def start_inspection_endpoint(
+            inspection_id: str = Path(...)
+        ):
+            try:
+                result = await self.start_inspection(inspection_id)
+                if not result.get("success"):
+                    raise HTTPException(status_code=404, detail=result.get("error"))
+                return result
+            except Exception as e:
+                logger.error("start_inspection_endpoint_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+        @self.app.post("/api/v1/inspections/{inspection_id}/complete")
+        async def complete_inspection_endpoint(
+            inspection_id: str = Path(...),
+            result_data: InspectionResult = Body(...)
+        ):
+            try:
+                result = await self.complete_inspection(inspection_id, result_data)
+                return result
+            except Exception as e:
+                logger.error("complete_inspection_endpoint_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
 
-agent_instance: Optional[QualityControlAgent] = None
+        @self.app.get("/api/v1/products/{product_id}/metrics", response_model=QualityMetrics)
+        async def get_product_metrics_endpoint(
+            product_id: str = Path(...)
+        ):
+            try:
+                metrics = await self.get_product_quality_metrics(product_id)
+                return metrics
+            except Exception as e:
+                logger.error("get_product_metrics_endpoint_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize agent on startup"""
-    global agent_instance
-    agent_instance = QualityControlAgent()
-    await agent_instance.initialize()
-    logger.info("Quality Control Agent API started")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    global agent_instance
-    if agent_instance:
-        if agent_instance.db_manager:
-            await agent_instance.db_manager.close()
-    logger.info("Quality Control Agent API shutdown")
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "agent": "QualityControlAgent",
-        "version": "1.0.0",
-        "database": agent_instance._db_initialized if agent_instance else False
-    }
-
-
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {
-        "agent": "QualityControlAgent",
-        "version": "1.0.0",
-        "endpoints": [
-            "/health",
-            "/inspections/schedule",
-            "/inspections/{inspection_id}",
-            "/inspections/{inspection_id}/start",
-            "/inspections/{inspection_id}/complete",
-            "/products/{product_id}/defects",
-            "/products/{product_id}/metrics"
-        ]
-    }
-
-
-@app.post("/inspections/schedule", summary="Schedule Inspection")
-async def schedule_inspection(
-    product_id: str = Body(...),
-    inspection_type: InspectionType = Body(...),
-    inspector_id: str = Body(...),
-    scheduled_at: Optional[datetime] = Body(None)
-):
-    """Schedule a quality inspection"""
-    if not agent_instance:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
-    try:
-        result = await agent_instance.schedule_inspection(
-            product_id,
-            inspection_type,
-            inspector_id,
-            scheduled_at
-        )
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error("schedule_inspection_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@app.get("/inspections/{inspection_id}", summary="Get Inspection")
-async def get_inspection(inspection_id: str = Path(...)):
-    """Get inspection by ID"""
-    if not agent_instance:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
-    try:
-        inspection = await agent_instance.repository.get_inspection(inspection_id)
-        if not inspection:
-            raise HTTPException(status_code=404, detail="Inspection not found")
-        return inspection
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("get_inspection_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@app.post("/inspections/{inspection_id}/start", summary="Start Inspection")
-async def start_inspection(inspection_id: str = Path(...)):
-    """Start an inspection"""
-    if not agent_instance:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
-    try:
-        result = await agent_instance.start_inspection(inspection_id)
-        if not result["success"]:
-            raise HTTPException(status_code=404, detail=result.get("error", "Failed to start inspection"))
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("start_inspection_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@app.post("/inspections/{inspection_id}/complete", summary="Complete Inspection")
-async def complete_inspection(
-    inspection_id: str = Path(...),
-    result: InspectionResult = Body(...)
-):
-    """Complete an inspection with results"""
-    if not agent_instance:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
-    try:
-        completion_result = await agent_instance.complete_inspection(inspection_id, result)
-        return completion_result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error("complete_inspection_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@app.get("/products/{product_id}/defects", summary="Get Product Defects")
-async def get_product_defects(product_id: str = Path(...)):
-    """Get all defects for a product"""
-    if not agent_instance:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
-    try:
-        defects = await agent_instance.repository.get_product_defects(product_id)
-        return {
-            "product_id": product_id,
-            "defects": defects,
-            "total": len(defects)
-        }
-    except Exception as e:
-        logger.error("get_product_defects_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@app.get("/products/{product_id}/metrics", summary="Get Product Quality Metrics")
-async def get_product_metrics(product_id: str = Path(...)):
-    """Get quality metrics for a product"""
-    if not agent_instance:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
-    try:
-        metrics = await agent_instance.get_product_quality_metrics(product_id)
-        return metrics
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error("get_product_metrics_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
-
+        @self.app.get("/health")
+        async def health_check():
+            return {
+                "status": "healthy",
+                "agent": self.agent_name,
+                "version": "1.0.0",
+                "database": self.db_manager is not None and self.db_manager.is_initialized
+            }
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8022))
-    logger.info(f"Starting Quality Control Agent on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
-
+    agent = QualityControlAgent()
+    
+    # Use environment variable for port, default to 8016
+    port = int(os.getenv("QUALITY_CONTROL_AGENT_PORT", 8016))
+    host = os.getenv("QUALITY_CONTROL_AGENT_HOST", "0.0.0.0")
+    
+    logger.info(f"Starting {agent.agent_name} API on {host}:{port}")
+    uvicorn.run(agent.app, host=host, port=port)
