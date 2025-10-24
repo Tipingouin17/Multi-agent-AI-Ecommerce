@@ -151,7 +151,7 @@ async def setup_database(drop_existing: bool = False):
         
         # Create tables using SQLAlchemy metadata
         from shared.database import Base
-        async with db_manager.engine.begin() as conn:
+        async with db_manager.async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         
         logger.info("✅ Database tables created successfully")
