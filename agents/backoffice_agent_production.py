@@ -93,6 +93,12 @@ class BackofficeRepository:
     """Handles all database operations for the backoffice agent"""
     
     def __init__(self, db_manager: DatabaseManager):
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Backoffice Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
+        
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
     
@@ -254,6 +260,7 @@ class BackofficeAgent(BaseAgentV2):
         except (RuntimeError, ImportError):
             from shared.models import DatabaseConfig
             from shared.database_manager import EnhancedDatabaseManager
+from shared.cors_middleware import add_cors_middleware
             db_config = DatabaseConfig()
             self.db_manager = EnhancedDatabaseManager(db_config)
             await self.db_manager.initialize(max_retries=5)
@@ -348,11 +355,7 @@ class BackofficeAgent(BaseAgentV2):
 # FASTAPI APP
 # =====================================================
 
-app = FastAPI(
-    title="Backoffice Agent API",
-    description="Handles admin operations, reporting, and system configuration",
-    version="1.0.0"
-)
+# FastAPI app moved to __init__ method as self.app
 
 app.add_middleware(
     CORSMiddleware,
@@ -384,7 +387,7 @@ async def shutdown_event():
     logger.info("Backoffice Agent API shutdown")
 
 
-@app.get("/health")
+@self.app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
@@ -395,7 +398,7 @@ async def health_check():
     }
 
 
-@app.get("/")
+@self.app.get("/")
 async def root():
     """Root endpoint"""
     return {
@@ -413,7 +416,7 @@ async def root():
     }
 
 
-@app.post("/users", summary="Create User")
+@self.app.post("/users", summary="Create User")
 async def create_user(user: User):
     """Create a new user"""
     if not agent_instance:
@@ -427,7 +430,7 @@ async def create_user(user: User):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/users", summary="Get All Users")
+@self.app.get("/users", summary="Get All Users")
 async def get_all_users():
     """Get all users"""
     if not agent_instance:
@@ -444,7 +447,7 @@ async def get_all_users():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/users/{user_id}", summary="Get User")
+@self.app.get("/users/{user_id}", summary="Get User")
 async def get_user(user_id: str = Path(...)):
     """Get user by ID"""
     if not agent_instance:
@@ -462,7 +465,7 @@ async def get_user(user_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.put("/users/{user_id}", summary="Update User")
+@self.app.put("/users/{user_id}", summary="Update User")
 async def update_user(
     user_id: str = Path(...),
     updates: Dict[str, Any] = Body(...)
@@ -483,7 +486,7 @@ async def update_user(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.delete("/users/{user_id}", summary="Delete User")
+@self.app.delete("/users/{user_id}", summary="Delete User")
 async def delete_user(user_id: str = Path(...)):
     """Delete user"""
     if not agent_instance:
@@ -501,7 +504,7 @@ async def delete_user(user_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.post("/config", summary="Set Configuration")
+@self.app.post("/config", summary="Set Configuration")
 async def set_config(config: SystemConfig):
     """Set system configuration"""
     if not agent_instance:
@@ -515,7 +518,7 @@ async def set_config(config: SystemConfig):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/config", summary="Get All Configuration")
+@self.app.get("/config", summary="Get All Configuration")
 async def get_all_config():
     """Get all system configurations"""
     if not agent_instance:
@@ -532,7 +535,7 @@ async def get_all_config():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/config/{config_key}", summary="Get Configuration")
+@self.app.get("/config/{config_key}", summary="Get Configuration")
 async def get_config(config_key: str = Path(...)):
     """Get system configuration by key"""
     if not agent_instance:
@@ -550,7 +553,7 @@ async def get_config(config_key: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.post("/reports/sales", summary="Generate Sales Report")
+@self.app.post("/reports/sales", summary="Generate Sales Report")
 async def generate_sales_report(
     start_date: datetime = Body(...),
     end_date: datetime = Body(...),
@@ -570,7 +573,7 @@ async def generate_sales_report(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/dashboard/metrics", summary="Get Dashboard Metrics")
+@self.app.get("/dashboard/metrics", summary="Get Dashboard Metrics")
 async def get_dashboard_metrics():
     """Get dashboard metrics"""
     if not agent_instance:
@@ -589,5 +592,5 @@ async def get_dashboard_metrics():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8021))
     logger.info(f"Starting Backoffice Agent on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(agent.app, host="0.0.0.0", port=port)
 

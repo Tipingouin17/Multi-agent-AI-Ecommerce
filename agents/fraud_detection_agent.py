@@ -90,6 +90,12 @@ class BlockEntityRequest(BaseModel):
 class FraudDetectionRepository:
     """Repository for interacting with fraud detection related data in the database."""
     def __init__(self, db_helper: DatabaseHelper):
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Fraud Detection Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
+        
         """Initializes the FraudDetectionRepository with a DatabaseHelper instance.
 
         Args:
@@ -517,6 +523,9 @@ class FraudDetectionAgent(BaseAgentV2):
                            on_startup=[self.on_startup],
                            on_shutdown=[self.on_shutdown])
         
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
+        
         # Add CORS middleware
         self.app.add_middleware(
             CORSMiddleware,
@@ -546,6 +555,7 @@ class FraudDetectionAgent(BaseAgentV2):
                     # Create enhanced database manager with retry logic
                     from shared.models import DatabaseConfig
                     from shared.database_manager import EnhancedDatabaseManager
+from shared.cors_middleware import add_cors_middleware
                     db_config = DatabaseConfig()
                     self.db_manager = EnhancedDatabaseManager(db_config)
                     await self.db_manager.initialize(max_retries=5)

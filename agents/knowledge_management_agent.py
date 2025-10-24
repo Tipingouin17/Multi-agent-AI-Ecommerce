@@ -136,6 +136,12 @@ class SearchResponse(BaseModel):
 class KnowledgeManagementService:
     """Service layer for managing knowledge base articles."""
     def __init__(self, db_manager: DatabaseManager):
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Knowledge Management Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
+        
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
         self._db_initialized = False
@@ -466,9 +472,7 @@ class KnowledgeManagementAgent(BaseAgentV2):
 
 
 # FASTAPI APP
-app = FastAPI(title="Knowledge Management Agent API",
-              version="1.0.0",
-              description="API for managing knowledge base articles in the E-Commerce system.")
+# FastAPI app moved to __init__ method as self.app
 
 # Dependency to get the KnowledgeManagementService
 async def get_service_dependency(db_manager: DatabaseManager = Depends(get_database_manager)) -> KnowledgeManagementService:
@@ -487,6 +491,7 @@ async def startup_event():
     except RuntimeError:
         # Create new database manager if global one doesn't exist
         from shared.models import DatabaseConfig
+from shared.cors_middleware import add_cors_middleware
         db_manager = DatabaseManager(DatabaseConfig())
         await db_manager.initialize_async()
     await db_manager.create_tables() # Ensure all tables are created on startup
@@ -498,17 +503,17 @@ async def startup_event():
     # It operates via FastAPI endpoints
     logger.info("Knowledge Management Agent and API ready.")
 
-@app.get("/health", response_model=Dict[str, str], summary="Health Check")
+@self.app.get("/health", response_model=Dict[str, str], summary="Health Check")
 async def health_check():
     """Check the health status of the Knowledge Management Agent API."""
     return {"status": "healthy", "agent": AGENT_ID, "type": AGENT_TYPE, "version": app.version}
 
-@app.get("/", response_model=Dict[str, str], summary="Root Endpoint")
+@self.app.get("/", response_model=Dict[str, str], summary="Root Endpoint")
 async def root():
     """Root endpoint providing basic information about the API."""
     return {"message": "Knowledge Management Agent API is running", "version": app.version}
 
-@app.post("/api/v1/knowledge/articles", response_model=ArticleResponse, status_code=status.HTTP_201_CREATED, summary="Create Article")
+@self.app.post("/api/v1/knowledge/articles", response_model=ArticleResponse, status_code=status.HTTP_201_CREATED, summary="Create Article")
 async def create_article_endpoint(
     article_data: ArticleCreate = Body(..., description="Data for the new knowledge base article."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -519,7 +524,7 @@ async def create_article_endpoint(
     """
     return await service.create_article(article_data)
 
-@app.get("/api/v1/knowledge/articles/{article_id}", response_model=ArticleResponse, summary="Get Article by ID")
+@self.app.get("/api/v1/knowledge/articles/{article_id}", response_model=ArticleResponse, summary="Get Article by ID")
 async def get_article_endpoint(
     article_id: UUID = Path(..., description="The UUID of the article to retrieve."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -533,7 +538,7 @@ async def get_article_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
     return article
 
-@app.put("/api/v1/knowledge/articles/{article_id}", response_model=ArticleResponse, summary="Update Article")
+@self.app.put("/api/v1/knowledge/articles/{article_id}", response_model=ArticleResponse, summary="Update Article")
 async def update_article_endpoint(
     article_id: UUID = Path(..., description="The UUID of the article to update."),
     update_data: ArticleUpdate = Body(..., description="Data to update the knowledge base article."),
@@ -548,7 +553,7 @@ async def update_article_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
     return updated_article
 
-@app.delete("/api/v1/knowledge/articles/{article_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete Article")
+@self.app.delete("/api/v1/knowledge/articles/{article_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete Article")
 async def delete_article_endpoint(
     article_id: UUID = Path(..., description="The UUID of the article to delete."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -562,7 +567,7 @@ async def delete_article_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
     return
 
-@app.post("/api/v1/knowledge/search", response_model=SearchResponse, summary="Search Articles")
+@self.app.post("/api/v1/knowledge/search", response_model=SearchResponse, summary="Search Articles")
 async def search_articles_endpoint(
     search_request: SearchRequest = Body(..., description="Search query and filters for articles."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -573,7 +578,7 @@ async def search_articles_endpoint(
     """
     return await service.search_articles(search_request)
 
-@app.post("/api/v1/knowledge/articles/{article_id}/helpful", response_model=ArticleResponse, summary="Mark Article as Helpful")
+@self.app.post("/api/v1/knowledge/articles/{article_id}/helpful", response_model=ArticleResponse, summary="Mark Article as Helpful")
 async def mark_article_helpful_endpoint(
     article_id: UUID = Path(..., description="The UUID of the article to mark as helpful."),
     service: KnowledgeManagementService = Depends(get_service_dependency)
@@ -593,6 +598,6 @@ if __name__ == "__main__":
     # This block is for local development/testing and will not be run in the agent's async loop
     # The agent's run() method is started in the startup_event for the FastAPI application.
     logger.info("Starting Knowledge Management Agent API via uvicorn")
-    uvicorn.run(app, host="0.0.0.0", port=API_PORT)
+    uvicorn.run(agent.app, host="0.0.0.0", port=API_PORT)
 
 from sqlalchemy import func # Imported here to avoid circular dependency with DBArticle for func.count()

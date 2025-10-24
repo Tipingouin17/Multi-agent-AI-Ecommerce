@@ -123,6 +123,12 @@ class QualityControlRepository:
     """Handles all database operations for the quality control agent"""
     
     def __init__(self, db_manager: DatabaseManager):
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Quality Control Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
+        
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
     
@@ -285,6 +291,7 @@ class QualityControlAgent(BaseAgentV2):
         except (RuntimeError, ImportError):
             from shared.models import DatabaseConfig
             from shared.database_manager import EnhancedDatabaseManager
+from shared.cors_middleware import add_cors_middleware
             db_config = DatabaseConfig()
             self.db_manager = EnhancedDatabaseManager(db_config)
             await self.db_manager.initialize(max_retries=5)
@@ -492,11 +499,7 @@ class QualityControlAgent(BaseAgentV2):
 # FASTAPI APP
 # =====================================================
 
-app = FastAPI(
-    title="Quality Control Agent API",
-    description="Handles product quality inspections and defect tracking",
-    version="1.0.0"
-)
+# FastAPI app moved to __init__ method as self.app
 
 app.add_middleware(
     CORSMiddleware,
@@ -528,7 +531,7 @@ async def shutdown_event():
     logger.info("Quality Control Agent API shutdown")
 
 
-@app.get("/health")
+@self.app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
@@ -539,7 +542,7 @@ async def health_check():
     }
 
 
-@app.get("/")
+@self.app.get("/")
 async def root():
     """Root endpoint"""
     return {
@@ -557,7 +560,7 @@ async def root():
     }
 
 
-@app.post("/inspections/schedule", summary="Schedule Inspection")
+@self.app.post("/inspections/schedule", summary="Schedule Inspection")
 async def schedule_inspection(
     product_id: str = Body(...),
     inspection_type: InspectionType = Body(...),
@@ -583,7 +586,7 @@ async def schedule_inspection(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/inspections/{inspection_id}", summary="Get Inspection")
+@self.app.get("/inspections/{inspection_id}", summary="Get Inspection")
 async def get_inspection(inspection_id: str = Path(...)):
     """Get inspection by ID"""
     if not agent_instance:
@@ -601,7 +604,7 @@ async def get_inspection(inspection_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.post("/inspections/{inspection_id}/start", summary="Start Inspection")
+@self.app.post("/inspections/{inspection_id}/start", summary="Start Inspection")
 async def start_inspection(inspection_id: str = Path(...)):
     """Start an inspection"""
     if not agent_instance:
@@ -619,7 +622,7 @@ async def start_inspection(inspection_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.post("/inspections/{inspection_id}/complete", summary="Complete Inspection")
+@self.app.post("/inspections/{inspection_id}/complete", summary="Complete Inspection")
 async def complete_inspection(
     inspection_id: str = Path(...),
     result: InspectionResult = Body(...)
@@ -638,7 +641,7 @@ async def complete_inspection(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/products/{product_id}/defects", summary="Get Product Defects")
+@self.app.get("/products/{product_id}/defects", summary="Get Product Defects")
 async def get_product_defects(product_id: str = Path(...)):
     """Get all defects for a product"""
     if not agent_instance:
@@ -656,7 +659,7 @@ async def get_product_defects(product_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/products/{product_id}/metrics", summary="Get Product Quality Metrics")
+@self.app.get("/products/{product_id}/metrics", summary="Get Product Quality Metrics")
 async def get_product_metrics(product_id: str = Path(...)):
     """Get quality metrics for a product"""
     if not agent_instance:
@@ -675,5 +678,5 @@ async def get_product_metrics(product_id: str = Path(...)):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8022))
     logger.info(f"Starting Quality Control Agent on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(agent.app, host="0.0.0.0", port=port)
 

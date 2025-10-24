@@ -31,6 +31,7 @@ if project_root not in sys.path:
 from shared.base_agent_v2 import AgentMessage, BaseAgentV2, MessageType
 from shared.db_helpers import DatabaseHelper
 from shared.database import DatabaseManager, DatabaseConfig, initialize_database_manager
+from shared.cors_middleware import add_cors_middleware
 
 logger = structlog.get_logger(__name__)
 
@@ -203,6 +204,12 @@ class CustomerAgent(BaseAgentV2):
     def __init__(self, agent_id: str, agent_type: str = "customer_agent"):
         """Initializes the CustomerAgent with a unique ID and type."""
         super().__init__(agent_id=agent_id)
+        
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Customer Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
         self.db_manager: Optional[DatabaseManager] = None
         self.db_helper_profile: Optional[DatabaseHelper] = None
         self.db_helper_address: Optional[DatabaseHelper] = None
@@ -565,11 +572,7 @@ class CustomerAgent(BaseAgentV2):
 # FASTAPI APP
 # =====================================================
 
-app = FastAPI(
-    title="Customer Agent API",
-    description="API for managing customer profiles, addresses, loyalty, and interactions.",
-    version="1.0.0"
-)
+# FastAPI app moved to __init__ method as self.app
 
 AGENT_ID = os.getenv("AGENT_ID", "customer_agent_001")
 AGENT_TYPE = "customer_agent"
@@ -601,7 +604,7 @@ async def shutdown_event():
         logger.error("Customer agent shutdown failed", error=str(e))
 
 
-@app.get("/", tags=["General"])
+@self.app.get("/", tags=["General"])
 async def root():
     """Root endpoint for the customer agent.
 
@@ -612,7 +615,7 @@ async def root():
     return {"message": "Customer agent is running."}
 
 
-@app.get("/health", tags=["General"])
+@self.app.get("/health", tags=["General"])
 async def health_check():
     """Health check endpoint.
 
@@ -635,7 +638,7 @@ async def health_check():
     return {"status": "ok", "database": db_status, "kafka_consumer": kafka_status}
 
 
-@app.get("/customers", response_model=List[CustomerProfile], tags=["Customers"])
+@self.app.get("/customers", response_model=List[CustomerProfile], tags=["Customers"])
 async def get_all_customers_api():
     """Retrieve a list of all customer profiles.
 
@@ -656,7 +659,7 @@ async def get_all_customers_api():
         raise HTTPException(status_code=500, detail=f"Failed to retrieve customers: {e}")
 
 
-@app.get("/customers/{customer_id}", response_model=CustomerProfile, tags=["Customers"])
+@self.app.get("/customers/{customer_id}", response_model=CustomerProfile, tags=["Customers"])
 async def get_customer_api(customer_id: str = Path(..., description="The ID of the customer to retrieve")):
     """Retrieve a specific customer profile by ID.
 
@@ -680,7 +683,7 @@ async def get_customer_api(customer_id: str = Path(..., description="The ID of t
         raise HTTPException(status_code=500, detail=f"Failed to retrieve customer: {e}")
 
 
-@app.post("/customers", response_model=CustomerProfile, status_code=201, tags=["Customers"])
+@self.app.post("/customers", response_model=CustomerProfile, status_code=201, tags=["Customers"])
 async def create_customer_api(customer_data: CustomerProfileCreate = Body(..., description="Data for the new customer profile")):
     """Create a new customer profile.
 
@@ -718,7 +721,7 @@ async def create_customer_api(customer_data: CustomerProfileCreate = Body(..., d
         raise HTTPException(status_code=500, detail=f"Failed to create customer profile: {e}")
 
 
-@app.put("/customers/{customer_id}", response_model=CustomerProfile, tags=["Customers"])
+@self.app.put("/customers/{customer_id}", response_model=CustomerProfile, tags=["Customers"])
 async def update_customer_api(
     customer_id: str = Path(..., description="The ID of the customer to update"),
     update_data: Dict[str, Any] = Body(..., description="Fields to update for the customer profile")
@@ -756,7 +759,7 @@ async def update_customer_api(
         raise HTTPException(status_code=500, detail=f"Failed to update customer profile: {e}")
 
 
-@app.delete("/customers/{customer_id}", status_code=204, tags=["Customers"])
+@self.app.delete("/customers/{customer_id}", status_code=204, tags=["Customers"])
 async def delete_customer_api(customer_id: str = Path(..., description="The ID of the customer to delete")):
     """Delete a customer profile.
 
@@ -787,7 +790,7 @@ async def delete_customer_api(customer_id: str = Path(..., description="The ID o
         raise HTTPException(status_code=500, detail=f"Failed to delete customer profile: {e}")
 
 
-@app.post("/customers/{customer_id}/addresses", response_model=CustomerAddress, status_code=201, tags=["Addresses"])
+@self.app.post("/customers/{customer_id}/addresses", response_model=CustomerAddress, status_code=201, tags=["Addresses"])
 async def add_address_api(
     customer_id: str = Path(..., description="The ID of the customer to add address for"),
     address_data: CustomerAddressCreate = Body(..., description="Data for the new customer address")
@@ -831,7 +834,7 @@ async def add_address_api(
         raise HTTPException(status_code=500, detail=f"Failed to add address: {e}")
 
 
-@app.get("/customers/{customer_id}/addresses", response_model=List[CustomerAddress], tags=["Addresses"])
+@self.app.get("/customers/{customer_id}/addresses", response_model=List[CustomerAddress], tags=["Addresses"])
 async def get_addresses_api(customer_id: str = Path(..., description="The ID of the customer to retrieve addresses for")):
     """Retrieve all addresses for a specific customer.
 
@@ -859,7 +862,7 @@ async def get_addresses_api(customer_id: str = Path(..., description="The ID of 
         raise HTTPException(status_code=500, detail=f"Failed to retrieve addresses: {e}")
 
 
-@app.get("/customers/{customer_id}/loyalty", response_model=Loyalty, tags=["Loyalty"])
+@self.app.get("/customers/{customer_id}/loyalty", response_model=Loyalty, tags=["Loyalty"])
 async def get_loyalty_api(customer_id: str = Path(..., description="The ID of the customer to retrieve loyalty info for")):
     """Retrieve loyalty information for a specific customer.
 
@@ -885,7 +888,7 @@ async def get_loyalty_api(customer_id: str = Path(..., description="The ID of th
         raise HTTPException(status_code=500, detail=f"Failed to retrieve loyalty information: {e}")
 
 
-@app.post("/customers/{customer_id}/interactions", response_model=CustomerInteraction, status_code=201, tags=["Interactions"])
+@self.app.post("/customers/{customer_id}/interactions", response_model=CustomerInteraction, status_code=201, tags=["Interactions"])
 async def create_interaction_api(
     customer_id: str = Path(..., description="The ID of the customer for the interaction"),
     interaction_data: CustomerInteractionCreate = Body(..., description="Data for the new customer interaction")
@@ -938,5 +941,5 @@ if __name__ == "__main__":
     port = int(os.getenv("CUSTOMER_AGENT_PORT", 8000))
     host = os.getenv("CUSTOMER_AGENT_HOST", "0.0.0.0")
     logger.info(f"Starting Customer Agent API on {host}:{port}")
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(agent.app, host=host, port=port)
 

@@ -48,6 +48,7 @@ if project_root not in sys.path:
 try:
     from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     from shared.db_connection import get_async_database_url
+from shared.cors_middleware import add_cors_middleware
     logger.info("Successfully imported shared modules")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -145,6 +146,12 @@ class ProductAgent(BaseAgentV2):
     
     def __init__(self):
         super().__init__(agent_id="product_agent")
+        
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Product Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
         
         # Database setup - Use unified connection
         self.database_url = get_async_database_url()

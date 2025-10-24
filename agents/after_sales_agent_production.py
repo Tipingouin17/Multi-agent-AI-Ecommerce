@@ -124,6 +124,12 @@ class AfterSalesRepository:
     """Handles all database operations for the after-sales agent"""
     
     def __init__(self, db_manager: DatabaseManager):
+        # FastAPI app for REST API
+        self.app = FastAPI(title="After-Sales Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
+        
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
     
@@ -293,6 +299,7 @@ class AfterSalesAgent(BaseAgentV2):
         except (RuntimeError, ImportError):
             from shared.models import DatabaseConfig
             from shared.database_manager import EnhancedDatabaseManager
+from shared.cors_middleware import add_cors_middleware
             db_config = DatabaseConfig()
             self.db_manager = EnhancedDatabaseManager(db_config)
             await self.db_manager.initialize(max_retries=5)
@@ -505,11 +512,7 @@ class AfterSalesAgent(BaseAgentV2):
 # FASTAPI APP
 # =====================================================
 
-app = FastAPI(
-    title="After-Sales Agent API",
-    description="Handles returns, RMA, customer satisfaction, and warranty claims",
-    version="1.0.0"
-)
+# FastAPI app moved to __init__ method as self.app
 
 app.add_middleware(
     CORSMiddleware,
@@ -541,7 +544,7 @@ async def shutdown_event():
     logger.info("After-Sales Agent API shutdown")
 
 
-@app.get("/health")
+@self.app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
@@ -552,7 +555,7 @@ async def health_check():
     }
 
 
-@app.get("/")
+@self.app.get("/")
 async def root():
     """Root endpoint"""
     return {
@@ -570,7 +573,7 @@ async def root():
     }
 
 
-@app.post("/returns/request", summary="Submit Return Request")
+@self.app.post("/returns/request", summary="Submit Return Request")
 async def submit_return_request(request: ReturnRequest):
     """Submit a return request"""
     if not agent_instance:
@@ -588,7 +591,7 @@ async def submit_return_request(request: ReturnRequest):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/returns/rma/{rma_number}", summary="Get RMA Authorization")
+@self.app.get("/returns/rma/{rma_number}", summary="Get RMA Authorization")
 async def get_rma_authorization(rma_number: str = Path(...)):
     """Get RMA authorization by RMA number"""
     if not agent_instance:
@@ -606,7 +609,7 @@ async def get_rma_authorization(rma_number: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.put("/returns/rma/{rma_number}/status", summary="Update RMA Status")
+@self.app.put("/returns/rma/{rma_number}/status", summary="Update RMA Status")
 async def update_rma_status_endpoint(
     rma_number: str = Path(...),
     status: RMAStatus = Body(...)
@@ -627,7 +630,7 @@ async def update_rma_status_endpoint(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/returns/customer/{customer_id}", summary="Get Customer Returns")
+@self.app.get("/returns/customer/{customer_id}", summary="Get Customer Returns")
 async def get_customer_returns(customer_id: str = Path(...)):
     """Get all returns for a customer"""
     if not agent_instance:
@@ -645,7 +648,7 @@ async def get_customer_returns(customer_id: str = Path(...)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.post("/surveys/submit", summary="Submit Satisfaction Survey")
+@self.app.post("/surveys/submit", summary="Submit Satisfaction Survey")
 async def submit_survey(survey: CustomerSatisfactionSurvey):
     """Submit customer satisfaction survey"""
     if not agent_instance:
@@ -661,7 +664,7 @@ async def submit_survey(survey: CustomerSatisfactionSurvey):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.post("/warranty/claim", summary="File Warranty Claim")
+@self.app.post("/warranty/claim", summary="File Warranty Claim")
 async def file_warranty_claim_endpoint(claim: WarrantyClaim):
     """File a warranty claim"""
     if not agent_instance:
@@ -680,5 +683,5 @@ async def file_warranty_claim_endpoint(claim: WarrantyClaim):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8020))
     logger.info(f"Starting After-Sales Agent on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(agent.app, host="0.0.0.0", port=port)
 

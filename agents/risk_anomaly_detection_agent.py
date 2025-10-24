@@ -212,6 +212,9 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         super().__init__(agent_id="risk_anomaly_detection_agent")
         self.app = FastAPI(title="Risk and Anomaly Detection Agent API", version="1.0.0")
         
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
+        
         # Add CORS middleware
         self.app.add_middleware(
             CORSMiddleware,
@@ -227,6 +230,7 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
             self.db_manager: DatabaseManager = get_database_manager()
         except RuntimeError:
             from shared.models import DatabaseConfig
+from shared.cors_middleware import add_cors_middleware
             db_config = DatabaseConfig()
             self.db_manager = DatabaseManager(db_config)
         self._db_initialized: bool = False

@@ -65,6 +65,12 @@ class TransportAgentProduction(BaseAgentV2):
     
     def __init__(self, agent_id: str = "TransportAgentProduction", agent_type: str = "TransportAgent"):
         super().__init__(agent_id, agent_type)
+        
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Transport Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
         self.kafka_producer: Optional[KafkaProducer] = None
         self.kafka_consumer: Optional[KafkaConsumer] = None
         self.carrier_manager = get_carrier_manager()
@@ -89,6 +95,7 @@ class TransportAgentProduction(BaseAgentV2):
                     # Create enhanced database manager with retry logic
                     from shared.models import DatabaseConfig
                     from shared.database_manager import EnhancedDatabaseManager
+from shared.cors_middleware import add_cors_middleware
                     db_config = DatabaseConfig()
                     self.db_manager = EnhancedDatabaseManager(db_config)
                     await self.db_manager.initialize(max_retries=5)
@@ -665,11 +672,7 @@ class TransportAgentProduction(BaseAgentV2):
             return {"status": "error", "message": str(e)}
 
 # FastAPI Server Setup
-app = FastAPI(
-    title="Transport Agent Production",
-    description="Transport Agent Production - Multi-Agent E-commerce Platform",
-    version="1.0.0"
-)
+# FastAPI app moved to __init__ method as self.app
 
 app.add_middleware(
     CORSMiddleware,
@@ -698,12 +701,12 @@ async def shutdown_event():
     if agent_instance:
         await agent_instance.shutdown()
 
-@app.get("/health", summary="Health check", response_description="Agent health status")
+@self.app.get("/health", summary="Health check", response_description="Agent health status")
 async def health_check():
     """Returns the health status of the agent."""
     return {"status": "healthy", "agent": "transport_agent_production"}
 
-@app.get("/", summary="Root endpoint", response_description="Agent information")
+@self.app.get("/", summary="Root endpoint", response_description="Agent information")
 async def root():
     """Returns basic information about the agent."""
     return {
@@ -712,7 +715,7 @@ async def root():
         "version": "1.0.0"
     }
 
-@app.post("/carriers/{carrier_code}/config", summary="Update carrier configuration", response_description="Updated carrier configuration")
+@self.app.post("/carriers/{carrier_code}/config", summary="Update carrier configuration", response_description="Updated carrier configuration")
 async def update_carrier_configuration_api(carrier_code: str, config_data: Dict[str, Any]):
     """
     Updates the configuration for a specific carrier.
@@ -730,7 +733,7 @@ async def update_carrier_configuration_api(carrier_code: str, config_data: Dict[
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
-@app.get("/carriers/{carrier_code}/config", summary="Get carrier configuration", response_description="Carrier configuration")
+@self.app.get("/carriers/{carrier_code}/config", summary="Get carrier configuration", response_description="Carrier configuration")
 async def get_carrier_configuration_api(carrier_code: str):
     """
     Retrieves the configuration for a specific carrier.
@@ -747,7 +750,7 @@ async def get_carrier_configuration_api(carrier_code: str):
         raise HTTPException(status_code=404, detail=f"Carrier config for {carrier_code} not found")
     return config
 
-@app.get("/carriers/config", summary="Get all carrier configurations", response_description="All carrier configurations")
+@self.app.get("/carriers/config", summary="Get all carrier configurations", response_description="All carrier configurations")
 async def get_all_carrier_configurations_api():
     """
     Retrieves all carrier configurations.
@@ -759,7 +762,7 @@ async def get_all_carrier_configurations_api():
     configs = await agent_instance.get_all_carrier_configs()
     return configs
 
-@app.delete("/carriers/{carrier_code}/config", summary="Delete carrier configuration", response_description="Deletion status")
+@self.app.delete("/carriers/{carrier_code}/config", summary="Delete carrier configuration", response_description="Deletion status")
 async def delete_carrier_configuration_api(carrier_code: str):
     """
     Deletes a specific carrier configuration.
@@ -782,5 +785,5 @@ if __name__ == "__main__":
     # This __main__ block is primarily for running the FastAPI server.
     port = int(os.getenv("PORT", 8017))
     logger.info(f"Starting FastAPI server on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(agent.app, host="0.0.0.0", port=port)
 

@@ -128,6 +128,12 @@ class InventoryRepository(BaseRepository):
         """
         from shared.models import InventoryDB
         super().__init__(db_manager, InventoryDB)
+        
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Inventory Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
     
     async def find_by_product(self, product_id: str) -> List[Inventory]:
         """Find inventory records by product ID.
@@ -278,6 +284,9 @@ class InventoryAgent(BaseAgentV2):
         self.repository: Optional[InventoryRepository] = None
         self.movement_repository: Optional[StockMovementRepository] = None
         self.app = FastAPI(title="Inventory Agent API", version="1.0.0")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
         
         # Add CORS middleware
         self.app.add_middleware(
@@ -617,6 +626,7 @@ class InventoryAgent(BaseAgentV2):
                 async with self.db_manager.get_session() as session:
                     from sqlalchemy import select, func
                     from shared.models import InventoryDB
+from shared.cors_middleware import add_cors_middleware
                     
                     # Total units across all warehouses
                     total_units_result = await session.execute(

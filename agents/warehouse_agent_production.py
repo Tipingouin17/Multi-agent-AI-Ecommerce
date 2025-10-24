@@ -40,6 +40,7 @@ if project_root not in sys.path:
 try:
     from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     from shared.db_helpers import DatabaseManager, DatabaseHelper, ProductDB
+from shared.cors_middleware import add_cors_middleware
     logger.info("Successfully imported shared.base_agent and db_helpers")
 except ImportError as e:
     logger.error(f"Import error for shared modules: {e}")
@@ -80,6 +81,9 @@ class WarehouseAgent(BaseAgentV2):
 
         # FastAPI app setup
         self.app = FastAPI(title="Warehouse Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
         
         # Add CORS middleware
         self.app.add_middleware(

@@ -11,6 +11,7 @@ All data comes from the database - NO MOCK DATA.
 """
 
 import asyncio
+import json
 import logging
 import os
 import sys
@@ -19,7 +20,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from decimal import Decimal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import Column, String, DateTime, Integer, Float, Boolean, Text, Numeric
@@ -45,6 +46,7 @@ try:
     from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
     from shared.db_helpers import DatabaseHelper
     from shared.models import DatabaseConfig
+from shared.cors_middleware import add_cors_middleware
     logger.info("Successfully imported shared modules")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -139,10 +141,16 @@ class MonitoringAgent(BaseAgentV2):
         self.agent_name = "Monitoring Agent"
         self.db_helper = None
         
+        # WebSocket connections for real-time updates
+        self.active_connections: List[WebSocket] = []
+        
         logger.info("Monitoring Agent constructor completed")
         
         # FastAPI app
         self.app = FastAPI(title="Monitoring Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
         
         # Add CORS middleware
         self.app.add_middleware(
@@ -226,6 +234,92 @@ class MonitoringAgent(BaseAgentV2):
             await session.commit()
             logger.info(f"Initialized health records for {len(known_agents)} agents")
     
+    async def _get_system_overview_data(self) -> Dict[str, Any]:
+        """Get system overview data (used by both REST and WebSocket)"""
+        try:
+            async with self.db_helper.get_session() as session:
+                # Get agent health statistics
+                result = await session.execute(select(AgentHealthDB))
+                agents = result.scalars().all()
+                
+                total_agents = len(agents)
+                healthy_agents = sum(1 for a in agents if a.status == "healthy")
+                warning_agents = sum(1 for a in agents if a.status == "warning")
+                critical_agents = sum(1 for a in agents if a.status == "critical")
+                offline_agents = sum(1 for a in agents if a.status == "offline")
+                
+                # Get active alerts
+                alerts_result = await session.execute(
+                    select(SystemAlertDB).where(SystemAlertDB.status == "active")
+                )
+                active_alerts_list = alerts_result.scalars().all()
+                active_alerts = len(active_alerts_list)
+                critical_alerts = sum(1 for a in active_alerts_list if a.severity == "critical")
+                
+                # Calculate system metrics
+                avg_cpu = sum(a.cpu_usage for a in agents) / total_agents if total_agents > 0 else 0
+                avg_memory = sum(a.memory_usage for a in agents) / total_agents if total_agents > 0 else 0
+                avg_response_time = sum(a.response_time for a in agents) / total_agents if total_agents > 0 else 0
+                total_errors = sum(a.error_count for a in agents)
+                
+                # Get system-wide metrics from performance_metrics table
+                perf_result = await session.execute(
+                    select(PerformanceMetricDB)
+                    .where(PerformanceMetricDB.timestamp >= datetime.utcnow() - timedelta(minutes=5))
+                    .order_by(PerformanceMetricDB.timestamp.desc())
+                    .limit(100)
+                )
+                perf_metrics = perf_result.scalars().all()
+                
+                # Determine overall system status
+                if critical_agents > 0 or critical_alerts > 0:
+                    system_status = "critical"
+                elif warning_agents > 0 or active_alerts > 0:
+                    system_status = "warning"
+                elif offline_agents > total_agents * 0.3:  # More than 30% offline
+                    system_status = "degraded"
+                else:
+                    system_status = "healthy"
+                
+                return {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "system_status": system_status,
+                    "total_agents": total_agents,
+                    "healthy_agents": healthy_agents,
+                    "warning_agents": warning_agents,
+                    "critical_agents": critical_agents,
+                    "offline_agents": offline_agents,
+                    "active_alerts": active_alerts,
+                    "critical_alerts": critical_alerts,
+                    "system_metrics": {
+                        "cpu_usage": round(avg_cpu, 2),
+                        "memory_usage": round(avg_memory, 2),
+                        "response_time": round(avg_response_time, 2),
+                        "error_rate": round(total_errors / total_agents if total_agents > 0 else 0, 2),
+                        "throughput": len(perf_metrics)
+                    }
+                }
+        except Exception as e:
+            logger.error(f"Error getting system overview data: {e}")
+            return {
+                "timestamp": datetime.utcnow().isoformat(),
+                "system_status": "error",
+                "total_agents": 0,
+                "healthy_agents": 0,
+                "warning_agents": 0,
+                "critical_agents": 0,
+                "offline_agents": 0,
+                "active_alerts": 0,
+                "critical_alerts": 0,
+                "system_metrics": {
+                    "cpu_usage": 0,
+                    "memory_usage": 0,
+                    "response_time": 0,
+                    "error_rate": 0,
+                    "throughput": 0
+                }
+            }
+    
     def _setup_routes(self):
         """Setup FastAPI routes"""
         
@@ -234,73 +328,54 @@ class MonitoringAgent(BaseAgentV2):
             """Health check endpoint"""
             return {"status": "healthy", "agent": self.agent_name}
         
+        @self.app.websocket("/ws")
+        async def websocket_endpoint(websocket: WebSocket):
+            """WebSocket endpoint for real-time monitoring updates"""
+            await websocket.accept()
+            self.active_connections.append(websocket)
+            logger.info(f"WebSocket client connected. Total connections: {len(self.active_connections)}")
+            
+            try:
+                # Send initial system overview
+                initial_data = await self._get_system_overview_data()
+                await websocket.send_json({
+                    "type": "system_overview",
+                    "data": initial_data
+                })
+                
+                # Keep connection alive and send periodic updates
+                while True:
+                    try:
+                        # Wait for client messages (ping/pong)
+                        await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
+                    except asyncio.TimeoutError:
+                        # Send periodic update every 5 seconds
+                        try:
+                            overview_data = await self._get_system_overview_data()
+                            await websocket.send_json({
+                                "type": "system_overview",
+                                "data": overview_data,
+                                "timestamp": datetime.utcnow().isoformat()
+                            })
+                        except Exception as e:
+                            logger.error(f"Error sending WebSocket update: {e}")
+                            break
+                    
+            except WebSocketDisconnect:
+                logger.info("WebSocket client disconnected")
+            except Exception as e:
+                logger.error(f"WebSocket error: {e}")
+            finally:
+                if websocket in self.active_connections:
+                    self.active_connections.remove(websocket)
+                logger.info(f"WebSocket client removed. Total connections: {len(self.active_connections)}")
+        
         @self.app.get("/system/overview", response_model=SystemOverview)
         async def get_system_overview():
             """Get system overview with real data from database"""
             try:
-                async with self.db_helper.get_session() as session:
-                    # Get agent health statistics
-                    result = await session.execute(select(AgentHealthDB))
-                    agents = result.scalars().all()
-                    
-                    total_agents = len(agents)
-                    healthy_agents = sum(1 for a in agents if a.status == "healthy")
-                    warning_agents = sum(1 for a in agents if a.status == "warning")
-                    critical_agents = sum(1 for a in agents if a.status == "critical")
-                    offline_agents = sum(1 for a in agents if a.status == "offline")
-                    
-                    # Get active alerts
-                    alerts_result = await session.execute(
-                        select(SystemAlertDB).where(SystemAlertDB.status == "active")
-                    )
-                    active_alerts_list = alerts_result.scalars().all()
-                    active_alerts = len(active_alerts_list)
-                    critical_alerts = sum(1 for a in active_alerts_list if a.severity == "critical")
-                    
-                    # Calculate system metrics
-                    avg_cpu = sum(a.cpu_usage for a in agents) / total_agents if total_agents > 0 else 0
-                    avg_memory = sum(a.memory_usage for a in agents) / total_agents if total_agents > 0 else 0
-                    avg_response_time = sum(a.response_time for a in agents) / total_agents if total_agents > 0 else 0
-                    total_errors = sum(a.error_count for a in agents)
-                    
-                    # Get system-wide metrics from performance_metrics table
-                    perf_result = await session.execute(
-                        select(PerformanceMetricDB)
-                        .where(PerformanceMetricDB.timestamp >= datetime.utcnow() - timedelta(minutes=5))
-                        .order_by(PerformanceMetricDB.timestamp.desc())
-                        .limit(100)
-                    )
-                    perf_metrics = perf_result.scalars().all()
-                    
-                    # Determine overall system status
-                    if critical_agents > 0 or critical_alerts > 0:
-                        system_status = "critical"
-                    elif warning_agents > 0 or active_alerts > 0:
-                        system_status = "warning"
-                    elif offline_agents > total_agents * 0.3:  # More than 30% offline
-                        system_status = "degraded"
-                    else:
-                        system_status = "healthy"
-                    
-                    return SystemOverview(
-                        timestamp=datetime.utcnow().isoformat(),
-                        system_status=system_status,
-                        total_agents=total_agents,
-                        healthy_agents=healthy_agents,
-                        warning_agents=warning_agents,
-                        critical_agents=critical_agents,
-                        offline_agents=offline_agents,
-                        active_alerts=active_alerts,
-                        critical_alerts=critical_alerts,
-                        system_metrics={
-                            "cpu_usage": round(avg_cpu, 2),
-                            "memory_usage": round(avg_memory, 2),
-                            "response_time": round(avg_response_time, 2),
-                            "error_rate": round(total_errors / total_agents if total_agents > 0 else 0, 2),
-                            "throughput": len(perf_metrics)
-                        }
-                    )
-                    
+                data = await self._get_system_overview_data()
+                return SystemOverview(**data)
             except Exception as e:
                 logger.error(f"Error getting system overview: {e}")
                 raise HTTPException(status_code=500, detail=str(e))

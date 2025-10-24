@@ -39,6 +39,7 @@ import asyncio
 from shared.db_helpers import DatabaseHelper
 from shared.base_agent_v2 import BaseAgentV2
 from shared.models import AgentMessage, MessageType
+from shared.cors_middleware import add_cors_middleware
 import base64
 
 # PDF generation
@@ -88,6 +89,12 @@ class DocumentGenerationAgent(BaseAgentV2):
         Initializes the DocumentGenerationAgent.
         """
         super().__init__(agent_id="document_generation_agent")
+        
+        # FastAPI app for REST API
+        self.app = FastAPI(title="Document Generation Agent API")
+        
+        # Add CORS middleware for dashboard integration
+        add_cors_middleware(self.app)
         self.db_helper = DatabaseHelper(self.db_manager)
         self.templates = {}
         self._db_initialized = False
@@ -724,11 +731,7 @@ class DocumentGenerationAgent(BaseAgentV2):
 
 
 # FastAPI Server Setup
-app = FastAPI(
-    title="Document Generation Agent",
-    description="Document Generation Agent - Multi-Agent E-commerce Platform",
-    version="1.0.0"
-)
+# FastAPI app moved to __init__ method as self.app
 
 # Add CORS middleware
 app.add_middleware(
@@ -770,7 +773,7 @@ async def shutdown_event():
         await agent_instance.cleanup()
         logger.info("DocumentGenerationAgent resources cleaned up.")
 
-@app.get("/health", summary="Health Check", response_description="Agent health status")
+@self.app.get("/health", summary="Health Check", response_description="Agent health status")
 async def health_check():
     """
     Checks the health status of the Document Generation Agent.
@@ -782,7 +785,7 @@ async def health_check():
         return {"status": "healthy", "agent": AGENT_TYPE, "agent_id": AGENT_ID}
     raise HTTPException(status_code=503, detail="Agent not fully initialized or unhealthy")
 
-@app.get("/", summary="Root Endpoint", response_description="Agent information")
+@self.app.get("/", summary="Root Endpoint", response_description="Agent information")
 async def root():
     """
     Provides basic information about the Document Generation Agent.
@@ -797,7 +800,7 @@ async def root():
         "agent_id": AGENT_ID
     }
 
-@app.post("/generate/invoice", summary="Generate Invoice", response_description="Result of invoice generation")
+@self.app.post("/generate/invoice", summary="Generate Invoice", response_description="Result of invoice generation")
 async def generate_invoice_api(order_id: int, format: str = 'PDF'):
     """
     API endpoint to trigger invoice generation.
@@ -815,7 +818,7 @@ async def generate_invoice_api(order_id: int, format: str = 'PDF'):
         raise HTTPException(status_code=500, detail=result.get('error', 'Failed to generate invoice'))
     return result
 
-@app.post("/generate/shipping_label", summary="Generate Shipping Label", response_description="Result of shipping label generation")
+@self.app.post("/generate/shipping_label", summary="Generate Shipping Label", response_description="Result of shipping label generation")
 async def generate_shipping_label_api(shipment_id: int, format: str = 'PDF'):
     """
     API endpoint to trigger shipping label generation.
@@ -833,7 +836,7 @@ async def generate_shipping_label_api(shipment_id: int, format: str = 'PDF'):
         raise HTTPException(status_code=500, detail=result.get('error', 'Failed to generate shipping label'))
     return result
 
-@app.post("/generate/packing_slip", summary="Generate Packing Slip", response_description="Result of packing slip generation")
+@self.app.post("/generate/packing_slip", summary="Generate Packing Slip", response_description="Result of packing slip generation")
 async def generate_packing_slip_api(order_id: int):
     """
     API endpoint to trigger packing slip generation.
@@ -854,5 +857,5 @@ async def generate_packing_slip_api(order_id: int):
 if __name__ == '__main__':
     # The main entry point for running the FastAPI application with Uvicorn.
     # This block ensures that the Uvicorn server is started when the script is executed directly.
-    uvicorn.run(app, host="0.0.0.0", port=API_PORT)
+    uvicorn.run(agent.app, host="0.0.0.0", port=API_PORT)
 
