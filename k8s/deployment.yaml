@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: your-registry/multi-agent-ecommerce-api:latest
+        image: your-registry/multi-agent-ecommerce-api:${TAG}
         ports:
         - containerPort: 8000
           name: http
@@ -141,7 +141,7 @@ spec:
     spec:
       containers:
       - name: order-agent
-        image: your-registry/multi-agent-ecommerce-order-agent:latest
+        image: your-registry/multi-agent-ecommerce-order-agent:${TAG}
         env:
         - name: DATABASE_HOST
           valueFrom:
@@ -185,7 +185,7 @@ spec:
     spec:
       containers:
       - name: inventory-agent
-        image: your-registry/multi-agent-ecommerce-inventory-agent:latest
+        image: your-registry/multi-agent-ecommerce-inventory-agent:${TAG}
         env:
         - name: DATABASE_HOST
           valueFrom:
@@ -229,7 +229,7 @@ spec:
     spec:
       containers:
       - name: marketplace-connector-agent
-        image: your-registry/multi-agent-ecommerce-marketplace-connector:latest
+        image: your-registry/multi-agent-ecommerce-marketplace-connector:${TAG}
         env:
         - name: DATABASE_HOST
           valueFrom:
