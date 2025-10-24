@@ -758,6 +758,25 @@ class MarketplaceConnectorAgent(BaseAgentV2):
             )
 
 
+    async def initialize(self):
+        """Initialize agent-specific components."""
+        await self._initialize_db()
+        self.logger.info("MarketplaceConnectorAgent initialized")
+    
+    async def cleanup(self):
+        """Cleanup agent-specific resources."""
+        if self._db_initialized:
+            await self.db_manager.close()
+            self.logger.info("MarketplaceConnectorAgent cleaned up")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process agent-specific business logic."""
+        # This agent primarily operates via REST API, not message processing
+        # But we need to implement this for BaseAgentV2
+        self.logger.info("Processing business logic", data=data)
+        return {"status": "processed", "data": data}
+
+
 # Dependency to get the agent instance
 # This is a placeholder for how the agent might be integrated into a larger system
 # For standalone execution, the agent instance is created directly in __main__

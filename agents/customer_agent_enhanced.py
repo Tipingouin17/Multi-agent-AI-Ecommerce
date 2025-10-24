@@ -935,8 +935,8 @@ async def create_interaction_api(
 
 if __name__ == "__main__":
     import uvicorn
-    # Use environment variable for port, default to 8000
-    port = int(os.getenv("CUSTOMER_AGENT_PORT", 8000))
+    # Use environment variable for port, default to 8008
+    port = int(os.getenv("CUSTOMER_AGENT_PORT", 8008))
     host = os.getenv("CUSTOMER_AGENT_HOST", "0.0.0.0")
     logger.info(f"Starting Customer Agent API on {host}:{port}")
     uvicorn.run(customer_agent.app, host=host, port=port)
