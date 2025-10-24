@@ -6,6 +6,7 @@ handles reservations, and provides real-time inventory information to other agen
 """
 
 import asyncio
+import contextlib
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from uuid import uuid4
@@ -282,7 +283,7 @@ class InventoryAgent(BaseAgentV2):
         super().__init__(agent_id="inventory_agent")
         self.repository: Optional[InventoryRepository] = None
         self.movement_repository: Optional[StockMovementRepository] = None
-        self.app = FastAPI(title="Inventory Agent API", version="1.0.0")
+        self.app = FastAPI(title="Inventory Agent API", version="1.0.0", lifespan=self.lifespan_context)
         
         # Add CORS middleware for dashboard integration
         
@@ -363,6 +364,18 @@ class InventoryAgent(BaseAgentV2):
         
         self.logger.info("Inventory Agent initialized successfully")
     
+    @contextlib.asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
+        """Context manager for managing the lifespan of the FastAPI application.
+        
+        Initializes the agent resources before the server starts and cleans them up after the server shuts down.
+        """
+        self.logger.info("Starting Inventory Agent lifespan context")
+        await self.initialize()
+        yield
+        self.logger.info("Shutting down Inventory Agent lifespan context")
+        await self.cleanup()
+
     async def cleanup(self):
         """Cleanup resources used by the Inventory Agent.
         """
@@ -1139,6 +1152,7 @@ class InventoryAgent(BaseAgentV2):
 
 if __name__ == "__main__":
     import uvicorn
+    import contextlib # Add contextlib import
     
     # Setup logging
     structlog.configure(
@@ -1154,12 +1168,6 @@ if __name__ == "__main__":
     
     # Initialize agent
     agent = InventoryAgent()
-    
-    # Initialize agent before starting server
-    async def startup():
-        await agent.initialize()
-    
-    asyncio.run(startup())
     
     port = int(os.getenv("INVENTORY_AGENT_PORT", 8002))
     logger.info(f"Starting Inventory Agent on port {port}")
