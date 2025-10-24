@@ -150,7 +150,6 @@ class ProductAgent(BaseAgentV2):
         self.app = FastAPI(title="Product Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         # Database setup - Use unified connection
         self.database_url = get_async_database_url()

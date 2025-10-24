@@ -39,7 +39,6 @@ import asyncio
 from shared.db_helpers import DatabaseHelper
 from shared.base_agent_v2 import BaseAgentV2
 from shared.models import AgentMessage, MessageType
-from shared.cors_middleware import add_cors_middleware
 import base64
 
 # PDF generation
@@ -94,7 +93,6 @@ class DocumentGenerationAgent(BaseAgentV2):
         self.app = FastAPI(title="Document Generation Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         self.db_helper = DatabaseHelper(self.db_manager)
         self.templates = {}
         self._db_initialized = False

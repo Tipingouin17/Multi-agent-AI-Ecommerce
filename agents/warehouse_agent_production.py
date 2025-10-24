@@ -82,7 +82,6 @@ class WarehouseAgent(BaseAgentV2):
         self.app = FastAPI(title="Warehouse Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         # Add CORS middleware
         self.app.add_middleware(

@@ -94,7 +94,6 @@ class FraudDetectionRepository:
         self.app = FastAPI(title="Fraud Detection Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         """Initializes the FraudDetectionRepository with a DatabaseHelper instance.
 
@@ -524,7 +523,6 @@ class FraudDetectionAgent(BaseAgentV2):
                            on_shutdown=[self.on_shutdown])
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         # Add CORS middleware
         self.app.add_middleware(

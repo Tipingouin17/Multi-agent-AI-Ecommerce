@@ -88,7 +88,6 @@ if project_root not in sys.path:
 from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
-from shared.cors_middleware import add_cors_middleware
 
 logger = structlog.get_logger(__name__)
 
@@ -229,7 +228,6 @@ class MarketplaceRepository:
         self.app = FastAPI(title="Marketplace Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         """Initializes the repository with a database manager."""
         self.db_manager = db_manager

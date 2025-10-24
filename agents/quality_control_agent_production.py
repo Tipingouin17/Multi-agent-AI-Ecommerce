@@ -127,7 +127,6 @@ class QualityControlRepository:
         self.app = FastAPI(title="Quality Control Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)

@@ -213,7 +213,6 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         self.app = FastAPI(title="Risk and Anomaly Detection Agent API", version="1.0.0")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         # Add CORS middleware
         self.app.add_middleware(

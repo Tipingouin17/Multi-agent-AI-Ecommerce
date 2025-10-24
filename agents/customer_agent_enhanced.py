@@ -31,7 +31,6 @@ if project_root not in sys.path:
 from shared.base_agent_v2 import AgentMessage, BaseAgentV2, MessageType
 from shared.db_helpers import DatabaseHelper
 from shared.database import DatabaseManager, DatabaseConfig, initialize_database_manager
-from shared.cors_middleware import add_cors_middleware
 
 logger = structlog.get_logger(__name__)
 
@@ -209,7 +208,6 @@ class CustomerAgent(BaseAgentV2):
         self.app = FastAPI(title="Customer Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         self.db_manager: Optional[DatabaseManager] = None
         self.db_helper_profile: Optional[DatabaseHelper] = None
         self.db_helper_address: Optional[DatabaseHelper] = None

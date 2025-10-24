@@ -133,7 +133,6 @@ class InventoryRepository(BaseRepository):
         self.app = FastAPI(title="Inventory Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
     
     async def find_by_product(self, product_id: str) -> List[Inventory]:
         """Find inventory records by product ID.
@@ -286,7 +285,6 @@ class InventoryAgent(BaseAgentV2):
         self.app = FastAPI(title="Inventory Agent API", version="1.0.0")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         # Add CORS middleware
         self.app.add_middleware(

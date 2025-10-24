@@ -140,7 +140,6 @@ class KnowledgeManagementService:
         self.app = FastAPI(title="Knowledge Management Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)

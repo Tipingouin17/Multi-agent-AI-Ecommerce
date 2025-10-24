@@ -70,7 +70,6 @@ class TransportAgentProduction(BaseAgentV2):
         self.app = FastAPI(title="Transport Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         self.kafka_producer: Optional[KafkaProducer] = None
         self.kafka_consumer: Optional[KafkaConsumer] = None
         self.carrier_manager = get_carrier_manager()

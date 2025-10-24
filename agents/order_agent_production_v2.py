@@ -38,7 +38,6 @@ from shared.base_agent import BaseAgent, MessageType, AgentMessage
 from shared.database import DatabaseManager
 from shared.db_helpers import DatabaseHelper
 from shared.models import OrderDB, OrderItemDB, OrderStatus, CustomerDB
-from shared.cors_middleware import add_cors_middleware
 
 # Pydantic Models for API
 class OrderItemRequest(BaseModel):
@@ -90,7 +89,6 @@ class OrderAgent(BaseAgent):
         self.app = FastAPI(title="Order Agent API")
         
         # Add CORS middleware for dashboard integration
-        add_cors_middleware(self.app)
         
         self._setup_routes()
 
