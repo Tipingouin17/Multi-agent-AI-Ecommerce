@@ -30,9 +30,17 @@ AGENTS=(
 
 # --- Main Script ---
 
+# 1. Load Environment Variables from .env file
+if [ -f ".env" ]; then
+    echo "Loading environment variables from .env"
+    source ./.env
+else
+    echo "WARNING: .env file not found. Using default environment settings. This may cause database connection failures."
+fi
+
 echo "--- Launching All Agents Concurrently ---"
 
-# 1. Check for virtual environment activation
+# 2. Check for virtual environment activation
 if [ -z "$VIRTUAL_ENV" ]; then
     echo "WARNING: Virtual environment is not active. Attempting to activate..."
     if [ -f "venv/bin/activate" ]; then

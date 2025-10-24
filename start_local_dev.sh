@@ -26,6 +26,14 @@ check_command() {
 
 # --- Main Script ---
 
+# 1. Load Environment Variables from .env file
+if [ -f "../.env" ]; then
+    echo "Loading environment variables from ../.env"
+    source ../.env
+else
+    echo "WARNING: .env file not found. Using default environment settings."
+fi
+
 echo "--- Starting Local Development Environment Setup ---"
 
 # 1. Check Prerequisites
