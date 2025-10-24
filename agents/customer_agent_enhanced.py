@@ -623,12 +623,12 @@ async def health_check():
     logger.info("Health check endpoint accessed.")
     # Check database connection status
     db_status = "ok"
-    if customer_agent.db_manager and not customer_agent.db_manager.is_connected:
-        db_status = "disconnected"
-        logger.error("Health check: Database disconnected.")
-    elif not customer_agent._db_initialized:
+    if not customer_agent._db_initialized:
         db_status = "not initialized"
         logger.error("Health check: Database not initialized.")
+    elif not customer_agent.db_manager:
+        db_status = "disconnected"
+        logger.error("Health check: Database disconnected.")
 
     # Check Kafka consumer status (assuming BaseAgent has a way to expose this)
     kafka_status = "ok" # Placeholder, actual implementation depends on BaseAgent details

@@ -185,9 +185,6 @@ class MonitoringAgent(BaseAgentV2):
             from shared.db_helpers import DatabaseHelper
             self.db_helper = DatabaseHelper(self.db_manager)
             
-            # Create tables
-            await self.db_helper.create_tables()
-            
             # Initialize agent health records for all known agents
             await self._initialize_agent_health()
             

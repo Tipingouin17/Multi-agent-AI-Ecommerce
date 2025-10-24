@@ -45,7 +45,7 @@ KAFKA_BROKER_URL = os.getenv("KAFKA_BROKER_URL", "localhost:9092")
 KAFKA_KNOWLEDGE_TOPIC = os.getenv("KAFKA_KNOWLEDGE_TOPIC", "knowledge_events")
 AGENT_ID = os.getenv("AGENT_ID", "knowledge_management_agent_001")
 AGENT_TYPE = os.getenv("AGENT_TYPE", "knowledge_management")
-API_PORT = int(os.getenv("API_PORT", "8020"))
+API_PORT = int(os.getenv("API_PORT", "8014"))
 
 # ENUMS
 class ArticleStatus(str, Enum):
