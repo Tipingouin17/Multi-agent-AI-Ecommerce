@@ -3,54 +3,15 @@ Recommendation Agent - Multi-Agent E-Commerce System
 
 This agent provides personalized product recommendations using collaborative filtering,
 content-based filtering, and hybrid approaches.
-
-DATABASE SCHEMA (migration 012_recommendation_agent.sql):
-
-CREATE TABLE user_interactions (
-    interaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id VARCHAR(100) NOT NULL,
-    product_id VARCHAR(100) NOT NULL,
-    interaction_type VARCHAR(50) NOT NULL, -- 'view', 'click', 'add_to_cart', 'purchase', 'wishlist', 'review'
-    interaction_score DECIMAL(3, 2) DEFAULT 1.0, -- Weight of interaction
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE product_similarities (
-    similarity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_id_1 VARCHAR(100) NOT NULL,
-    product_id_2 VARCHAR(100) NOT NULL,
-    similarity_score DECIMAL(5, 4) NOT NULL, -- 0.0 to 1.0
-    similarity_type VARCHAR(50), -- 'content', 'collaborative', 'hybrid'
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE recommendation_sets (
-    set_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id VARCHAR(100) NOT NULL,
-    recommendation_type VARCHAR(50) NOT NULL, -- 'personalized', 'trending', 'similar', 'frequently_bought_together'
-    products JSONB NOT NULL, -- [{product_id, score, reason}]
-    context JSONB DEFAULT '{}',
-    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP
-);
-
-CREATE TABLE recommendation_feedback (
-    feedback_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    set_id UUID REFERENCES recommendation_sets(set_id),
-    customer_id VARCHAR(100) NOT NULL,
-    product_id VARCHAR(100) NOT NULL,
-    feedback_type VARCHAR(50) NOT NULL, -- 'clicked', 'purchased', 'dismissed', 'not_interested'
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 """
 
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, AsyncGenerator
 from uuid import uuid4, UUID
 from enum import Enum
 from collections import defaultdict
+from contextlib import asynccontextmanager
 
 from shared.db_helpers import DatabaseHelper
 import math
@@ -60,7 +21,9 @@ from pydantic import BaseModel, Field
 import structlog
 import sys
 import os
+import uvicorn
 
+# Add project root to path
 current_file_path = os.path.abspath(__file__)
 current_dir = os.path.dirname(current_file_path)
 project_root = os.path.dirname(current_dir)
@@ -80,18 +43,6 @@ class InteractionType(str, Enum):
     PURCHASE = "purchase"
     WISHLIST = "wishlist"
     REVIEW = "review"
-    async def initialize(self):
-        """Initialize agent."""
-        await super().initialize()
-        
-    async def cleanup(self):
-        """Cleanup agent."""
-        await super().cleanup()
-        
-    async def process_business_logic(self, data):
-        """Process business logic."""
-        return {"status": "success"}
-
 
 class RecommendationType(str, Enum):
     PERSONALIZED = "personalized"
@@ -311,71 +262,148 @@ class RecommendationService:
             generated_at=datetime.utcnow()
         )
 
-# FASTAPI APP
-app = FastAPI(title="Recommendation Agent API", version="1.0.0")
+# AGENT CLASS
+class RecommendationAgent(BaseAgentV2):
+    """
+    Recommendation Agent with FastAPI for API exposure and database management via lifespan.
+    """
+    def __init__(self, agent_id: str = "recommendation_agent"):
+        super().__init__(agent_id=agent_id)
+        self.agent_name = "Recommendation Agent"
+        self.db_manager: Optional[DatabaseManager] = None
+        self.repo: Optional[RecommendationRepository] = None
+        self.service: Optional[RecommendationService] = None
+        
+        # Initialize FastAPI app with lifespan
+        self.app = FastAPI(title=f"{self.agent_name} API", lifespan=self.lifespan_context)
+        self._setup_routes()
 
-async def get_recommendation_service() -> RecommendationService:
-    db_manager = await get_database_manager()
-    repo = RecommendationRepository(db_manager)
-    return RecommendationService(repo)
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI) -> AsyncGenerator[None, None]:
+        """
+        FastAPI Lifespan Context Manager for agent startup and shutdown.
+        Initializes the database connection and the agent's services.
+        """
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Recommendation Agent")
+        
+        # 1. Initialize Database Manager
+        try:
+            self.db_manager = get_database_manager()
+        except RuntimeError:
+            # Fallback to creating a new manager if global one is not set
+            from shared.models import DatabaseConfig
+            from shared.database import EnhancedDatabaseManager
+            self.db_manager = EnhancedDatabaseManager(DatabaseConfig().database_url)
+        
+        await self.db_manager.initialize_async()
+        
+        # 2. Initialize Repository and Service
+        self.repo = RecommendationRepository(self.db_manager)
+        self.service = RecommendationService(self.repo)
+        
+        # 3. Call BaseAgentV2 initialize (for Kafka, etc.)
+        await self.initialize()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Recommendation Agent")
+        await self.cleanup()
 
-# ENDPOINTS
-@app.post("/api/v1/recommendations/interaction")
-async def record_interaction(
-    interaction: UserInteraction = Body(...),
-    service: RecommendationService = Depends(get_recommendation_service)
-):
-    try:
-        interaction_id = await service.repo.record_interaction(interaction)
-        return {"interaction_id": interaction_id, "message": "Interaction recorded"}
-    except Exception as e:
-        logger.error("record_interaction_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    async def initialize(self):
+        """Initialize agent-specific components"""
+        await super().initialize()
+        logger.info(f"{self.agent_name} initialized successfully")
 
-@app.post("/api/v1/recommendations/generate", response_model=RecommendationResponse)
-async def generate_recommendations(
-    request: RecommendationRequest = Body(...),
-    service: RecommendationService = Depends(get_recommendation_service)
-):
-    try:
-        response = await service.generate_recommendations(request)
-        return response
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error("generate_recommendations_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        if self.db_manager:
+            await self.db_manager.close()
+        await super().cleanup()
+        logger.info(f"{self.agent_name} cleaned up successfully")
 
-@app.get("/api/v1/recommendations/trending", response_model=List[ProductRecommendation])
-async def get_trending(
-    limit: int = Query(10, ge=1, le=50),
-    service: RecommendationService = Depends(get_recommendation_service)
-):
-    try:
-        recommendations = await service.generate_trending_recommendations(limit)
-        return recommendations
-    except Exception as e:
-        logger.error("get_trending_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process promotion-specific business logic"""
+        # This can be used for internal agent-to-agent communication
+        logger.info("Processing recommendation business logic", data=data)
+        return {"status": "processed", "data": data}
 
-@app.get("/api/v1/recommendations/similar/{product_id}", response_model=List[ProductRecommendation])
-async def get_similar(
-    product_id: str = Path(...),
-    limit: int = Query(10, ge=1, le=50),
-    service: RecommendationService = Depends(get_recommendation_service)
-):
-    try:
-        recommendations = await service.generate_similar_recommendations(product_id, limit)
-        return recommendations
-    except Exception as e:
-        logger.error("get_similar_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    def _setup_routes(self):
+        """Setup FastAPI routes for the Recommendation Agent API."""
+        
+        # Dependency to get the initialized service
+        def get_recommendation_service_dependency() -> RecommendationService:
+            if not self.service:
+                raise HTTPException(status_code=503, detail="Service not initialized")
+            return self.service
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "agent": "recommendation_agent", "version": "1.0.0"}
+        @self.app.post("/api/v1/recommendations/interaction")
+        async def record_interaction(
+            interaction: UserInteraction = Body(...),
+            service: RecommendationService = Depends(get_recommendation_service_dependency)
+        ):
+            try:
+                interaction_id = await service.repo.record_interaction(interaction)
+                return {"interaction_id": interaction_id, "message": "Interaction recorded"}
+            except Exception as e:
+                logger.error("record_interaction_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.post("/api/v1/recommendations/generate", response_model=RecommendationResponse)
+        async def generate_recommendations(
+            request: RecommendationRequest = Body(...),
+            service: RecommendationService = Depends(get_recommendation_service_dependency)
+        ):
+            try:
+                response = await service.generate_recommendations(request)
+                return response
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                logger.error("generate_recommendations_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/api/v1/recommendations/trending", response_model=List[ProductRecommendation])
+        async def get_trending(
+            limit: int = Query(10, ge=1, le=50),
+            service: RecommendationService = Depends(get_recommendation_service_dependency)
+        ):
+            try:
+                recommendations = await service.generate_trending_recommendations(limit)
+                return recommendations
+            except Exception as e:
+                logger.error("get_trending_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/api/v1/recommendations/similar/{product_id}", response_model=List[ProductRecommendation])
+        async def get_similar(
+            product_id: str = Path(...),
+            limit: int = Query(10, ge=1, le=50),
+            service: RecommendationService = Depends(get_recommendation_service_dependency)
+        ):
+            try:
+                recommendations = await service.generate_similar_recommendations(product_id, limit)
+                return recommendations
+            except Exception as e:
+                logger.error("get_similar_failed", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/health")
+        async def health_check():
+            return {
+                "status": "healthy", 
+                "agent": "recommendation_agent", 
+                "version": "1.0.0",
+                "db_connected": self.db_manager is not None and self.db_manager.is_initialized
+            }
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8011)
-
+    agent = RecommendationAgent()
+    
+    # Use environment variable for port, default to 8011
+    port = int(os.getenv("RECOMMENDATION_AGENT_PORT", 8011))
+    host = os.getenv("RECOMMENDATION_AGENT_HOST", "0.0.0.0")
+    
+    logger.info(f"Starting Recommendation Agent API on {host}:{port}")
+    uvicorn.run(agent.app, host=host, port=port)
