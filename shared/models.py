@@ -522,19 +522,22 @@ class DatabaseConfig(BaseModel):
     def __init__(self, **data):
         """Initialize DatabaseConfig from environment variables or provided data."""
         import os
+        from dotenv import load_dotenv
+        
+        # Load .env file if not already loaded
+        load_dotenv()
+        
         # Support both DATABASE_* and POSTGRES_* prefixes for compatibility
         if not data:
-            # Read environment variables
-            db_password = os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD') or 'postgres'
-            print(f"[DatabaseConfig] DATABASE_PASSWORD from env: {os.getenv('DATABASE_PASSWORD')}")
-            print(f"[DatabaseConfig] Using password: {db_password}")
+            # Use unified connection logic
             data = {
                 'host': os.getenv('DATABASE_HOST') or os.getenv('POSTGRES_HOST') or 'localhost',
                 'port': int(os.getenv('DATABASE_PORT') or os.getenv('POSTGRES_PORT') or '5432'),
-                'database': os.getenv('DATABASE_NAME') or os.getenv('POSTGRES_NAME') or 'multi_agent_ecommerce',
+                'database': os.getenv('DATABASE_NAME') or os.getenv('POSTGRES_DB') or 'multi_agent_ecommerce',
                 'username': os.getenv('DATABASE_USER') or os.getenv('POSTGRES_USER') or 'postgres',
-                'password': db_password,
+                'password': os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD') or 'postgres',
             }
+            print(f"[DatabaseConfig] Connecting as: {data['username']}@{data['host']}:{data['port']}/{data['database']}")
         super().__init__(**data)
     
     @property

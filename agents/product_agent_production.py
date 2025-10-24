@@ -47,7 +47,7 @@ if project_root not in sys.path:
 # Import base agent
 try:
     from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
-    from shared.database import DatabaseConfig
+    from shared.db_connection import get_async_database_url
     logger.info("Successfully imported shared modules")
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -146,10 +146,8 @@ class ProductAgent(BaseAgentV2):
     def __init__(self):
         super().__init__(agent_id="product_agent")
         
-        # Database setup
-        db_config = DatabaseConfig()
-        # Convert postgresql:// to postgresql+asyncpg:// for async support
-        self.database_url = db_config.url.replace('postgresql://', 'postgresql+asyncpg://')
+        # Database setup - Use unified connection
+        self.database_url = get_async_database_url()
         self.engine = create_async_engine(self.database_url, echo=False)
         self.async_session = async_sessionmaker(
             self.engine,
