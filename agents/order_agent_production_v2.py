@@ -78,7 +78,7 @@ class OrderAgent(BaseAgent):
         # Database setup
         self.DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/ecommerce")
         self.db_manager = DatabaseManager(self.DATABASE_URL)
-        self.db_helper = DatabaseHelper()
+        self.db_helper = DatabaseHelper(self.db_manager)
         self._db_initialized = False
         
         # FastAPI app
