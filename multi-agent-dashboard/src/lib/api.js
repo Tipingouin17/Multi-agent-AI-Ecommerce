@@ -8,21 +8,24 @@
 import axios from 'axios'
 
 // Base configuration for different agent services
+// Port assignments match actual agent startup configuration
 const AGENT_PORTS = {
   order: 8001,
-  product: 8002,
-  inventory: 8003,
-  warehouse: 8004,
-  carrier: 8005,
-  demand: 8006,
-  pricing: 8007,
-  communication: 8008,
-  logistics: 8009,
-  risk: 8010,
-  marketplace: 8011,
-  refurbished: 8012,
-  d2c: 8013,
-  monitoring: 8014
+  inventory: 8002,
+  product: 8003,
+  payment: 8004,
+  warehouse: 8005,
+  transport: 8006,
+  marketplace: 8007,
+  customer: 8008,
+  aftersales: 8009,
+  quality: 8010,
+  backoffice: 8011,
+  fraud: 8012,
+  documents: 8013,
+  monitoring: 8015,
+  knowledge: 8020,
+  risk: 8021
 }
 
 const BASE_URL = 'http://localhost' || process.env.REACT_APP_API_BASE_URL 

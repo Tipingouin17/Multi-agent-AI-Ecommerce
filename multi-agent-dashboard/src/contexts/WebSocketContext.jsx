@@ -24,7 +24,7 @@ export const WebSocketProvider = ({ children }) => {
 
   // Get WebSocket URL from environment or default
   const getWebSocketUrl = () => {
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws'
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8015/ws'
     return wsUrl
   }
 
