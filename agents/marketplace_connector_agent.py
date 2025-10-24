@@ -86,7 +86,8 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
-from shared.database import DatabaseManager, get_database_manager
+from shared.database import DatabaseManager
+from contextlib import asynccontextmanager, get_database_manager
 from shared.db_helpers import DatabaseHelper
 
 logger = structlog.get_logger(__name__)
@@ -506,19 +507,22 @@ class MarketplaceConnectorAgent(BaseAgentV2):
 
     def _create_fastapi_app(self) -> FastAPI:
         """Creates and configures the FastAPI application for the agent."""
-        app = FastAPI(title="Marketplace Connector Agent API", version="1.0.0",
-                      description="API for managing multi-marketplace integrations.")
-
-        @app.on_event("startup")
-        async def startup_event():
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            # Startup
             await self._initialize_db()
-            self.logger.info("FastAPI startup event triggered.")
-
-        @app.on_event("shutdown")
-        async def shutdown_event():
+            self.logger.info("FastAPI Lifespan Startup: Database Initialized.")
+            
+            yield
+            
+            # Shutdown
             if self._db_initialized:
                 await self.db_manager.close()
-                self.logger.info("FastAPI shutdown event triggered. Database disconnected.")
+                self.logger.info("FastAPI Lifespan Shutdown: Database disconnected.")
+
+        app = FastAPI(title="Marketplace Connector Agent API", version="1.0.0",
+                      description="API for managing multi-marketplace integrations.",
+                      lifespan=lifespan)
 
         @app.get("/health", tags=["Monitoring"])
         async def health_check():
