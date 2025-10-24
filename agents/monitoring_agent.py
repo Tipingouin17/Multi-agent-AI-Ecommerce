@@ -214,7 +214,7 @@ class MonitoringAgent(BaseAgentV2):
             ("monitoring_agent", "System Monitoring"),
         ]
         
-        async with self.db_helper.get_session() as session:
+        async with self.db_manager.get_session() as session:
             for agent_id, agent_name in known_agents:
                 # Check if agent health record exists
                 result = await session.execute(
@@ -244,7 +244,7 @@ class MonitoringAgent(BaseAgentV2):
     async def _get_system_overview_data(self) -> Dict[str, Any]:
         """Get system overview data (used by both REST and WebSocket)"""
         try:
-            async with self.db_helper.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 # Get agent health statistics
                 result = await session.execute(select(AgentHealthDB))
                 agents = result.scalars().all()
@@ -391,7 +391,7 @@ class MonitoringAgent(BaseAgentV2):
         async def get_agent_health():
             """Get health status of all agents from database"""
             try:
-                async with self.db_helper.get_session() as session:
+                async with self.db_manager.get_session() as session:
                     result = await session.execute(
                         select(AgentHealthDB).order_by(AgentHealthDB.agent_name)
                     )
@@ -422,7 +422,7 @@ class MonitoringAgent(BaseAgentV2):
         ):
             """Get system alerts from database"""
             try:
-                async with self.db_helper.get_session() as session:
+                async with self.db_manager.get_session() as session:
                     query = select(SystemAlertDB).order_by(SystemAlertDB.created_at.desc())
                     
                     if active_only:
@@ -465,7 +465,7 @@ class MonitoringAgent(BaseAgentV2):
                 time_delta = time_delta_map.get(time_range, timedelta(hours=24))
                 since = datetime.utcnow() - time_delta
                 
-                async with self.db_helper.get_session() as session:
+                async with self.db_manager.get_session() as session:
                     result = await session.execute(
                         select(PerformanceMetricDB)
                         .where(PerformanceMetricDB.timestamp >= since)
@@ -498,7 +498,7 @@ class MonitoringAgent(BaseAgentV2):
         async def update_agent_heartbeat(agent_id: str, health_data: Dict[str, Any]):
             """Update agent heartbeat and health data"""
             try:
-                async with self.db_helper.get_session() as session:
+                async with self.db_manager.get_session() as session:
                     result = await session.execute(
                         select(AgentHealthDB).where(AgentHealthDB.agent_id == agent_id)
                     )
@@ -526,7 +526,7 @@ class MonitoringAgent(BaseAgentV2):
         async def create_alert(alert_data: Dict[str, Any]):
             """Create a new system alert"""
             try:
-                async with self.db_helper.get_session() as session:
+                async with self.db_manager.get_session() as session:
                     alert = SystemAlertDB(
                         id=f"alert_{datetime.utcnow().timestamp()}",
                         severity=alert_data.get("severity", "medium"),
@@ -548,7 +548,7 @@ class MonitoringAgent(BaseAgentV2):
         async def resolve_alert(alert_id: str, resolved_by: str = "system"):
             """Resolve a system alert"""
             try:
-                async with self.db_helper.get_session() as session:
+                async with self.db_manager.get_session() as session:
                     result = await session.execute(
                         select(SystemAlertDB).where(SystemAlertDB.id == alert_id)
                     )
