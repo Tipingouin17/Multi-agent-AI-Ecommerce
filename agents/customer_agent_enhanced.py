@@ -7,6 +7,7 @@ preferences, loyalty programs, segmentation, and customer interactions.
 """
 
 import asyncio
+import contextlib
 import os
 import sys
 from datetime import datetime, date
@@ -205,7 +206,7 @@ class CustomerAgent(BaseAgentV2):
         super().__init__(agent_id=agent_id)
         
         # FastAPI app for REST API
-        self.app = FastAPI(title="Customer Agent API")
+        self.app = FastAPI(title="Customer Agent API", lifespan=self.lifespan_context)
         
         # Add CORS middleware for dashboard integration
         self.db_manager: Optional[DatabaseManager] = None
@@ -517,6 +518,33 @@ class CustomerAgent(BaseAgentV2):
             logger.info(f"{self.agent_name} cleaned up successfully")
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
+
+    @contextlib.asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
+        """Context manager for managing the lifespan of the FastAPI application.
+        
+        Initializes the agent resources before the server starts and cleans them up after the server shuts down.
+        """
+        logger.info("Customer Agent starting up...")
+        try:
+            await self.initialize_db()
+            # Kafka consumer is started automatically by BaseAgent if configured
+            logger.info("Customer Agent startup complete.")
+        except Exception as e:
+            logger.error("Customer Agent startup failed", error=str(e))
+            # Log error but don't exit - let the agent run in degraded mode
+            # The health endpoint will report the issue
+
+        yield
+
+        logger.info("Customer Agent shutting down...")
+        try:
+            await self.stop_kafka_consumer()
+            if self.db_manager:
+                await self.db_manager.disconnect()
+            logger.info("Customer Agent shutdown complete.")
+        except Exception as e:
+            logger.error("Customer Agent shutdown failed", error=str(e))
     
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process customer-specific business logic
@@ -576,30 +604,7 @@ AGENT_ID = os.getenv("AGENT_ID", "customer_agent_001")
 AGENT_TYPE = "customer_agent"
 customer_agent = CustomerAgent(agent_id=AGENT_ID, agent_type=AGENT_TYPE)
 
-@customer_agent.app.on_event("startup")
-async def startup_event():
-    """Initialize database and Kafka consumer on startup."""
-    logger.info("Customer agent starting up...")
-    try:
-        await customer_agent.initialize_db()
-        # Kafka consumer is started automatically by BaseAgent if configured
-        logger.info("Customer agent startup complete.")
-    except Exception as e:
-        logger.error("Customer agent startup failed", error=str(e))
-        # Log error but don't exit - let the agent run in degraded mode
-        # The health endpoint will report the issue
 
-@customer_agent.app.on_event("shutdown")
-async def shutdown_event():
-    """Shutdown Kafka consumer and database connections on shutdown."""
-    logger.info("Customer agent shutting down...")
-    try:
-        await customer_agent.stop_kafka_consumer()
-        if customer_agent.db_manager:
-            await customer_agent.db_manager.disconnect()
-        logger.info("Customer agent shutdown complete.")
-    except Exception as e:
-        logger.error("Customer agent shutdown failed", error=str(e))
 
 
 @customer_agent.app.get("/", tags=["General"])
