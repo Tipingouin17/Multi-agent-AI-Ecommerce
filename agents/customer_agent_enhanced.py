@@ -578,7 +578,7 @@ AGENT_ID = os.getenv("AGENT_ID", "customer_agent_001")
 AGENT_TYPE = "customer_agent"
 customer_agent = CustomerAgent(agent_id=AGENT_ID, agent_type=AGENT_TYPE)
 
-@app.on_event("startup")
+@customer_agent.app.on_event("startup")
 async def startup_event():
     """Initialize database and Kafka consumer on startup."""
     logger.info("Customer agent starting up...")
@@ -591,7 +591,7 @@ async def startup_event():
         # Log error but don't exit - let the agent run in degraded mode
         # The health endpoint will report the issue
 
-@app.on_event("shutdown")
+@customer_agent.app.on_event("shutdown")
 async def shutdown_event():
     """Shutdown Kafka consumer and database connections on shutdown."""
     logger.info("Customer agent shutting down...")
@@ -941,5 +941,5 @@ if __name__ == "__main__":
     port = int(os.getenv("CUSTOMER_AGENT_PORT", 8000))
     host = os.getenv("CUSTOMER_AGENT_HOST", "0.0.0.0")
     logger.info(f"Starting Customer Agent API on {host}:{port}")
-    uvicorn.run(agent.app, host=host, port=port)
+    uvicorn.run(customer_agent.app, host=host, port=port)
 

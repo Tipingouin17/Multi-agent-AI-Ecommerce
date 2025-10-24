@@ -733,14 +733,6 @@ class DocumentGenerationAgent(BaseAgentV2):
 # FastAPI Server Setup
 # FastAPI app moved to __init__ method as self.app
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"])
-
 # Agent instance (global for FastAPI to access)
 agent_instance: Optional[DocumentGenerationAgent] = None
 

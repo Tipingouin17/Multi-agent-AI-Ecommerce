@@ -93,9 +93,6 @@ class OrderAgent(BaseAgent):
         add_cors_middleware(self.app)
         
         self._setup_routes()
-        
-        # Initialize database connection asynchronously
-        asyncio.create_task(self._init_db_connection())
 
     async def _init_db_connection(self):
         """
