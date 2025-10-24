@@ -13,6 +13,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 from decimal import Decimal
 from fastapi import FastAPI, HTTPException, Query, Path, Body
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from uuid import uuid4
 import uvicorn
@@ -31,7 +32,7 @@ from shared.db_helpers import DatabaseHelper
 logger = structlog.get_logger(__name__)
 
 # Create module-level FastAPI app
-app = FastAPI(title="Backoffice Agent Production API")
+# app = FastAPI(title="Backoffice Agent Production API") # Moved into lifespan block
 
 
 # =====================================================
@@ -385,23 +386,31 @@ app.add_middleware(
 agent_instance: Optional[BackofficeAgent] = None
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize agent on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI Lifespan Context Manager for agent startup and shutdown.
+    Replaces deprecated @app.on_event("startup/shutdown").
+    """
     global agent_instance
+    
+    # Startup
+    logger.info("FastAPI Lifespan Startup: Backoffice Agent")
     agent_instance = BackofficeAgent()
     await agent_instance.initialize()
     logger.info("Backoffice Agent API started")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    global agent_instance
+    
+    yield
+    
+    # Shutdown
+    logger.info("FastAPI Lifespan Shutdown: Backoffice Agent")
     if agent_instance:
-        if agent_instance.db_manager:
-            await agent_instance.db_manager.close()
-    logger.info("Backoffice Agent API shutdown")
+        await agent_instance.cleanup() # Assuming cleanup handles db_manager.close()
+    logger.info("Backoffice Agent API shutdown complete")
+
+
+# Create module-level FastAPI app
+app = FastAPI(title="Backoffice Agent Production API", lifespan=lifespan)
 
 
 @app.get("/health")
