@@ -563,6 +563,17 @@ class MonitoringAgent(BaseAgentV2):
             except Exception as e:
                 logger.error(f"Error resolving alert: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        if self.db_manager:
+            await self.db_manager.close()
+        logger.info("MonitoringAgent cleaned up")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process business logic for monitoring operations"""
+        logger.info("Processing monitoring business logic", data=data)
+        return {"status": "processed", "data": data}
 
 async def run_agent():
     """Run the monitoring agent"""
