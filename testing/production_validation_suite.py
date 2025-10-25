@@ -71,59 +71,59 @@ class ProductionValidationSuite:
         logger.info("=" * 100)
         logger.info(f"Start Time: {self.start_time}")
         logger.info("")
-	        
-	        # Phase 1: Infrastructure and Agent Health Checks (with Retries)
-	        logger.info("\n" + "=" * 100)
-	        logger.info("PHASE 1: INFRASTRUCTURE & AGENT HEALTH VALIDATION (with Retries)")
-	        logger.info("=" * 100)
-	        
-	        # 1.1 Agent Health Check (includes retry loop)
-	        self.results["agent_health"] = await self.validate_agent_health()
-	        
-	        # 1.2 Database Connectivity
-	        self.results["database_connectivity"] = await self.validate_database_connectivity()
-	        
-	        # 1.3 Kafka Integration
-	        self.results["kafka_integration"] = await self.validate_kafka_integration()
-	        
-	        # 1.4 UI (Vite) Connectivity
-	        self.results["ui_connectivity"] = await self.validate_ui_connectivity()
+        
+        # Phase 1: Infrastructure and Agent Health Checks (with Retries)
+        logger.info("\n" + "=" * 100)
+        logger.info("PHASE 1: INFRASTRUCTURE & AGENT HEALTH VALIDATION (with Retries)")
+        logger.info("=" * 100)
+        
+        # 1.1 Agent Health Check (includes retry loop)
+        self.results["agent_health"] = await self.validate_agent_health()
+        
+        # 1.2 Database Connectivity
+        self.results["database_connectivity"] = await self.validate_database_connectivity()
+        
+        # 1.3 Kafka Integration
+        self.results["kafka_integration"] = await self.validate_kafka_integration()
+        
+        # 1.4 UI (Vite) Connectivity
+        self.results["ui_connectivity"] = await self.validate_ui_connectivity()
 
-	        # Check if critical components are up before running heavy tests
-	        if self.results["agent_health"]["health_rate"] < 90 or \
-	           self.results["database_connectivity"]["status"] != "connected" or \
-	           self.results["kafka_integration"]["status"] != "connected":
-	            logger.error("CRITICAL INFRASTRUCTURE FAILURE: Aborting workflow and UI tests.")
-	            return self.generate_production_readiness_report()
+        # Check if critical components are up before running heavy tests
+        if self.results["agent_health"]["health_rate"] < 90 or \
+           self.results["database_connectivity"]["status"] != "connected" or \
+           self.results["kafka_integration"]["status"] != "connected":
+            logger.error("CRITICAL INFRASTRUCTURE FAILURE: Aborting workflow and UI tests.")
+            return self.generate_production_readiness_report()
 
-	        # Phase 2: Workflow Tests
-	        logger.info("\n" + "=" * 100)
-	        logger.info("PHASE 2: WORKFLOW VALIDATION (100+ scenarios)")
-	        logger.info("=" * 100)
-	        
-	        try:
-	            async with WorkflowTestSuite() as workflow_suite:
-	                self.results["workflow_tests"] = await workflow_suite.run_all_tests()
-	                logger.info("[OK] Workflow tests completed")
-	        except Exception as e:
-	            logger.error(f"[ERROR] Workflow tests failed: {e}")
-	            self.results["workflow_tests"] = {"error": str(e)}
-	        
-	        # Phase 3: UI Tests
-	        logger.info("\n" + "=" * 100)
-	        logger.info("PHASE 3: UI VALIDATION (70+ scenarios)")
-	        logger.info("=" * 100)
-	        
-	        try:
-	            ui_suite = UITestSuite()
-	            self.results["ui_tests"] = await ui_suite.run_all_tests()
-	            logger.info("[OK] UI tests completed")
-	        except Exception as e:
-	            logger.error(f"[ERROR] UI tests failed: {e}")
-	            self.results["ui_tests"] = {"error": str(e)}
-	        
-	        # Generate final report
-	        return self.generate_production_readiness_report()
+        # Phase 2: Workflow Tests
+        logger.info("\n" + "=" * 100)
+        logger.info("PHASE 2: WORKFLOW VALIDATION (100+ scenarios)")
+        logger.info("=" * 100)
+        
+        try:
+            async with WorkflowTestSuite() as workflow_suite:
+                self.results["workflow_tests"] = await workflow_suite.run_all_tests()
+                logger.info("[OK] Workflow tests completed")
+        except Exception as e:
+            logger.error(f"[ERROR] Workflow tests failed: {e}")
+            self.results["workflow_tests"] = {"error": str(e)}
+        
+        # Phase 3: UI Tests
+        logger.info("\n" + "=" * 100)
+        logger.info("PHASE 3: UI VALIDATION (70+ scenarios)")
+        logger.info("=" * 100)
+        
+        try:
+            ui_suite = UITestSuite()
+            self.results["ui_tests"] = await ui_suite.run_all_tests()
+            logger.info("[OK] UI tests completed")
+        except Exception as e:
+            logger.error(f"[ERROR] UI tests failed: {e}")
+            self.results["ui_tests"] = {"error": str(e)}
+        
+        # Generate final report
+        return self.generate_production_readiness_report()
     
     async def validate_agent_health(self, max_retries=10, delay=5) -> Dict[str, Any]:
         """Validate health of all agents with retries"""
