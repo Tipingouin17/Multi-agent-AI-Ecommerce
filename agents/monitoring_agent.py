@@ -150,11 +150,11 @@ class MonitoringAgent(BaseAgentV2):
         
         logger.info("Monitoring Agent constructor completed")
         
-	        # The module-level 'app' is the FastAPI instance.
-	        # Add CORS middleware for dashboard integration
-	        
-	        # Add CORS middleware
-	        app.add_middleware(
+        # The module-level 'app' is the FastAPI instance.
+        # Add CORS middleware for dashboard integration
+        
+        # Add CORS middleware
+        app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=True,
@@ -162,33 +162,32 @@ class MonitoringAgent(BaseAgentV2):
             allow_headers=["*"],
         )
         
-	        self._setup_routes()
-	        self.app = app # Set self.app to the module-level app for internal use
+        self._setup_routes()
+        self.app = app # Set self.app to the module-level app for internal use
 
-    @asynccontextmanager
 	    @asynccontextmanager
 	    async def lifespan_context(self, app: FastAPI):
         """
         FastAPI Lifespan Context Manager for agent startup and shutdown.
         """
-	        # Startup
-	        logger.info("FastAPI Lifespan Startup: Monitoring Agent")
-	        # Add CORS middleware here to ensure it's added to the module-level app
-	        app.add_middleware(
-	            CORSMiddleware,
-	            allow_origins=["*"],
-	            allow_credentials=True,
-	            allow_methods=["*"],
-	            allow_headers=["*"],
-	        )
-	        await self.initialize()
-	        
-	        yield
-	        
-	        # Shutdown
-	        logger.info("FastAPI Lifespan Shutdown: Monitoring Agent")
-	        await self.cleanup()
-	        logger.info("Monitoring Agent API shutdown complete")
+        # Startup
+        logger.info("FastAPI Lifespan Startup: Monitoring Agent")
+        # Add CORS middleware here to ensure it's added to the module-level app
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        await self.initialize()
+        
+        yield
+        
+        # Shutdown
+        logger.info("FastAPI Lifespan Shutdown: Monitoring Agent")
+        await self.cleanup()
+        logger.info("Monitoring Agent API shutdown complete")
     
     async def initialize(self):
         """Initialize the monitoring agent"""
