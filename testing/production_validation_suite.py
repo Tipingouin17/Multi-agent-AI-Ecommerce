@@ -235,6 +235,7 @@ class ProductionValidationSuite:
             
             from shared.database import DatabaseManager
             from shared.models import DatabaseConfig
+            from sqlalchemy import text # Import text
             
             db_config = DatabaseConfig()
             db_manager = DatabaseManager(db_config)
@@ -242,7 +243,7 @@ class ProductionValidationSuite:
             # Try to get a session
             async with db_manager.get_session() as session:
                 # Try a simple query
-                result = await session.execute("SELECT 1")
+                result = await session.execute(text("SELECT 1")) # Use text() for raw SQL
                 row = result.fetchone()
                 
                 if row and row[0] == 1:
