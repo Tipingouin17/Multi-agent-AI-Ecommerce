@@ -453,11 +453,15 @@ async def start_local_environment():
         # Use subprocess.Popen to run the script in the background
         # Note: This assumes the script is designed to start background processes (e.g., using 'nohup' or similar)
         # For a clean test environment, we'll rely on the shell script to start the agents.
+        # Use nohup to ensure the script continues running even if the parent process dies,
+        # and redirect output to a file for later inspection.
+        log_file = script_path.parent.parent / "start_local_dev.log"
         process = subprocess.Popen(
-            ["/bin/bash", str(script_path)],
+            ["/usr/bin/nohup", "/bin/bash", str(script_path)],
             cwd=script_path.parent.parent, # Run from the project root
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stdout=open(log_file, "w"),
+            stderr=open(log_file, "a"),
+            start_new_session=True # Start in a new session to detach
         )
         logger.info(f"Local environment startup script started with PID: {process.pid}")
         # Give the script a moment to start the background processes
