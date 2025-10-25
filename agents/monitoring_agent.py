@@ -615,5 +615,5 @@ if __name__ == "__main__":
     host = os.getenv("MONITORING_AGENT_HOST", "0.0.0.0")
     
     logger.info(f"Starting Monitoring Agent API on {host}:{port}")
-	    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(app, host=host, port=port)
 
