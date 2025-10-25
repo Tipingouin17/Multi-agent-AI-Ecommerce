@@ -601,20 +601,20 @@ class MonitoringAgent(BaseAgentV2):
             await self.db_manager.close()
         logger.info("MonitoringAgent cleaned up")
     
-	    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
-	        """Process business logic for monitoring operations"""
-	        logger.info("Processing monitoring business logic", data=data)
-	        return {"status": "processed", "data": data}
-	
-	# Instantiate the agent to register routes and middleware on the module-level 'app'
-	agent = MonitoringAgent()
-	
-	if __name__ == "__main__":
-	    import uvicorn
-	    # Use environment variable for port, default to 8015
-	    port = int(os.getenv("MONITORING_AGENT_PORT", 8015))
-	    host = os.getenv("MONITORING_AGENT_HOST", "0.0.0.0")
-	    
-	    logger.info(f"Starting Monitoring Agent API on {host}:{port}")
-	    uvicorn.run(app, host=host, port=port)
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process business logic for monitoring operations"""
+        logger.info("Processing monitoring business logic", data=data)
+        return {"status": "processed", "data": data}
+
+# Instantiate the agent to register routes and middleware on the module-level 'app'
+agent = MonitoringAgent()
+
+if __name__ == "__main__":
+    import uvicorn
+    # Use environment variable for port, default to 8015
+    port = int(os.getenv("MONITORING_AGENT_PORT", 8015))
+    host = os.getenv("MONITORING_AGENT_HOST", "0.0.0.0")
+    
+    logger.info(f"Starting Monitoring Agent API on {host}:{port}")
+    uvicorn.run(app, host=host, port=port)
 
