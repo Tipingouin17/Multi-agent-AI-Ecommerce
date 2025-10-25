@@ -165,8 +165,8 @@ class MonitoringAgent(BaseAgentV2):
         self._setup_routes()
         self.app = app # Set self.app to the module-level app for internal use
 
-	    @asynccontextmanager
-	    async def lifespan_context(self, app: FastAPI):
+    @asynccontextmanager
+    async def lifespan_context(self, app: FastAPI):
         """
         FastAPI Lifespan Context Manager for agent startup and shutdown.
         """
