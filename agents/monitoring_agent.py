@@ -37,6 +37,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Create module-level FastAPI app
+# This is the app instance that uvicorn will load.
 app = FastAPI(title="Monitoring Agent API")
 
 # Add project root to path
@@ -149,13 +150,11 @@ class MonitoringAgent(BaseAgentV2):
         
         logger.info("Monitoring Agent constructor completed")
         
-        # FastAPI app
-        self.app = FastAPI(title="Monitoring Agent API", lifespan=self.lifespan_context)
-        
-        # Add CORS middleware for dashboard integration
-        
-        # Add CORS middleware
-        self.app.add_middleware(
+	        # The module-level 'app' is the FastAPI instance.
+	        # Add CORS middleware for dashboard integration
+	        
+	        # Add CORS middleware
+	        app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=True,
@@ -163,23 +162,33 @@ class MonitoringAgent(BaseAgentV2):
             allow_headers=["*"],
         )
         
-        self._setup_routes()
+	        self._setup_routes()
+	        self.app = app # Set self.app to the module-level app for internal use
 
     @asynccontextmanager
-    async def lifespan_context(self, app: FastAPI):
+	    @asynccontextmanager
+	    async def lifespan_context(self, app: FastAPI):
         """
         FastAPI Lifespan Context Manager for agent startup and shutdown.
         """
-        # Startup
-        logger.info("FastAPI Lifespan Startup: Monitoring Agent")
-        await self.initialize()
-        
-        yield
-        
-        # Shutdown
-        logger.info("FastAPI Lifespan Shutdown: Monitoring Agent")
-        await self.cleanup()
-        logger.info("Monitoring Agent API shutdown complete")
+	        # Startup
+	        logger.info("FastAPI Lifespan Startup: Monitoring Agent")
+	        # Add CORS middleware here to ensure it's added to the module-level app
+	        app.add_middleware(
+	            CORSMiddleware,
+	            allow_origins=["*"],
+	            allow_credentials=True,
+	            allow_methods=["*"],
+	            allow_headers=["*"],
+	        )
+	        await self.initialize()
+	        
+	        yield
+	        
+	        # Shutdown
+	        logger.info("FastAPI Lifespan Shutdown: Monitoring Agent")
+	        await self.cleanup()
+	        logger.info("Monitoring Agent API shutdown complete")
     
     async def initialize(self):
         """Initialize the monitoring agent"""
@@ -347,12 +356,12 @@ class MonitoringAgent(BaseAgentV2):
     def _setup_routes(self):
         """Setup FastAPI routes"""
         
-        @self.app.get("/health")
+	        @app.get("/health")
         async def health_check():
             """Health check endpoint"""
             return {"status": "healthy", "agent": self.agent_name}
         
-        @self.app.websocket("/ws")
+	        @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
             """WebSocket endpoint for real-time monitoring updates"""
             await websocket.accept()
@@ -394,7 +403,7 @@ class MonitoringAgent(BaseAgentV2):
                     self.active_connections.remove(websocket)
                 logger.info(f"WebSocket client removed. Total connections: {len(self.active_connections)}")
         
-        @self.app.get("/system/overview", response_model=SystemOverview)
+	        @app.get("/system/overview", response_model=SystemOverview)
         async def get_system_overview():
             """Get system overview with real data from database"""
             try:
@@ -404,7 +413,7 @@ class MonitoringAgent(BaseAgentV2):
                 logger.error(f"Error getting system overview: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/agents", response_model=List[AgentHealth])
+	        @app.get("/agents", response_model=List[AgentHealth])
         async def get_agent_health():
             """Get health status of all agents from database"""
             try:
@@ -433,7 +442,7 @@ class MonitoringAgent(BaseAgentV2):
                 logger.error(f"Error getting agent health: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/alerts", response_model=List[SystemAlert])
+	        @app.get("/alerts", response_model=List[SystemAlert])
         async def get_system_alerts(
             active_only: bool = Query(True, description="Return only active alerts")
         ):
@@ -466,7 +475,7 @@ class MonitoringAgent(BaseAgentV2):
                 logger.error(f"Error getting system alerts: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/metrics/performance")
+	        @app.get("/metrics/performance")
         async def get_performance_metrics(
             time_range: str = Query("24h", description="Time range: 1h, 24h, 7d, 30d")
         ):
@@ -511,7 +520,7 @@ class MonitoringAgent(BaseAgentV2):
                 logger.error(f"Error getting performance metrics: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/agents/{agent_id}/heartbeat")
+	        @app.post("/agents/{agent_id}/heartbeat")
         async def update_agent_heartbeat(agent_id: str, health_data: Dict[str, Any]):
             """Update agent heartbeat and health data"""
             try:
@@ -539,7 +548,7 @@ class MonitoringAgent(BaseAgentV2):
                 logger.error(f"Error updating agent heartbeat: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/alerts")
+	        @app.post("/alerts")
         async def create_alert(alert_data: Dict[str, Any]):
             """Create a new system alert"""
             try:
@@ -561,7 +570,7 @@ class MonitoringAgent(BaseAgentV2):
                 logger.error(f"Error creating alert: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/alerts/{alert_id}/resolve")
+	        @app.post("/alerts/{alert_id}/resolve")
         async def resolve_alert(alert_id: str, resolved_by: str = "system"):
             """Resolve a system alert"""
             try:
@@ -607,5 +616,5 @@ if __name__ == "__main__":
     host = os.getenv("MONITORING_AGENT_HOST", "0.0.0.0")
     
     logger.info(f"Starting Monitoring Agent API on {host}:{port}")
-    uvicorn.run(agent.app, host=host, port=port)
+	    uvicorn.run(app, host=host, port=port)
 
