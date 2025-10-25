@@ -466,7 +466,7 @@ class MonitoringAgent(BaseAgentV2):
                 logger.error(f"Error getting system alerts: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-      @self.app.get("/metrics/performance")
+        @self.app.get("/metrics/performance")
         async def get_performance_metrics(
             time_range: str = Query("24h", description="Time range: 1h, 24h, 7d, 30d")
         ):
