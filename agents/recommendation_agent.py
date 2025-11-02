@@ -262,6 +262,7 @@ class RecommendationService:
 app = FastAPI()
 
 
+class RecommendationAgent(BaseAgentV2):
     """
     Recommendation Agent with FastAPI for API exposure and database management via lifespan.
     """
