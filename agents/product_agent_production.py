@@ -142,10 +142,10 @@ class ProductCategory(BaseModel):
 app = FastAPI()
 
 
+class ProductAgent(BaseAgentV2):
     """
     Production-ready Product Agent with 100% database integration
     """
-    
     def __init__(self):
         super().__init__(agent_id="product_agent")
         
