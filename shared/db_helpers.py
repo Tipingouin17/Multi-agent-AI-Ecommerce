@@ -116,7 +116,21 @@ class DatabaseHelper:
             List of records
         """
         try:
-            query = select(model)
+            # Check if the model is a Pydantic model and try to find the corresponding SQLAlchemy model
+            if not issubclass(model, Base):
+                # Assuming a naming convention where Pydantic model name + 'DB' is the SQLAlchemy model
+                model_name = model.__name__ + 'DB'
+                # Dynamically get the SQLAlchemy model from shared.models
+                import shared.models
+                sqla_model = getattr(shared.models, model_name, None)
+                
+                if sqla_model is None:
+                    logger.error(f"Could not find SQLAlchemy model for Pydantic model: {model.__name__}")
+                    raise ValueError(f"No SQLAlchemy model found for {model.__name__}")
+                
+                query = select(sqla_model)
+            else:
+                query = select(model)
             
             # Apply filters
             if filters:
