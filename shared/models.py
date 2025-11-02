@@ -533,7 +533,7 @@ class DatabaseConfig(BaseModel):
             data = {
                 'host': os.getenv('DATABASE_HOST') or os.getenv('POSTGRES_HOST') or 'localhost',
                 'port': int(os.getenv('DATABASE_PORT') or os.getenv('POSTGRES_PORT') or '5432'),
-                'database': os.getenv('DATABASE_NAME') or os.getenv('POSTGRES_DB') or 'multi_agent_ecommerce',
+               'database': os.getenv('DATABASE_NAME') or os.getenv('POSTGRES_DB') or 'multi_agent_ecommerce',
                 'username': os.getenv('DATABASE_USER') or os.getenv('POSTGRES_USER') or 'postgres',
                 'password': os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD') or 'postgres',
             }
