@@ -194,10 +194,10 @@ else {
     Write-Host "Starting UI application (npm run dev) on port 5173..." -ForegroundColor White
     
     # Start npm run dev in the background
-    $StartCommand = "npm run dev --prefix .\ui"
+    $StartCommand = "npm run dev"
     
     # Use cmd /c to run npm and redirect output to a log file
-    $Process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $StartCommand > '$UILogFile' 2>&1" -PassThru -NoNewWindow
+    $Process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd .\ui\ && $StartCommand > '$UILogFile' 2>&1" -PassThru -NoNewWindow
     
     $Process.Id | Out-File -Append $UIPIDFile
     Write-Host "  -> PID: $($Process.Id). Log: $UILogFile" -ForegroundColor DarkGreen
