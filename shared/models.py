@@ -667,3 +667,21 @@ class AnomalyModelConfig(BaseModel):
     last_trained: Optional[datetime] = None
     performance_score: Optional[float] = None
 
+
+
+class AnomalyModelConfigDB(Base):
+    """Anomaly detection model configuration database model."""
+    __tablename__ = "anomaly_model_configs"
+
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    model_id = Column(String, unique=True, nullable=False)
+    model_type = Column(String, nullable=False)
+    target_metrics = Column(JSONB, nullable=False)
+    sensitivity = Column(Numeric(5, 4), nullable=False)
+    training_window_hours = Column(Integer, nullable=False)
+    detection_window_minutes = Column(Integer, nullable=False)
+    threshold_multiplier = Column(Numeric(5, 2), nullable=False)
+    active = Column(Boolean, nullable=False, default=True)
+    last_trained = Column(DateTime)
+    performance_score = Column(Numeric(5, 4))
+
