@@ -26,23 +26,34 @@ $PIDsFile = ".\logs\agent_pids.txt"
 # --- Functions ---
 
 function Cleanup {
-    Write-Host "`n--- Cleaning up running agents ---" -ForegroundColor Yellow
+    Write-Host "`n--- Cleaning up running agents and infrastructure ---" -ForegroundColor Yellow
     
+    # 1. Stop Docker Compose services
+    Write-Host "Stopping Docker Compose services..." -ForegroundColor White
+    try {
+        docker-compose down --remove-orphans
+        Write-Host "Docker Compose services stopped." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Warning: Could not run 'docker-compose down'. Ensure Docker is running." -ForegroundColor DarkYellow
+    }
+
+    # 2. Stop Agent Processes
     if (Test-Path $PIDsFile) {
         $PIDs = Get-Content $PIDsFile
         foreach ($PID in $PIDs) {
             try {
                 Stop-Process -Id $PID -Force -ErrorAction Stop
-                Write-Host "Stopped process with PID: $PID" -ForegroundColor Green
+                Write-Host "Stopped agent process with PID: $PID" -ForegroundColor Green
             }
             catch {
-                Write-Host "Process with PID $PID was not running or could not be stopped." -ForegroundColor DarkYellow
+                Write-Host "Agent process with PID $PID was not running or could not be stopped." -ForegroundColor DarkYellow
             }
         }
         Remove-Item $PIDsFile
     }
     else {
-        Write-Host "No PID file found. Searching for processes on ports $StartPort-$(($StartPort + $AgentModules.Count - 1))..." -ForegroundColor DarkYellow
+        Write-Host "No PID file found. Searching for agent processes on ports $StartPort-$(($StartPort + $AgentModules.Count - 1))..." -ForegroundColor DarkYellow
         # Fallback: Find processes listening on the ports and kill them
         for ($i = 0; $i -lt $AgentModules.Count; $i++) {
             $Port = $StartPort + $i
@@ -58,6 +69,21 @@ function Cleanup {
             }
         }
     }
+    
+    # 3. Stop UI Process (assuming it was started via Start-Process)
+    $UIPIDFile = ".\logs\ui_pid.txt"
+    if (Test-Path $UIPIDFile) {
+        $UIPID = Get-Content $UIPIDFile
+        try {
+            Stop-Process -Id $UIPID -Force -ErrorAction Stop
+            Write-Host "Stopped UI process with PID: $UIPID" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "UI process with PID $UIPID was not running or could not be stopped." -ForegroundColor DarkYellow
+        }
+        Remove-Item $UIPIDFile
+    }
+    
     Write-Host "Cleanup complete." -ForegroundColor Yellow
 }
 
@@ -91,18 +117,33 @@ if (-not (Get-Command docker-compose -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "Starting PostgreSQL, Kafka, and Redis via Docker Compose..." -ForegroundColor White
-try {
-    # Use 'up -d' to start services in detached mode
-    docker-compose up -d postgres kafka redis
-    Write-Host "Infrastructure services started successfully." -ForegroundColor Green
-}
-catch {
-    Write-Host "ERROR: Failed to start infrastructure services with Docker Compose." -ForegroundColor Red
-    Write-Host $_.Exception.Message -ForegroundColor Red
+
+# Use 'up -d' to start services in detached mode
+docker-compose up -d postgres kafka redis
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Docker Compose failed to start services. Check Docker status and docker-compose.yml." -ForegroundColor Red
     exit 1
 }
 
-Write-Host "Waiting 15 seconds for infrastructure to initialize..." -ForegroundColor Yellow
+# Robust Check: Wait for containers to be healthy/running
+$MaxRetries = 10
+$RetryDelay = 5
+Write-Host "Waiting for infrastructure containers to be running..." -ForegroundColor Yellow
+for ($i = 1; $i -le $MaxRetries; $i++) {
+    $RunningContainers = docker-compose ps -q | Measure-Object | Select-Object -ExpandProperty Count
+    if ($RunningContainers -ge 3) { # Assuming 3 services: postgres, kafka, redis
+        Write-Host "Infrastructure services are running after $($i * $RetryDelay) seconds." -ForegroundColor Green
+        break
+    }
+    if ($i -eq $MaxRetries) {
+        Write-Host "ERROR: Infrastructure services did not start within the timeout." -ForegroundColor Red
+        docker-compose ps
+        exit 1
+    }
+    Start-Sleep -Seconds $RetryDelay
+}
+
+Write-Host "Waiting 15 seconds for services to initialize (e.g., Kafka topics, DB tables)..." -ForegroundColor Yellow
 Start-Sleep -Seconds 15
 
 # 4. Agent Startup
@@ -139,14 +180,33 @@ Write-Host "All agents are running in the background. Check logs in $LogDir" -Fo
 Write-Host "Waiting 10 seconds for agents to initialize..." -ForegroundColor Yellow
 Start-Sleep -Seconds 10
 
-# 5. UI Startup (Placeholder)
-Write-Host "`n--- UI Startup (Placeholder) ---" -ForegroundColor Yellow
-Write-Host "INFO: Assuming UI is started via 'npm run dev' or similar on port 5173." -ForegroundColor Yellow
-Write-Host "INFO: Skipping UI startup as it is external to this script." -ForegroundColor Yellow
+# 5. UI Startup
+Write-Host "`n--- UI Startup (Vite/npm) ---" -ForegroundColor Yellow
+$UIPIDFile = ".\logs\ui_pid.txt"
+$UILogFile = Join-Path $LogDir "ui_startup.log"
+
+if (-not (Test-Path ".\ui\package.json")) {
+    Write-Host "WARNING: UI directory not found or missing package.json. Skipping UI startup." -ForegroundColor DarkYellow
+}
+else {
+    Write-Host "Starting UI application (npm run dev) on port 5173..." -ForegroundColor White
+    
+    # Start npm run dev in the background
+    $StartCommand = "npm run dev --prefix .\ui"
+    
+    # Use cmd /c to run npm and redirect output to a log file
+    $Process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $StartCommand > '$UILogFile' 2>&1" -PassThru -NoNewWindow
+    
+    $Process.Id | Out-File -Append $UIPIDFile
+    Write-Host "  -> PID: $($Process.Id). Log: $UILogFile" -ForegroundColor DarkGreen
+    
+    Write-Host "Waiting 5 seconds for UI to start..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+}
 
 Write-Host "`n================================================================================" -ForegroundColor Cyan
-Write-Host "PLATFORM STARTUP FINISHED. Agents are running in the background." -ForegroundColor Cyan
-Write-Host "To stop all agents, run: $ProjectRoot\scripts\start_local_dev.ps1 cleanup" -ForegroundColor Cyan
+Write-Host "PLATFORM STARTUP FINISHED. All components are running in the background." -ForegroundColor Cyan
+Write-Host "To stop all components (Agents, UI, Docker), run: $ProjectRoot\scripts\start_local_dev.ps1 cleanup" -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 
 # The script exits here, but the background processes continue to run.
