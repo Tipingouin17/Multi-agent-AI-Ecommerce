@@ -292,6 +292,14 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         await self._load_anomaly_models()
         self.logger.info("Risk Anomaly Detection Agent initialized.")
 
+    async def process_messages(self):
+        """
+        The main message processing loop for the Kafka consumer.
+        This method is required by BaseAgentV2.
+        """
+        self.logger.info("Starting Kafka message processing loop...")
+        await super().process_messages()
+
     async def cleanup(self):
         """Performs cleanup tasks."""
         self.logger.info("Cleaning up Risk Anomaly Detection Agent...")
@@ -627,6 +635,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize database manager globally (must be done before agent initialization)
+from shared.database import initialize_database_manager
+initialize_database_manager()
 
 # Initialize agent instance and setup routes
 risk_agent = RiskAnomalyDetectionAgent()
