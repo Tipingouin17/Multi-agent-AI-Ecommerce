@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 
 """
 Order Agent - Production Ready with Full Database Integration

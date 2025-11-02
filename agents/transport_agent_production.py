@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 
 """
 Transport Agent (Production-Ready with Carrier API Integration)
@@ -70,7 +71,7 @@ class TransportAgentProduction(BaseAgentV2):
         super().__init__(agent_id, agent_type)
         
         # FastAPI app for REST API
-        self.app = FastAPI(title="Transport Agent API")
+        
         
         # Add CORS middleware for dashboard integration
         self.kafka_producer: Optional[KafkaProducer] = None

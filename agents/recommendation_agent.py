@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 """
 Recommendation Agent - Multi-Agent E-Commerce System
 
@@ -258,7 +259,9 @@ class RecommendationService:
         )
 
 # AGENT CLASS
-class RecommendationAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """
     Recommendation Agent with FastAPI for API exposure and database management via lifespan.
     """
@@ -270,7 +273,7 @@ class RecommendationAgent(BaseAgentV2):
         self.service: Optional[RecommendationService] = None
         
         # Initialize FastAPI app with lifespan
-        self.app = FastAPI(title=f"{self.agent_name} API", lifespan=self.lifespan_context)
+        
         self._setup_routes()
 
     @asynccontextmanager
@@ -333,7 +336,7 @@ class RecommendationAgent(BaseAgentV2):
                 raise HTTPException(status_code=503, detail="Service not initialized")
             return self.service
 
-        @self.app.post("/api/v1/recommendations/interaction")
+        @app.post("/api/v1/recommendations/interaction")
         async def record_interaction(
             interaction: UserInteraction = Body(...),
             service: RecommendationService = Depends(get_recommendation_service_dependency)
@@ -345,7 +348,7 @@ class RecommendationAgent(BaseAgentV2):
                 logger.error("record_interaction_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/api/v1/recommendations/generate", response_model=RecommendationResponse)
+        @app.post("/api/v1/recommendations/generate", response_model=RecommendationResponse)
         async def generate_recommendations(
             request: RecommendationRequest = Body(...),
             service: RecommendationService = Depends(get_recommendation_service_dependency)
@@ -359,7 +362,7 @@ class RecommendationAgent(BaseAgentV2):
                 logger.error("generate_recommendations_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/api/v1/recommendations/trending", response_model=List[ProductRecommendation])
+        @app.get("/api/v1/recommendations/trending", response_model=List[ProductRecommendation])
         async def get_trending(
             limit: int = Query(10, ge=1, le=50),
             service: RecommendationService = Depends(get_recommendation_service_dependency)
@@ -371,7 +374,7 @@ class RecommendationAgent(BaseAgentV2):
                 logger.error("get_trending_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/api/v1/recommendations/similar/{product_id}", response_model=List[ProductRecommendation])
+        @app.get("/api/v1/recommendations/similar/{product_id}", response_model=List[ProductRecommendation])
         async def get_similar(
             product_id: str = Path(...),
             limit: int = Query(10, ge=1, le=50),
@@ -384,7 +387,7 @@ class RecommendationAgent(BaseAgentV2):
                 logger.error("get_similar_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/health")
+        @app.get("/health")
         async def health_check():
             return {
                 "status": "healthy", 
@@ -401,4 +404,4 @@ if __name__ == "__main__":
     host = os.getenv("RECOMMENDATION_AGENT_HOST", "0.0.0.0")
     
     logger.info(f"Starting Recommendation Agent API on {host}:{port}")
-    uvicorn.run(agent.app, host=host, port=port)
+    uvicorn.run(app, host=host, port=port)

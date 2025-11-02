@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 import os
 import sys
 import uvicorn
@@ -373,7 +374,9 @@ class ComplianceService:
             raise
 
 # AGENT
-class ComplianceAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """Compliance Agent for managing GDPR, data retention, and regulatory reporting.
 
     This agent integrates with a FastAPI server for API endpoints and Kafka for message processing.

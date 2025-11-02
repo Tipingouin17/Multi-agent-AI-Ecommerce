@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 """
 Reverse Logistics Agent - Multi-Agent E-commerce System
@@ -169,7 +171,9 @@ class ReverseLogisticsMetrics(BaseModel):
     customer_satisfaction_score: float
 
 
-class ReverseLogisticsAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """
     Reverse Logistics Agent manages the complete reverse supply chain including:
     - Return authorization and processing
@@ -189,7 +193,7 @@ class ReverseLogisticsAgent(BaseAgentV2):
             **kwargs: Additional keyword arguments to pass to the BaseAgent constructor.
         """
         super().__init__(agent_id=agent_id, **kwargs)
-        self.app = FastAPI(title="Reverse Logistics Agent API", version="1.0.0")
+        
         self.db_manager = get_database_manager()
         self.db_helper = DatabaseHelper(self.db_manager)
         self._db_initialized = False
@@ -271,17 +275,17 @@ class ReverseLogisticsAgent(BaseAgentV2):
 
     def setup_routes(self):
         """Setup FastAPI routes for the Reverse Logistics Agent API."""
-        @self.app.get("/health", response_model=Dict[str, str])
+        @app.get("/health", response_model=Dict[str, str])
         async def health_check():
             """Health check endpoint."""
             return {"status": "ok"}
 
-        @self.app.get("/", response_model=Dict[str, str])
+        @app.get("/", response_model=Dict[str, str])
         async def root():
             """Root endpoint providing basic agent information."""
             return {"message": "Reverse Logistics Agent is running", "agent_id": self.agent_id}
 
-        @self.app.post("/returns", response_model=APIResponse)
+        @app.post("/returns", response_model=APIResponse)
         async def process_return_request_api(return_data: ReturnRequest):
             """Process a return request via API.
 
@@ -302,7 +306,7 @@ class ReverseLogisticsAgent(BaseAgentV2):
                 self.logger.error("Failed to process return request via API", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/returns/{return_id}/assess", response_model=APIResponse)
+        @app.post("/returns/{return_id}/assess", response_model=APIResponse)
         async def assess_item_quality_api(return_id: str):
             """Assess quality of returned item via API.
 
@@ -323,7 +327,7 @@ class ReverseLogisticsAgent(BaseAgentV2):
                 self.logger.error("Failed to assess item quality via API", error=str(e), return_id=return_id)
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/refurbishment", response_model=APIResponse)
+        @app.post("/refurbishment", response_model=APIResponse)
         async def create_refurbishment_task_api(assessment_id: str):
             """Create a refurbishment task via API.
 
@@ -344,7 +348,7 @@ class ReverseLogisticsAgent(BaseAgentV2):
                 self.logger.error("Failed to create refurbishment task via API", error=str(e), assessment_id=assessment_id)
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/resale-recommendation/{product_id}/{condition}", response_model=APIResponse)
+        @app.get("/resale-recommendation/{product_id}/{condition}", response_model=APIResponse)
         async def get_resale_recommendation_api(product_id: str, condition: ItemCondition):
             """Get resale recommendation via API.
 
@@ -366,7 +370,7 @@ class ReverseLogisticsAgent(BaseAgentV2):
                 self.logger.error("Failed to get resale recommendation via API", error=str(e), product_id=product_id, condition=condition.value)
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/metrics", response_model=APIResponse)
+        @app.get("/metrics", response_model=APIResponse)
         async def get_performance_metrics_api(period_days: int = 30):
             """Get reverse logistics performance metrics via API.
 
@@ -1263,5 +1267,5 @@ if __name__ == "__main__":
         await agent.cleanup()
 
     import uvicorn
-    uvicorn.run(agent.app, host="0.0.0.0", port=api_port)
+    uvicorn.run(app, host="0.0.0.0", port=api_port)
 

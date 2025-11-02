@@ -93,10 +93,14 @@ project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.database import DatabaseManager, get_database_manager
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 logger = structlog.get_logger(__name__)
+
+# AGENT INSTANCE (for dependency injection)
+warehouse_service: Optional['WarehouseService'] = None
 
 # ENUMS
 class PickListStatus(str, Enum):
@@ -117,18 +121,6 @@ class Warehouse(BaseModel):
 
     class Config:
         from_attributes = True
-    async def initialize(self):
-        """Initialize agent."""
-        await super().initialize()
-        
-    async def cleanup(self):
-        """Cleanup agent."""
-        await super().cleanup()
-        
-    async def process_business_logic(self, data):
-        """Process business logic."""
-        return {"status": "success"}
-
 
 class WarehouseInventory(BaseModel):
     inventory_id: UUID
@@ -327,13 +319,40 @@ class WarehouseService:
         logger.info("picking_completed", pick_list_id=str(pick_list_id))
         return pick_list
 
+# --- FastAPI Lifespan ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initializes the database connection and service layer."""
+    global warehouse_service
+    logger.info("Warehouse Agent Startup: Initializing Database and Service")
+    try:
+        db_manager = await get_database_manager()
+        repo = WarehouseRepository(db_manager)
+        warehouse_service = WarehouseService(repo)
+        logger.info("Warehouse Agent Startup: Initialization Complete")
+        yield
+    finally:
+        logger.info("Warehouse Agent Shutdown: Cleaning up resources")
+        # DatabaseManager handles connection pool cleanup on its own
+        pass
+
 # FASTAPI APP
-app = FastAPI(title="Warehouse Agent API", version="1.0.0")
+app = FastAPI(title="Warehouse Agent API", version="1.0.0", lifespan=lifespan)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 async def get_warehouse_service() -> WarehouseService:
-    db_manager = await get_database_manager()
-    repo = WarehouseRepository(db_manager)
-    return WarehouseService(repo)
+    """Dependency injector for the WarehouseService."""
+    if not warehouse_service:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+    return warehouse_service
 
 # ENDPOINTS
 @app.get("/api/v1/warehouses", response_model=List[Warehouse])
@@ -432,5 +451,20 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8013)
+    
+    # Setup logging
+    structlog.configure(
+        processors=[
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.JSONRenderer()
+        ],
+        wrapper_class=structlog.stdlib.BoundLogger,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+    )
+    
+    port = int(os.getenv("PORT", 8013))
+    logger.info(f"Starting Warehouse Agent on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)
 

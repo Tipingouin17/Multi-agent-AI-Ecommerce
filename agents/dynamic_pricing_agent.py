@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 """
 Dynamic Pricing Agent - Multi-Agent E-commerce System
 

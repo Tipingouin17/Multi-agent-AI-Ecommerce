@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 """
 Payment Agent Enhanced - Multi-Agent E-Commerce System
 
@@ -342,7 +343,7 @@ class PaymentRepository:
 
     def __init__(self, db_manager: DatabaseManager):
         # FastAPI app for REST API
-        self.app = FastAPI(title="Payment Agent API")
+        
         
         # Add CORS middleware for dashboard integration
         

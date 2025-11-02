@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 """
 Quality Control Agent
 Handles product inspection, damage verification, quality assurance, and defect tracking
@@ -117,7 +120,9 @@ class QualityIssue(BaseModel):
     resolved: bool = False
 
 
-class QualityControlAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """
     Quality Control Agent
     

@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 """
 Inventory Agent - Multi-Agent E-commerce System
 
@@ -131,7 +132,7 @@ class InventoryRepository(BaseRepository):
         super().__init__(db_manager, InventoryDB)
         
         # FastAPI app for REST API (Moved to module level for Uvicorn compatibility)
-        # self.app = FastAPI(title="Inventory Agent API")
+        # 
         
         # Add CORS middleware for dashboard integration (Handled at module level)
     
@@ -442,7 +443,7 @@ async def get_inventory(
                 self.logger.error("Failed to get inventory", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/inventory/{product_id}/availability", response_model=APIResponse)
+        @app.get("/inventory/{product_id}/availability", response_model=APIResponse)
         async def check_product_availability(product_id: str, quantity: int = 1):
             """Check product availability across all warehouses.
 

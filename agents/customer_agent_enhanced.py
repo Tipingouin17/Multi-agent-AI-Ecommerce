@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 
 """
 Customer Agent Enhanced - Multi-Agent E-Commerce System

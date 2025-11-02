@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 """
 Product Agent API - Multi-Agent E-commerce System
 

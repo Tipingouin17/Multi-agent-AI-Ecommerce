@@ -98,7 +98,7 @@ class BackofficeRepository:
     
     def __init__(self, db_manager: DatabaseManager):
         # FastAPI app for REST API
-        self.app = FastAPI(title="Backoffice Agent API")
+        
         
         # Add CORS middleware for dashboard integration
         

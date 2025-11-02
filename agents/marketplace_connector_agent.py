@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 
 """
 Marketplace Connector Agent - Multi-Agent E-Commerce System
@@ -226,7 +227,7 @@ class MarketplaceRepository:
     """Handles database operations for marketplace entities."""
     def __init__(self, db_manager: DatabaseManager):
         # FastAPI app for REST API
-        self.app = FastAPI(title="Marketplace Agent API")
+        
         
         # Add CORS middleware for dashboard integration
         
@@ -472,7 +473,9 @@ class MarketplaceService:
 
 
 # AGENT CLASS
-class MarketplaceConnectorAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """Marketplace Connector Agent for managing multi-marketplace integrations."""
     def __init__(self, agent_id: str, agent_type: str):
         """Initializes the MarketplaceConnectorAgent."""

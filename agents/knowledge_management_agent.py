@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 
 """
 Knowledge Management Agent - Multi-Agent E-Commerce System
@@ -140,7 +141,7 @@ class KnowledgeManagementService:
     """Service layer for managing knowledge base articles."""
     def __init__(self, db_manager: DatabaseManager):
         # FastAPI app for REST API
-        self.app = FastAPI(title="Knowledge Management Agent API")
+        
         
         # Add CORS middleware for dashboard integration
         

@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 """
 Product Agent - Multi-Agent E-commerce System (Production Ready with Database)
 
@@ -138,7 +139,9 @@ class ProductCategory(BaseModel):
     parent_id: Optional[str] = None
     description: Optional[str] = None
 
-class ProductAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """
     Production-ready Product Agent with 100% database integration
     """
@@ -147,7 +150,7 @@ class ProductAgent(BaseAgentV2):
         super().__init__(agent_id="product_agent")
         
         # FastAPI app for REST API
-        self.app = FastAPI(title="Product Agent API")
+        
         
         # Add CORS middleware for dashboard integration
         
@@ -180,7 +183,7 @@ class ProductAgent(BaseAgentV2):
     def setup_routes(self):
         """Setup FastAPI routes - ALL query database"""
         
-        @self.app.get("/health")
+        @app.get("/health")
         async def health_check():
             return {
                 "status": "healthy",
@@ -191,7 +194,7 @@ class ProductAgent(BaseAgentV2):
         
         # ===== PRODUCT CRUD ENDPOINTS =====
         
-        @self.app.get("/products")
+        @app.get("/products")
         async def get_products(
             skip: int = 0,
             limit: int = 100,
@@ -241,7 +244,7 @@ class ProductAgent(BaseAgentV2):
                 logger.error(f"Error getting products: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/products/{product_id}")
+        @app.get("/products/{product_id}")
         async def get_product(product_id: str):
             """Get single product by ID - queries database"""
             try:
@@ -261,7 +264,7 @@ class ProductAgent(BaseAgentV2):
                 logger.error(f"Error getting product {product_id}: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/products")
+        @app.post("/products")
         async def create_product(product: Product):
             """Create new product - saves to database"""
             try:
@@ -292,7 +295,7 @@ class ProductAgent(BaseAgentV2):
                 logger.error(f"Error creating product: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.put("/products/{product_id}")
+        @app.put("/products/{product_id}")
         async def update_product(product_id: str, product: Product):
             """Update product - updates database"""
             try:
@@ -329,7 +332,7 @@ class ProductAgent(BaseAgentV2):
                 logger.error(f"Error updating product {product_id}: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.delete("/products/{product_id}")
+        @app.delete("/products/{product_id}")
         async def delete_product(product_id: str):
             """Delete product - removes from database"""
             try:
@@ -355,7 +358,7 @@ class ProductAgent(BaseAgentV2):
         
         # ===== SEARCH ENDPOINT =====
         
-        @self.app.get("/products/search")
+        @app.get("/products/search")
         async def search_products(
             q: str = Query(..., min_length=1),
             limit: int = 20
@@ -386,7 +389,7 @@ class ProductAgent(BaseAgentV2):
         
         # ===== CATEGORY ENDPOINTS =====
         
-        @self.app.get("/categories")
+        @app.get("/categories")
         async def get_categories():
             """Get all product categories - queries database"""
             try:
@@ -402,7 +405,7 @@ class ProductAgent(BaseAgentV2):
                 logger.error(f"Error getting categories: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/categories")
+        @app.post("/categories")
         async def create_category(category: ProductCategory):
             """Create new category - saves to database"""
             try:
@@ -427,7 +430,7 @@ class ProductAgent(BaseAgentV2):
         
         # ===== ANALYTICS ENDPOINTS =====
         
-        @self.app.get("/analytics/products")
+        @app.get("/analytics/products")
         async def get_product_analytics():
             """Get product analytics - queries database"""
             try:
@@ -489,7 +492,7 @@ class ProductAgent(BaseAgentV2):
                 logger.error(f"Error getting product analytics: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/analytics/inventory")
+        @app.get("/analytics/inventory")
         async def get_inventory_analytics():
             """Get inventory analytics - queries database"""
             try:

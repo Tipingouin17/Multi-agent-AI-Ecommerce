@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 
 import asyncio
 import json
@@ -329,7 +332,9 @@ class SupplierRepository:
             return None
 
 
-class SupplierAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """
     Manages supplier relationships, products, and purchase orders through a FastAPI interface and Kafka messaging.
     """

@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 
 """
 Document Generation Agent
@@ -93,7 +94,7 @@ class DocumentGenerationAgent(BaseAgentV2):
         super().__init__(agent_id="document_generation_agent")
         
         # FastAPI app for REST API
-        self.app = FastAPI(title="Document Generation Agent API")
+        
         
         # Add CORS middleware for dashboard integration
         self.db_helper = DatabaseHelper(self.db_manager)

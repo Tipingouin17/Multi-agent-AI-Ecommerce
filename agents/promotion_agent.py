@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 """
 Promotion Agent - Multi-Agent E-Commerce System
 
@@ -262,7 +263,9 @@ class PromotionService:
         )
 
 # AGENT CLASS
-class PromotionAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """
     Promotion Agent with FastAPI for API exposure and database management via lifespan.
     """
@@ -274,7 +277,7 @@ class PromotionAgent(BaseAgentV2):
         self.service: Optional[PromotionService] = None
         
         # Initialize FastAPI app with lifespan
-        self.app = FastAPI(title=f"{self.agent_name} API", lifespan=self.lifespan_context)
+        
         self._setup_routes()
 
     @asynccontextmanager
@@ -336,7 +339,7 @@ class PromotionAgent(BaseAgentV2):
                 raise HTTPException(status_code=503, detail="Service not initialized")
             return self.service
 
-        @self.app.post("/api/v1/promotions", response_model=Promotion)
+        @app.post("/api/v1/promotions", response_model=Promotion)
         async def create_promotion(
             promo_data: PromotionCreate = Body(...),
             service: PromotionService = Depends(get_promotion_service_dependency)
@@ -349,7 +352,7 @@ class PromotionAgent(BaseAgentV2):
                 logger.error("create_promotion_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/api/v1/promotions/active")
+        @app.get("/api/v1/promotions/active")
         async def get_active_promotions(
             service: PromotionService = Depends(get_promotion_service_dependency)
         ):
@@ -360,7 +363,7 @@ class PromotionAgent(BaseAgentV2):
                 logger.error("get_active_promotions_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/api/v1/promotions/validate", response_model=PromotionValidationResponse)
+        @app.post("/api/v1/promotions/validate", response_model=PromotionValidationResponse)
         async def validate_promotion(
             request: PromotionValidationRequest = Body(...),
             service: PromotionService = Depends(get_promotion_service_dependency)
@@ -372,7 +375,7 @@ class PromotionAgent(BaseAgentV2):
                 logger.error("validate_promotion_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/api/v1/promotions/{promotion_id}/use")
+        @app.post("/api/v1/promotions/{promotion_id}/use")
         async def record_usage(
             promotion_id: UUID = Path(...),
             customer_id: str = Body(..., embed=True),
@@ -389,7 +392,7 @@ class PromotionAgent(BaseAgentV2):
                 logger.error("record_usage_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/health")
+        @app.get("/health")
         async def health_check():
             return {
                 "status": "healthy", 
@@ -406,4 +409,4 @@ if __name__ == "__main__":
     host = os.getenv("PROMOTION_AGENT_HOST", "0.0.0.0")
     
     logger.info(f"Starting Promotion Agent API on {host}:{port}")
-    uvicorn.run(agent.app, host=host, port=port)
+    uvicorn.run(app, host=host, port=port)

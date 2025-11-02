@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 """
 Demand Forecasting Agent - Multi-Agent E-commerce System
@@ -151,7 +153,9 @@ class SeasonalPattern(BaseModel):
     confidence: float
 
 
-class DemandForecastingAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """
     Demand Forecasting Agent provides AI-powered demand predictions including:
     - Machine learning-based demand forecasting
@@ -165,7 +169,7 @@ class DemandForecastingAgent(BaseAgentV2):
         agent_id = os.getenv("AGENT_ID", "demand_forecasting_agent")
         agent_type = os.getenv("AGENT_TYPE", "demand_forecasting")  # Default agent_type
         super().__init__(agent_id=agent_id, **kwargs)
-        self.app = FastAPI(title="Demand Forecasting Agent API", version="1.0.0", lifespan=self.lifespan_context)
+        
         self.setup_routes()
 
         # ML models and data
@@ -277,19 +281,19 @@ class DemandForecastingAgent(BaseAgentV2):
         This includes health check, root, and business logic endpoints.
         """
 
-        @self.app.get("/health", status_code=status.HTTP_200_OK)
+        @app.get("/health", status_code=status.HTTP_200_OK)
         async def health_check():
             """Health check endpoint to verify agent status."""
             self.logger.info("Health check requested.")
             return APIResponse(success=True, message="Demand Forecasting Agent is healthy.")
 
-        @self.app.get("/", status_code=status.HTTP_200_OK)
+        @app.get("/", status_code=status.HTTP_200_OK)
         async def root():
             """Root endpoint providing basic agent information."""
             self.logger.info("Root endpoint requested.")
             return APIResponse(success=True, message="Welcome to the Demand Forecasting Agent API.", data={"agent_id": self.agent_id, "agent_type": self.agent_type})
 
-        @self.app.post("/forecast", response_model=APIResponse)
+        @app.post("/forecast", response_model=APIResponse)
         async def forecast_demand_endpoint(request: DemandForecastRequest):
             """Generate demand forecast for a product.
 
@@ -311,7 +315,7 @@ class DemandForecastingAgent(BaseAgentV2):
                 self.logger.error("Failed to generate demand forecast", error=str(e), product_id=request.product_id)
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-        @self.app.get("/reorder-recommendations", response_model=APIResponse)
+        @app.get("/reorder-recommendations", response_model=APIResponse)
         async def get_reorder_recommendations_endpoint(warehouse_id: Optional[str] = None):
             """Get reorder recommendations.
 
@@ -333,7 +337,7 @@ class DemandForecastingAgent(BaseAgentV2):
                 self.logger.error("Failed to get reorder recommendations", error=str(e), warehouse_id=warehouse_id)
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-        @self.app.get("/seasonality/{product_id}", response_model=APIResponse)
+        @app.get("/seasonality/{product_id}", response_model=APIResponse)
         async def analyze_seasonality_endpoint(product_id: str):
             """Analyze seasonal patterns for a product.
 
@@ -355,7 +359,7 @@ class DemandForecastingAgent(BaseAgentV2):
                 self.logger.error("Failed to analyze seasonality", error=str(e), product_id=product_id)
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-        @self.app.get("/accuracy", response_model=APIResponse)
+        @app.get("/accuracy", response_model=APIResponse)
         async def get_forecast_accuracy_endpoint():
             """Get forecast accuracy metrics.
 
@@ -374,7 +378,7 @@ class DemandForecastingAgent(BaseAgentV2):
                 self.logger.error("Failed to get forecast accuracy", error=str(e))
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-        @self.app.post("/retrain", response_model=APIResponse)
+        @app.post("/retrain", response_model=APIResponse)
         async def retrain_models_endpoint():
             """Manually trigger model retraining.
 
@@ -1404,5 +1408,5 @@ if __name__ == "__main__":
     host = os.getenv("AGENT_HOST", "0.0.0.0")
 
     logger.info(f"Starting Demand Forecasting Agent API on {host}:{port}")
-    uvicorn.run(agent.app, host=host, port=port, log_config=log_config)
+    uvicorn.run(app, host=host, port=port, log_config=log_config)
 

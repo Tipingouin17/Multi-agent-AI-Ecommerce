@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 """
 D2C E-commerce Platform Agent - Multi-Agent E-commerce System
 
@@ -327,7 +329,7 @@ class D2CEcommerceAgent(BaseAgentV2):
     
     def __init__(self, **kwargs):
         super().__init__(agent_id="d2c_ecommerce_agent", **kwargs)
-        self.app = FastAPI(title="D2C E-commerce Platform Agent API", version="1.0.0")
+        
         self.setup_routes()
         
         # D2C platform data
@@ -405,7 +407,7 @@ class D2CEcommerceAgent(BaseAgentV2):
     def setup_routes(self):
         """Setup FastAPI routes for the D2C E-commerce Agent."""
         
-        @self.app.post("/stores/credentials", response_model=APIResponse)
+        @app.post("/stores/credentials", response_model=APIResponse)
         async def add_store_credentials(credentials: D2CCredentials):
             """Add D2C store API credentials."""
             try:
@@ -432,7 +434,7 @@ class D2CEcommerceAgent(BaseAgentV2):
                 self.logger.error("Failed to add store credentials", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/stores/{store_id}/products", response_model=APIResponse)
+        @app.post("/stores/{store_id}/products", response_model=APIResponse)
         async def create_product(store_id: str, product_data: D2CProduct):
             """Create a new product on D2C platform."""
             try:
@@ -448,7 +450,7 @@ class D2CEcommerceAgent(BaseAgentV2):
                 self.logger.error("Failed to create D2C product", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.put("/products/{product_id}", response_model=APIResponse)
+        @app.put("/products/{product_id}", response_model=APIResponse)
         async def update_product(product_id: str, updates: Dict[str, Any]):
             """Update D2C product."""
             try:
@@ -464,7 +466,7 @@ class D2CEcommerceAgent(BaseAgentV2):
                 self.logger.error("Failed to update D2C product", error=str(e), product_id=product_id)
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/stores/{store_id}/sync/orders", response_model=APIResponse)
+        @app.post("/stores/{store_id}/sync/orders", response_model=APIResponse)
         async def sync_orders(store_id: str):
             """Synchronize orders from D2C platform."""
             try:
@@ -480,7 +482,7 @@ class D2CEcommerceAgent(BaseAgentV2):
                 self.logger.error("Failed to sync orders", error=str(e), store_id=store_id)
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/webhooks/{store_id}", response_model=APIResponse)
+        @app.post("/webhooks/{store_id}", response_model=APIResponse)
         async def process_webhook(store_id: str, webhook_data: Dict[str, Any]):
             """Process webhook from D2C platform."""
             try:
@@ -499,7 +501,7 @@ class D2CEcommerceAgent(BaseAgentV2):
                 self.logger.error("Failed to process webhook", error=str(e), store_id=store_id)
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.put("/products/{product_id}/inventory", response_model=APIResponse)
+        @app.put("/products/{product_id}/inventory", response_model=APIResponse)
         async def update_inventory(product_id: str, inventory_data: Dict[str, Any]):
             """Update product inventory on D2C platform."""
             try:
@@ -518,7 +520,7 @@ class D2CEcommerceAgent(BaseAgentV2):
                 self.logger.error("Failed to update inventory", error=str(e), product_id=product_id)
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/orders/{order_id}/fulfill", response_model=APIResponse)
+        @app.post("/orders/{order_id}/fulfill", response_model=APIResponse)
         async def fulfill_order(order_id: str, fulfillment_data: Dict[str, Any]):
             """Fulfill order on D2C platform."""
             try:
@@ -534,7 +536,7 @@ class D2CEcommerceAgent(BaseAgentV2):
                 self.logger.error("Failed to fulfill order", error=str(e), order_id=order_id)
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/stores", response_model=APIResponse)
+        @app.get("/stores", response_model=APIResponse)
         async def list_stores(platform_type: Optional[D2CPlatform] = None):
             """List D2C stores with optional platform filter."""
             try:
@@ -553,7 +555,7 @@ class D2CEcommerceAgent(BaseAgentV2):
                 self.logger.error("Failed to list stores", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/stores/{store_id}/analytics", response_model=APIResponse)
+        @app.get("/stores/{store_id}/analytics", response_model=APIResponse)
         async def get_store_analytics(store_id: str):
             """Get store analytics and metrics."""
             try:

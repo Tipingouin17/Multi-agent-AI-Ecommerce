@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 """
 After-Sales Agent - Production Ready
 Handles RMA requests, returns, refunds, customer satisfaction, and warranty claims with full database integration
@@ -128,7 +129,7 @@ class AfterSalesRepository:
     
     def __init__(self, db_manager: DatabaseManager):
         # FastAPI app for REST API
-        self.app = FastAPI(title="After-Sales Agent API")
+        
         
         # Add CORS middleware for dashboard integration
         

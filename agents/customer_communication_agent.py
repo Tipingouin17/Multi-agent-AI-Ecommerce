@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 """
 Customer Communication Agent - Multi-Agent E-commerce System
 
@@ -141,7 +143,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
     
     def __init__(self, **kwargs):
         super().__init__(agent_id="customer_communication_agent", **kwargs)
-        self.app = FastAPI(title="Customer Communication Agent API", version="1.0.0")
+        
         self.setup_routes()
         # OpenAI client is initialized in openai_helper
         # Communication data
@@ -209,7 +211,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
     def setup_routes(self):
         """Setup FastAPI routes for the Customer Communication Agent."""
         
-        @self.app.websocket("/chat/{session_id}")
+        @app.websocket("/chat/{session_id}")
         async def websocket_chat(websocket: WebSocket, session_id: str):
             """WebSocket endpoint for real-time chat."""
             await websocket.accept()
@@ -255,7 +257,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
                 if session_id in self.websocket_connections:
                     del self.websocket_connections[session_id]
         
-        @self.app.post("/chat/message", response_model=APIResponse)
+        @app.post("/chat/message", response_model=APIResponse)
         async def send_chat_message(message: str, session_id: str, customer_id: Optional[str] = None):
             """Send a chat message (REST API alternative to WebSocket)."""
             try:
@@ -271,7 +273,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
                 self.logger.error("Failed to process chat message", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/email/send", response_model=APIResponse)
+        @app.post("/email/send", response_model=APIResponse)
         async def send_email(email_data: Dict[str, Any]):
             """Send an email."""
             try:
@@ -287,7 +289,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
                 self.logger.error("Failed to send email", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/campaigns", response_model=APIResponse)
+        @app.post("/campaigns", response_model=APIResponse)
         async def create_campaign(campaign_data: EmailCampaign):
             """Create an email campaign."""
             try:
@@ -303,7 +305,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
                 self.logger.error("Failed to create email campaign", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/interactions", response_model=APIResponse)
+        @app.get("/interactions", response_model=APIResponse)
         async def get_customer_interactions(customer_id: Optional[str] = None):
             """Get customer interactions."""
             try:
@@ -319,7 +321,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
                 self.logger.error("Failed to get customer interactions", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/interactions/{interaction_id}/escalate", response_model=APIResponse)
+        @app.post("/interactions/{interaction_id}/escalate", response_model=APIResponse)
         async def escalate_interaction(interaction_id: str):
             """Escalate an interaction to human agent."""
             try:
@@ -335,7 +337,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
                 self.logger.error("Failed to escalate interaction", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/templates", response_model=APIResponse)
+        @app.get("/templates", response_model=APIResponse)
         async def list_email_templates():
             """List all email templates."""
             try:
@@ -351,7 +353,7 @@ class CustomerCommunicationAgent(BaseAgentV2):
                 self.logger.error("Failed to list email templates", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/campaigns", response_model=APIResponse)
+        @app.get("/campaigns", response_model=APIResponse)
         async def list_campaigns():
             """List all email campaigns."""
             try:

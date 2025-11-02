@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 
 """
 Fraud Detection Agent - Multi-Agent E-Commerce System
@@ -91,7 +92,7 @@ class FraudDetectionRepository:
     """Repository for interacting with fraud detection related data in the database."""
     def __init__(self, db_helper: DatabaseHelper):
         # FastAPI app for REST API
-        self.app = FastAPI(title="Fraud Detection Agent API")
+        # 
         
         # Add CORS middleware for dashboard integration
         
@@ -498,13 +499,13 @@ class FraudDetectionService:
 
 
 # --- Agent ---
-class FraudDetectionAgent(BaseAgentV2):
+app = FastAPI()
+
+
     """Fraud Detection Agent for the Multi-Agent E-Commerce System.
 
     This agent provides ML-based fraud detection, risk scoring, and anomaly detection
-    for transactions, orders, and user behavior.
-    """
-    def __init__(self, agent_id: str = "fraud_detection_agent", **kwargs):
+    for transactions, orders, and user behavior    def __init__(self, agent_id: str = "fraud_detection_agent", **kwargs):
         """Initializes the FraudDetectionAgent."""
         super().__init__(agent_id=agent_id, **kwargs)
         # Initialize database manager with fallback
@@ -518,39 +519,33 @@ class FraudDetectionAgent(BaseAgentV2):
         self.repository = FraudDetectionRepository(self.db_helper)
         self.service = FraudDetectionService(self.repository)
 
-        self.app = FastAPI(title="FraudDetectionAgent",
-                           description="Agent for detecting and managing fraudulent activities.",
-                           lifespan=self.lifespan_context) # Use lifespan context manager
-        
-        # Add CORS middleware
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],  # In production, specify exact origins
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-        self._db_initialized = False
-
-        self.setup_routes()
-
-    @asynccontextmanager
-    async def lifespan_context(self, app: FastAPI):
-        """
-        FastAPI Lifespan Context Manager for agent startup and shutdown.
-        """
-        # Startup
-        logger.info("FastAPI Lifespan Startup: Fraud Detection Agent")
-        await self.initialize()
-        
-        yield
-        
-        # Shutdown
-        logger.info("FastAPI Lifespan Shutdown: Fraud Detection Agent")
-        await self.cleanup()
-        logger.info("Fraud Detection Agent API shutdown complete")
-
-    async def initialize(self):
+        # Use module-level app
+        self.app = app
+        self._db_initial@contextlib.asynccontextmanager
+async def lifespan_context(app: FastAPI):
+    """
+    FastAPI Lifespan Context Manager for agent startup and shutdown.
+    """
+    global fraud_agent
+    
+    # Startup
+    logger.info("FastAPI Lifespan Startup: Fraud Detection Agent")
+    
+    # Initialize agent instance
+    agent_id = os.getenv("AGENT_ID", "fraud_detection_agent_001")
+    fraud_agent = FraudDetectionAgent(agent_id=agent_id)
+    
+    # Set lifespan context on the agent's app instance
+    app.router.lifespan_context = fraud_agent.lifespan_context
+    
+    await fraud_agent.initialize()
+    
+    yield
+    
+    # Shutdown
+    logger.info("FastAPI Lifespan Shutdown: Fraud Detection Agent")
+    await fraud_agent.cleanup()
+    logger.info("Fraud Detection Agent API shutdown complete")    async def initialize(self):
         """Initializes the agent with robust error handling."""
         await super().initialize()
         
@@ -607,7 +602,7 @@ class FraudDetectionAgent(BaseAgentV2):
 
         Includes health check, root endpoint, and business logic endpoints.
         """
-        @self.app.get("/health", summary="Health Check", tags=["Monitoring"])
+        @app.get("/health", summary="Health Check", tags=["Monitoring"])
         async def health_check():
             """Endpoint to check the health of the agent and its database connection."""
             logger.info("Health check requested")
@@ -616,13 +611,13 @@ class FraudDetectionAgent(BaseAgentV2):
                 raise HTTPException(status_code=503, detail="Database not initialized")
             return {"status": "healthy", "db_connected": self._db_initialized}
 
-        @self.app.get("/", summary="Root endpoint", tags=["General"])
+        @app.get("/", summary="Root endpoint", tags=["General"])
         async def root():
             """Root endpoint providing a simple status message."""
             logger.info("Root endpoint accessed")
             return {"message": "Fraud Detection Agent is running"}
 
-        @self.app.post("/check_fraud", response_model=FraudCheckResult, summary="Perform a fraud check", tags=["Fraud Detection"])
+        @app.post("/check_fraud", response_model=FraudCheckResult, summary="Perform a fraud check", tags=["Fraud Detection"])
         async def check_fraud_endpoint(request: FraudCheckRequest):
             """Endpoint to perform a comprehensive fraud check on an entity."""
             logger.info("Fraud check endpoint called", entity_type=request.entity_type, entity_id=request.entity_id)
@@ -631,7 +626,7 @@ class FraudDetectionAgent(BaseAgentV2):
                 raise HTTPException(status_code=503, detail="Database not initialized")
             return await self.service.perform_fraud_check(request)
 
-        @self.app.post("/block_entity", summary="Block an entity", tags=["Fraud Management"])
+        @app.post("/block_entity", summary="Block an entity", tags=["Fraud Management"])
         async def block_entity_endpoint(request: BlockEntityRequest, blocked_by: str = Body(..., embed=True)):
             """Endpoint to block an entity from performing transactions."""
             logger.info("Block entity endpoint called", entity_type=request.entity_type, entity_value=request.entity_value)
@@ -640,7 +635,7 @@ class FraudDetectionAgent(BaseAgentV2):
                 raise HTTPException(status_code=503, detail="Database not initialized")
             return await self.service.block_entity(request, blocked_by)
 
-        @self.app.get("/customer_fraud_history/{customer_id}", response_model=List[Dict[str, Any]], summary="Get customer fraud history", tags=["Fraud Detection"])
+        @app.get("/customer_fraud_history/{customer_id}", response_model=List[Dict[str, Any]], summary="Get customer fraud history", tags=["Fraud Detection"])
         async def get_customer_history_endpoint(customer_id: str = Path(..., description="The ID of the customer"), limit: int = 10):
             """Endpoint to retrieve the fraud history for a specific customer."""
             logger.info("Customer fraud history endpoint called", customer_id=customer_id, limit=limit)
@@ -735,16 +730,13 @@ if __name__ == "__main__":
     Initializes and runs the agent's FastAPI server using uvicorn.
     Configuration is loaded from environment variables.
     """
-    agent_id = os.getenv("AGENT_ID", "fraud_detection_agent_001")
-
-    # Create the agent instance (db_manager, db_helper, repository, service initialized in __init__)
-    agent = FraudDetectionAgent(agent_id=agent_id)
-
+    # The agent is initialized in the lifespan context, so we just run the app
+    
     # Get port from environment variables
     port = int(os.getenv("PORT", "8011"))
 
-    logger.info("Starting Fraud Detection Agent FastAPI server", port=port, agent_id=agent_id)
+    logger.info("Starting Fraud Detection Agent FastAPI server", port=port)
 
     # Run the FastAPI server
-    uvicorn.run(agent.app, host="0.0.0.0", port=port, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 

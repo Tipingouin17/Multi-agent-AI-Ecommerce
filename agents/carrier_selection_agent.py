@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 """
 Carrier Selection Agent - Multi-Agent E-commerce System
 
@@ -196,7 +198,7 @@ class CarrierSelectionAgent(BaseAgentV2):
     def __init__(self, **kwargs):
         super().__init__(agent_id="carrier_selection_agent", **kwargs)
         self.repository: Optional[CarrierRepository] = None
-        self.app = FastAPI(title="Carrier Selection Agent API", version="1.0.0")
+        
         self.setup_routes()
         # OpenAI client is initialized in openai_helper
         # Carrier performance metrics (in production, this would be in a database)
@@ -248,7 +250,7 @@ class CarrierSelectionAgent(BaseAgentV2):
     def setup_routes(self):
         """Setup FastAPI routes for the Carrier Selection Agent."""
         
-        @self.app.post("/carrier-selection", response_model=APIResponse)
+        @app.post("/carrier-selection", response_model=APIResponse)
         async def select_carrier(request: CarrierSelectionRequest):
             """Select optimal carrier for a shipment."""
             try:
@@ -264,7 +266,7 @@ class CarrierSelectionAgent(BaseAgentV2):
                 self.logger.error("Failed to select carrier", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.post("/carrier-selection/quotes", response_model=APIResponse)
+        @app.post("/carrier-selection/quotes", response_model=APIResponse)
         async def get_carrier_quotes(request: CarrierSelectionRequest):
             """Get quotes from all available carriers."""
             try:
@@ -280,7 +282,7 @@ class CarrierSelectionAgent(BaseAgentV2):
                 self.logger.error("Failed to get carrier quotes", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/carriers/{carrier_id}/performance", response_model=APIResponse)
+        @app.get("/carriers/{carrier_id}/performance", response_model=APIResponse)
         async def get_carrier_performance(carrier_id: str):
             """Get performance metrics for a carrier."""
             try:
@@ -296,7 +298,7 @@ class CarrierSelectionAgent(BaseAgentV2):
                 self.logger.error("Failed to get carrier performance", error=str(e), carrier_id=carrier_id)
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/tracking/{tracking_number}", response_model=APIResponse)
+        @app.get("/tracking/{tracking_number}", response_model=APIResponse)
         async def track_shipment(tracking_number: str, carrier_id: str):
             """Track a shipment."""
             try:
@@ -312,7 +314,7 @@ class CarrierSelectionAgent(BaseAgentV2):
                 self.logger.error("Failed to track shipment", error=str(e), tracking_number=tracking_number)
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/carriers", response_model=APIResponse)
+        @app.get("/carriers", response_model=APIResponse)
         async def list_carriers():
             """List all available carriers."""
             try:

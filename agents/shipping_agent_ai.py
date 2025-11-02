@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 """
 Shipping Agent with AI-Powered Carrier Selection - Multi-Agent E-Commerce System
 
