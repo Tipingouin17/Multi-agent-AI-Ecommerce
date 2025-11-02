@@ -23,7 +23,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 
-# app = FastAPI(title="Order Agent API", version="1.0.0") # Moved to module level for Uvicorn compatibility
+app = FastAPI(title="Order Agent API", version="1.0.0") # Initialized at module level for Uvicorn compatibility
 
 # Setup logging
 logging.basicConfig(
