@@ -443,7 +443,7 @@ async def get_inventory(
                 self.logger.error("Failed to get inventory", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @app.get("/inventory/{product_id}/availability", response_model=APIResponse)
+            @app.get("/inventory/{product_id}/availability", response_model=APIResponse)
         async def check_product_availability(product_id: str, quantity: int = 1):
             """Check product availability across all warehouses.
 
