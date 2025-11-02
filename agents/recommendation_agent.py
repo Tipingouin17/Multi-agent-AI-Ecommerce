@@ -261,7 +261,7 @@ class RecommendationService:
 # AGENT CLASS
 app = FastAPI()
 
-
+
     """
     Recommendation Agent with FastAPI for API exposure and database management via lifespan.
     """

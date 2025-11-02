@@ -122,7 +122,7 @@ class QualityIssue(BaseModel):
 
 app = FastAPI()
 
-
+
     """
     Quality Control Agent
     

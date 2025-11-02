@@ -155,7 +155,7 @@ class SeasonalPattern(BaseModel):
 
 app = FastAPI()
 
-
+
     """
     Demand Forecasting Agent provides AI-powered demand predictions including:
     - Machine learning-based demand forecasting

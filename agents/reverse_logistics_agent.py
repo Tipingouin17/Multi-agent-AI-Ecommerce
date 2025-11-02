@@ -173,7 +173,7 @@ class ReverseLogisticsMetrics(BaseModel):
 
 app = FastAPI()
 
-
+
     """
     Reverse Logistics Agent manages the complete reverse supply chain including:
     - Return authorization and processing

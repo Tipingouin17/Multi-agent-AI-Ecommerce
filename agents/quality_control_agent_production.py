@@ -254,7 +254,7 @@ class QualityControlRepository:
 
 app = FastAPI()
 
-
+
     """
     Quality Control Agent - Production Ready
     

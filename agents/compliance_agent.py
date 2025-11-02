@@ -376,7 +376,7 @@ class ComplianceService:
 # AGENT
 app = FastAPI()
 
-
+
     """Compliance Agent for managing GDPR, data retention, and regulatory reporting.
 
     This agent integrates with a FastAPI server for API endpoints and Kafka for message processing.

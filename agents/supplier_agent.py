@@ -334,7 +334,7 @@ class SupplierRepository:
 
 app = FastAPI()
 
-
+
     """
     Manages supplier relationships, products, and purchase orders through a FastAPI interface and Kafka messaging.
     """

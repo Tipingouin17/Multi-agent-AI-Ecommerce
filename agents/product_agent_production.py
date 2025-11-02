@@ -141,7 +141,7 @@ class ProductCategory(BaseModel):
 
 app = FastAPI()
 
-
+
     """
     Production-ready Product Agent with 100% database integration
     """
