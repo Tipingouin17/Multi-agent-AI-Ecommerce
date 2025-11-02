@@ -88,7 +88,8 @@ if project_root not in sys.path:
 
 from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.database import DatabaseManager
-from contextlib import asynccontextmanager, get_database_manager
+from contextlib import asynccontextmanager
+from shared.database import get_database_manager
 from shared.db_helpers import DatabaseHelper
 
 logger = structlog.get_logger(__name__)
