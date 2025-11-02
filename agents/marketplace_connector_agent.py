@@ -476,6 +476,7 @@ class MarketplaceService:
 app = FastAPI()
 
 
+class MarketplaceConnectorAgent(BaseAgentV2):
     """Marketplace Connector Agent for managing multi-marketplace integrations."""
     def __init__(self, agent_id: str, agent_type: str):
         """Initializes the MarketplaceConnectorAgent."""
