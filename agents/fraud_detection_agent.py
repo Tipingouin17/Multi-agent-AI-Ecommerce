@@ -548,7 +548,9 @@ async def lifespan_context(app: FastAPI):
     # Shutdown
     logger.info("FastAPI Lifespan Shutdown: Fraud Detection Agent")
     await fraud_agent.cleanup()
-    logger.info("Fraud Detection Agent API shutdown complete")    async def initialize(self):
+    logger.info("Fraud Detection Agent API shutdown complete")
+
+    async def initialize(self):
         """Initializes the agent with robust error handling."""
         await super().initialize()
         
