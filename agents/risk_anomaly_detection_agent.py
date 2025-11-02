@@ -224,7 +224,8 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         async def get_alerts_endpoint(status: AlertStatus = Query(AlertStatus.ACTIVE)):
             """Endpoint to retrieve risk alerts by status."""
             try:
-                results = await self.db_helper.fetch_all("risk_alerts", {"status": status.value})
+                async with self.db_manager.get_async_session() as session:
+                    results = await self.db_helper.get_all(session, RiskAlert, filters={"status": status.value})
                 return [RiskAlert(**r) for r in results]
             except Exception as e:
                 self.logger.error(f"Failed to retrieve alerts: {e}", exc_info=True)
@@ -407,7 +408,8 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         
         # 1. Load configurations from DB (or use default if DB not initialized)
         if self._db_initialized:
-            configs = await self.db_helper.fetch_all("anomaly_models")
+            async with self.db_manager.get_async_session() as session:
+                configs = await self.db_helper.get_all(session, AnomalyModelConfig)
             if not configs:
                 self.logger.warning("No anomaly model configs found in DB. Using default.")
                 configs = self._get_default_model_configs()
