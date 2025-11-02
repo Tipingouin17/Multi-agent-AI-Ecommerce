@@ -652,3 +652,18 @@ class MessageType(str, Enum):
     PRODUCT_CREATED = "product.created"
     PRODUCT_UPDATED = "product.updated"
     
+
+
+class AnomalyModelConfig(BaseModel):
+    """Configuration model for anomaly detection models."""
+    model_id: str
+    model_type: str
+    target_metrics: List[str]
+    sensitivity: float
+    training_window_hours: int
+    detection_window_minutes: int
+    threshold_multiplier: float
+    active: bool
+    last_trained: Optional[datetime] = None
+    performance_score: Optional[float] = None
+
