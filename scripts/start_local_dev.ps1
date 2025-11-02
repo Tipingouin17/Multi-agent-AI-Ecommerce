@@ -41,13 +41,13 @@ function Cleanup {
     # 2. Stop Agent Processes
     if (Test-Path $PIDsFile) {
         $PIDs = Get-Content $PIDsFile
-        foreach ($PID in $PIDs) {
+        foreach ($AgentPID in $PIDs) {
             try {
-                Stop-Process -Id $PID -Force -ErrorAction Stop
-                Write-Host "Stopped agent process with PID: $PID" -ForegroundColor Green
+                Stop-Process -Id $AgentPID -Force -ErrorAction Stop
+                Write-Host "Stopped process with PID: $AgentPID" -ForegroundColor Green
             }
             catch {
-                Write-Host "Agent process with PID $PID was not running or could not be stopped." -ForegroundColor DarkYellow
+                Write-Host "Process with PID $AgentPID was not running or could not be stopped." -ForegroundColor DarkYellow
             }
         }
         Remove-Item $PIDsFile
