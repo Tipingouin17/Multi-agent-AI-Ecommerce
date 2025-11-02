@@ -266,6 +266,7 @@ class PromotionService:
 app = FastAPI()
 
 
+class PromotionAgent(BaseAgentV2):
     """
     Promotion Agent with FastAPI for API exposure and database management via lifespan.
     """
