@@ -197,7 +197,13 @@ else {
     $StartCommand = "npm run dev"
     
     # Use cmd /c to run npm and redirect output to a log file
-    $Process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd .\ui\ && $StartCommand > '$UILogFile' 2>&1" -PassThru -NoNewWindow
+    # The issue is likely that $UILogFile is an absolute path, and cmd.exe cannot handle it correctly when combined with 'cd'.
+    # We will use the full path for the npm command, and the full path for the log file.
+    $UIPath = Join-Path $ProjectRoot "ui"
+    $StartCommand = "npm run dev"
+    
+    # Use cmd /c to run npm and redirect output to a log file
+    $Process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd /d `"$UIPath`" && $StartCommand > `"$UILogFile`" 2>&1" -PassThru -NoNewWindow
     
     $Process.Id | Out-File -Append $UIPIDFile
     Write-Host "  -> PID: $($Process.Id). Log: $UILogFile" -ForegroundColor DarkGreen
