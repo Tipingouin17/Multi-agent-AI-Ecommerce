@@ -269,7 +269,7 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         try:
             self.db_manager = get_database_manager()
             self.db_helper = DatabaseHelper(self.db_manager)
-            await self.db_manager.connect()
+            await self.db_manager.initialize()
             self._db_initialized = True
             self.logger.info("Database connection established.")
         except Exception as e:
@@ -298,7 +298,9 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         This method is required by BaseAgentV2.
         """
         self.logger.info("Starting Kafka message processing loop...")
-        await super().process_messages()
+        # The message processing loop is started in the base class's 'start' method
+        # This method should contain the agent-specific logic, but since the base class
+        # handles the loop, we can leave this method empty or remove the super call.
 
     async def cleanup(self):
         """Performs cleanup tasks."""
