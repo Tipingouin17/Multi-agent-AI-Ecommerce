@@ -130,10 +130,10 @@ class InventoryRepository(BaseRepository):
         from shared.models import InventoryDB
         super().__init__(db_manager, InventoryDB)
         
-        # FastAPI app for REST API
-        self.app = FastAPI(title="Inventory Agent API")
+        # FastAPI app for REST API (Moved to module level for Uvicorn compatibility)
+        # self.app = FastAPI(title="Inventory Agent API")
         
-        # Add CORS middleware for dashboard integration
+        # Add CORS middleware for dashboard integration (Handled at module level)
     
     async def find_by_product(self, product_id: str) -> List[Inventory]:
         """Find inventory records by product ID.
@@ -282,19 +282,17 @@ class InventoryAgent(BaseAgentV2):
         """
         super().__init__(agent_id="inventory_agent")
         self.repository: Optional[InventoryRepository] = None
-        self.movement_repository: Optional[StockMovementRepository] = None
-        self.app = FastAPI(title="Inventory Agent API", version="1.0.0", lifespan=self.lifespan_context)
         
-        # Add CORS middleware for dashboard integration
-        
-        # Add CORS middleware
-        self.app.add_middleware(
+        # Apply CORS middleware to the module-level app
+        app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],  # In production, specify exact origins
+            allow_origins=["*"],  # Allows all origins
             allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
+            allow_methods=["*"],  # Allows all methods
+            allow_headers=["*"],  # Allows all headers
         )
+        self.movement_repository: Optional[StockMovementRepository] = None
+        self.app = app # Use module-level app
         self.setup_routes()
         
         # In-memory reservations (in production, this would be in Redis or database)
@@ -413,8 +411,8 @@ class InventoryAgent(BaseAgentV2):
         """Setup FastAPI routes for the Inventory Agent API.
         """
         
-        @self.app.get("/inventory", response_model=APIResponse)
-        async def get_inventory(
+@app.get("/inventory", response_model=APIResponse)
+async def get_inventory(
             product_id: Optional[str] = None,
             warehouse_id: Optional[str] = None,
             page: int = 1,
@@ -467,8 +465,8 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error(f"Failed to check availability for product {product_id}", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/inventory/reserve", response_model=APIResponse)
-        async def reserve_stock_api(request: StockReservationRequest):
+@app.post("/inventory/reserve", response_model=APIResponse)
+async def reserve_stock_api(request: StockReservationRequest):
             """Reserve stock for an order.
 
             Args:
@@ -493,8 +491,8 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error("Failed to reserve stock", error=str(e), request=request.dict())
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/inventory/release/{reservation_id}", response_model=APIResponse)
-        async def release_stock_api(reservation_id: str):
+@app.post("/inventory/release/{reservation_id}", response_model=APIResponse)
+async def release_stock_api(reservation_id: str):
             """Release a stock reservation.
 
             Args:
@@ -516,8 +514,8 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error("Failed to release stock reservation", error=str(e), reservation_id=reservation_id)
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/inventory/move", response_model=APIResponse)
-        async def record_stock_movement_api(request: StockMovementRequest):
+@app.post("/inventory/move", response_model=APIResponse)
+async def record_stock_movement_api(request: StockMovementRequest):
             """Record a stock movement (inbound/outbound/transfer).
 
             Args:
@@ -540,8 +538,8 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error("Failed to record stock movement", error=str(e), request=request.dict())
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/inventory/{product_id}/{warehouse_id}", response_model=APIResponse)
-        async def update_inventory_item_api(
+@app.put("/inventory/{product_id}/{warehouse_id}", response_model=APIResponse)
+async def update_inventory_item_api(
             product_id: str,
             warehouse_id: str,
             request: InventoryUpdateRequest
@@ -572,8 +570,8 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error(f"Failed to update inventory item {product_id}/{warehouse_id}", error=str(e), request=request.dict())
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/health", response_model=Dict[str, str])
-        async def health_check():
+@app.get("/health", response_model=Dict[str, str])
+async def health_check():
             """Health check endpoint.
 
             Returns:
@@ -585,8 +583,8 @@ class InventoryAgent(BaseAgentV2):
         # ANALYTICS ENDPOINTS
         # =====================================================
 
-        @self.app.get("/analytics/low-stock", response_model=APIResponse)
-        async def get_low_stock_alerts():
+@app.get("/analytics/low-stock", response_model=APIResponse)
+async def get_low_stock_alerts():
             """Get products that are below reorder point.
             
             Returns:
@@ -626,8 +624,8 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error("Failed to get low stock alerts", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/analytics/inventory-value", response_model=APIResponse)
-        async def get_inventory_value():
+@app.get("/analytics/inventory-value", response_model=APIResponse)
+async def get_inventory_value():
             """Calculate total inventory value across all warehouses.
             
             Returns:
@@ -689,8 +687,8 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error("Failed to calculate inventory value", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/analytics/stock-movements", response_model=APIResponse)
-        async def get_stock_movement_analytics(
+@app.get("/analytics/stock-movements", response_model=APIResponse)
+async def get_stock_movement_analytics(
             days: int = 30,
             movement_type: Optional[str] = None
         ):
@@ -774,8 +772,8 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error("Failed to get stock movement analytics", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/", response_model=APIResponse)
-        async def root():
+@app.get("/", response_model=APIResponse)
+async def root():
             """Root endpoint providing basic agent information.
 
             Returns:
@@ -1150,6 +1148,19 @@ class InventoryAgent(BaseAgentV2):
             self.logger.warning("No handler for message type", message_type=message.message_type.value)
 
 
+# Module-level agent and app instantiation
+AGENT = InventoryAgent()
+app = FastAPI(title="Inventory Agent API", version="1.0.0", lifespan=AGENT.lifespan_context)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 if __name__ == "__main__":
     import uvicorn
     import contextlib # Add contextlib import
@@ -1166,10 +1177,9 @@ if __name__ == "__main__":
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
     
-    # Initialize agent
-    agent = InventoryAgent()
+    # Initialize agent (already done above)
     
     port = int(os.getenv("INVENTORY_AGENT_PORT", 8002))
     logger.info(f"Starting Inventory Agent on port {port}")
-    uvicorn.run(agent.app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
 

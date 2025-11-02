@@ -20,6 +20,9 @@ load_dotenv()
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from starlette.middleware.cors import CORSMiddleware
+
+# app = FastAPI(title="Order Agent API", version="1.0.0") # Moved to module level for Uvicorn compatibility
 
 # Setup logging
 logging.basicConfig(
@@ -77,6 +80,15 @@ class OrderAgent(BaseAgent):
         FastAPI application, and routes.
         """
         super().__init__(agent_id="order_agent")
+
+        # Apply CORS middleware to the module-level app
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # Allows all origins
+            allow_credentials=True,
+            allow_methods=["*"],  # Allows all methods
+            allow_headers=["*"],  # Allows all headers
+        )
         
         logger.info("Order Agent initialized")
         
@@ -86,10 +98,7 @@ class OrderAgent(BaseAgent):
         self.db_helper = DatabaseHelper(self.db_manager)
         self._db_initialized = False
         
-        # FastAPI app
-        self.app = FastAPI(title="Order Agent API", lifespan=self.lifespan_context)
-        
-        # Add CORS middleware for dashboard integration
+        # The module-level 'app' is used for routes, and the lifespan context is handled separately.
         
         self._setup_routes()
 
@@ -125,7 +134,7 @@ class OrderAgent(BaseAgent):
     def _setup_routes(self):
         """Setup FastAPI routes for the Order Agent API."""
         
-        @self.app.get("/health", summary="Health Check")
+        @app.get("/health", summary="Health Check")
         async def health_check():
             """Returns the health status of the Order Agent and its database connection."""
             return {
@@ -134,12 +143,12 @@ class OrderAgent(BaseAgent):
                 "database_connected": self._db_initialized
             }
         
-        @self.app.get("/", summary="Root Endpoint")
+        @app.get("/", summary="Root Endpoint")
         async def root():
             """Root endpoint for the Order Agent API."""
             return {"message": "Order Agent API is running"}
 
-        @self.app.post("/orders", response_model=OrderResponse, status_code=201, summary="Create New Order")
+        @app.post("/orders", response_model=OrderResponse, status_code=201, summary="Create New Order")
         async def create_order_endpoint(order: OrderRequest):
             """Creates a new order with full database persistence and publishes an ORDER_CREATED event."""
             if not self._db_initialized:
@@ -157,7 +166,7 @@ class OrderAgent(BaseAgent):
                 logger.error(f"Error creating order via API: {e}", exc_info=True)
                 raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
         
-        @self.app.get("/orders", response_model=List[OrderResponse], summary="Get All Orders")
+        @app.get("/orders", response_model=List[OrderResponse], summary="Get All Orders")
         async def get_orders_endpoint(skip: int = 0, limit: int = 100, status: Optional[str] = None):
             """Retrieves a list of orders with optional pagination and status filtering."""
             if not self._db_initialized:
@@ -171,7 +180,7 @@ class OrderAgent(BaseAgent):
                 logger.error(f"Error getting orders via API: {e}", exc_info=True)
                 raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
         
-        @self.app.get("/orders/{order_id}", response_model=OrderResponse, summary="Get Order by ID")
+        @app.get("/orders/{order_id}", response_model=OrderResponse, summary="Get Order by ID")
         async def get_order_endpoint(order_id: UUID):
             """Retrieves a single order by its unique ID."""
             if not self._db_initialized:
@@ -188,7 +197,7 @@ class OrderAgent(BaseAgent):
                 logger.error(f"Error getting order {order_id} via API: {e}", exc_info=True)
                 raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
         
-        @self.app.patch("/orders/{order_id}/status", response_model=OrderResponse, summary="Update Order Status")
+        @app.patch("/orders/{order_id}/status", response_model=OrderResponse, summary="Update Order Status")
         async def update_order_status_endpoint(order_id: UUID, status: OrderStatus):
             """Updates the status of an existing order and publishes an ORDER_STATUS_UPDATED event."""
             if not self._db_initialized:
@@ -210,7 +219,7 @@ class OrderAgent(BaseAgent):
                 logger.error(f"Error updating order status for {order_id} via API: {e}", exc_info=True)
                 raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
         
-        @self.app.delete("/orders/{order_id}", summary="Cancel Order")
+        @app.delete("/orders/{order_id}", summary="Cancel Order")
         async def cancel_order_endpoint(order_id: UUID, reason: str):
             """Cancels an order by ID and publishes an ORDER_CANCELLED event."""
             if not self._db_initialized:
@@ -583,6 +592,7 @@ class OrderAgent(BaseAgent):
     async def initialize(self):
         """Initialize agent-specific components"""
         await super().initialize()
+        await self._init_db_connection() # Manually initialize DB connection
         logger.info(f"{self.agent_name} initialized successfully")
     
     async def cleanup(self):
@@ -639,5 +649,11 @@ if __name__ == "__main__":
     port = int(os.getenv("ORDER_AGENT_PORT", 8000))
     host = os.getenv("ORDER_AGENT_HOST", "0.0.0.0")
     logger.info(f"Starting Order Agent API on {host}:{port}")
-    uvicorn.run(agent.app, host=host, port=port)
-
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allows all origins
+        allow_credentials=True,
+        allow_methods=["*"],  # Allows all methods
+        allow_headers=["*"],  # Allows all headers
+    )
+    uvicorn.run(app, host=host, port=port)
