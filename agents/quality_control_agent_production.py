@@ -255,6 +255,7 @@ class QualityControlRepository:
 app = FastAPI()
 
 
+class QualityControlAgent(BaseAgentV2):
     """
     Quality Control Agent - Production Ready
     
@@ -266,7 +267,6 @@ app = FastAPI()
     - Generate quality reports
     - Alert on quality issues
     """
-    
     def __init__(self, agent_id: str = "QualityControlAgent"):
         super().__init__(agent_id=agent_id)
         self.agent_name = "Quality Control Agent"
