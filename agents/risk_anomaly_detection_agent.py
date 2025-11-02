@@ -638,7 +638,11 @@ app.add_middleware(
 
 # Initialize database manager globally (must be done before agent initialization)
 from shared.database import initialize_database_manager
-initialize_database_manager()
+from shared.models import DatabaseConfig
+
+# Initialize database manager globally (must be done before agent initialization)
+db_config = DatabaseConfig()
+initialize_database_manager(db_config)
 
 # Initialize agent instance and setup routes
 risk_agent = RiskAnomalyDetectionAgent()
