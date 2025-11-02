@@ -502,10 +502,13 @@ class FraudDetectionService:
 app = FastAPI()
 
 
+class FraudDetectionAgent(BaseAgentV2):
     """Fraud Detection Agent for the Multi-Agent E-Commerce System.
 
     This agent provides ML-based fraud detection, risk scoring, and anomaly detection
-    for transactions, orders, and user behavior    def __init__(self, agent_id: str = "fraud_detection_agent", **kwargs):
+    for transactions, orders, and user behavior.
+    """
+    def __init__(self, agent_id: str = "fraud_detection_agent", **kwargs):
         """Initializes the FraudDetectionAgent."""
         super().__init__(agent_id=agent_id, **kwargs)
         # Initialize database manager with fallback
