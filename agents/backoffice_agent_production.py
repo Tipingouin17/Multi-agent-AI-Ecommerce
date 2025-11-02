@@ -32,7 +32,7 @@ from shared.db_helpers import DatabaseHelper
 logger = structlog.get_logger(__name__)
 
 # Create module-level FastAPI app
-# app = FastAPI(title="Backoffice Agent Production API") # Moved into lifespan block
+app = FastAPI(title="Backoffice Agent Production API")
 
 
 # =====================================================
@@ -373,8 +373,7 @@ class BackofficeAgent(BaseAgentV2):
 # FASTAPI APP
 # =====================================================
 
-# FastAPI app moved to __init__ method as self.app
-
+# FastAPI app is module-level for uvicorn to load.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
