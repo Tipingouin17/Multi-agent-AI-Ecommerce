@@ -703,7 +703,7 @@ Select the best carrier and explain your reasoning. Respond in JSON format:
         @app.get("/track_shipment", summary="Track a shipment", tags=["Transportation"])
         async def track_shipment_endpoint(tracking_number: str, carrier_code: str):
             """Endpoint to track a shipment."""
-         is_initialized:
+            if not transport_agent.is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
             return transport_agent.track_shipment(tracking_number, carrier_code)
 
