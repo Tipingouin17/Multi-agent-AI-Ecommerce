@@ -682,7 +682,7 @@ Select the best carrier and explain your reasoning. Respond in JSON format:
         @app.get("/health", summary="Health Check", tags=["Monitoring"])
         async def health_check():
             """Endpoint to check the health of the agent and its connections."""
-            if not transport_agent.is_initialized:
+        .is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
             return {"status": "healthy", "db_connected": transport_agent.db_conn is not None}
 
@@ -703,14 +703,14 @@ Select the best carrier and explain your reasoning. Respond in JSON format:
         @app.get("/track_shipment", summary="Track a shipment", tags=["Transportation"])
         async def track_shipment_endpoint(tracking_number: str, carrier_code: str):
             """Endpoint to track a shipment."""
-            if not transport_agent.is_initialized:
+         is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
             return transport_agent.track_shipment(tracking_number, carrier_code)
 
         @app.post("/optimize_route", summary="Optimize a delivery route", tags=["Transportation"])
         async def optimize_route_endpoint(shipment_details: Dict = Body(..., description="Shipment details")):
             """Endpoint to optimize a delivery route."""
-            if not transport_agent.is_initialized:
+        .is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
             return transport_agent.optimize_route(shipment_details)
 
@@ -1072,7 +1072,7 @@ if __name__ == '__main__':
     )
     
     # Initialize agent instance for the main block
-    global transport_agent
+
     transport_agent = TransportManagementAgent()
     
     # Get port from environment variables
