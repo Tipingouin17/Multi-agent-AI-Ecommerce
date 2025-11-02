@@ -602,6 +602,9 @@ AGENT_ID = os.getenv("AGENT_ID", "customer_agent_001")
 AGENT_TYPE = "customer_agent"
 customer_agent = CustomerAgent(agent_id=AGENT_ID, agent_type=AGENT_TYPE)
 
+# Create module-level FastAPI app
+app = FastAPI(title="Customer Agent API", lifespan=customer_agent.lifespan_context)
+
 # Apply CORS middleware to the module-level app
 app.add_middleware(
     CORSMiddleware,
@@ -610,9 +613,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Create module-level FastAPI app (Already done below)
-app = FastAPI(title="Customer Agent API", lifespan=customer_agent.lifespan_context)
 
 # The CORS middleware is now applied below the agent instantiation
 # to ensure the agent object is fully initialized.
