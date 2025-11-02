@@ -682,7 +682,7 @@ Select the best carrier and explain your reasoning. Respond in JSON format:
         @app.get("/health", summary="Health Check", tags=["Monitoring"])
         async def health_check():
             """Endpoint to check the health of the agent and its connections."""
-        .is_initialized:
+            if not transport_agent.is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
             return {"status": "healthy", "db_connected": transport_agent.db_conn is not None}
 
@@ -710,7 +710,7 @@ Select the best carrier and explain your reasoning. Respond in JSON format:
         @app.post("/optimize_route", summary="Optimize a delivery route", tags=["Transportation"])
         async def optimize_route_endpoint(shipment_details: Dict = Body(..., description="Shipment details")):
             """Endpoint to optimize a delivery route."""
-        .is_initialized:
+            if not transport_agent.is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
             return transport_agent.optimize_route(shipment_details)
 
