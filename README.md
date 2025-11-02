@@ -89,8 +89,11 @@ A comprehensive AI-powered multi-agent system for warehouse and marketplace inte
 
 3. **Start the system**
    ```bash
-   # Use the new local development script
-   ./scripts/start_local_dev.sh
+	   # Use the new local development script
+	   # For Linux/macOS:
+	   ./scripts/start_local_dev.sh
+	   # For Windows (PowerShell):
+	   .\scripts\start_local_dev.ps1
    ```
 
 
@@ -181,7 +184,8 @@ python -m multi_agent_ecommerce.cli start
 
 The `./scripts` directory contains utilities for local development and deployment:
 
-- `./scripts/start_local_dev.sh`: Starts all agents, Kafka, and PostgreSQL locally.
+	- `./scripts/start_local_dev.sh`: Starts all agents, Kafka, and PostgreSQL locally (Linux/macOS).
+	- `./scripts/start_local_dev.ps1`: Starts all agents, Kafka, and PostgreSQL locally (Windows/PowerShell).
 - `./scripts/deploy_to_k8s.sh`: Builds and deploys the system to a Kubernetes cluster.
 
 ### Production Validation
