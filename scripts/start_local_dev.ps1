@@ -31,7 +31,8 @@ function Cleanup {
     # 1. Stop Docker Compose services
     Write-Host "Stopping Docker Compose services..." -ForegroundColor White
     try {
-        docker-compose down --remove-orphans
+        # Use -f to specify the correct path
+        docker-compose -f .\infrastructure\docker-compose.yml down --remove-orphans
         Write-Host "Docker Compose services stopped." -ForegroundColor Green
     }
     catch {
@@ -118,10 +119,10 @@ if (-not (Get-Command docker-compose -ErrorAction SilentlyContinue)) {
 
 Write-Host "Starting PostgreSQL, Kafka, and Redis via Docker Compose..." -ForegroundColor White
 
-# Use 'up -d' to start services in detached mode
-docker-compose up -d postgres kafka redis
+# Use -f to specify the correct path and 'up -d' to start services in detached mode
+docker-compose -f .\infrastructure\docker-compose.yml up -d postgres kafka redis
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: Docker Compose failed to start services. Check Docker status and docker-compose.yml." -ForegroundColor Red
+    Write-Host "ERROR: Docker Compose failed to start services. Check Docker status and .\infrastructure\docker-compose.yml." -ForegroundColor Red
     exit 1
 }
 
@@ -130,14 +131,15 @@ $MaxRetries = 10
 $RetryDelay = 5
 Write-Host "Waiting for infrastructure containers to be running..." -ForegroundColor Yellow
 for ($i = 1; $i -le $MaxRetries; $i++) {
-    $RunningContainers = docker-compose ps -q | Measure-Object | Select-Object -ExpandProperty Count
+    # Use -f to specify the correct path
+    $RunningContainers = docker-compose -f .\infrastructure\docker-compose.yml ps -q | Measure-Object | Select-Object -ExpandProperty Count
     if ($RunningContainers -ge 3) { # Assuming 3 services: postgres, kafka, redis
         Write-Host "Infrastructure services are running after $($i * $RetryDelay) seconds." -ForegroundColor Green
         break
     }
     if ($i -eq $MaxRetries) {
         Write-Host "ERROR: Infrastructure services did not start within the timeout." -ForegroundColor Red
-        docker-compose ps
+        docker-compose -f .\infrastructure\docker-compose.yml ps
         exit 1
     }
     Start-Sleep -Seconds $RetryDelay
