@@ -40,7 +40,7 @@ if project_root not in sys.path:
 
 # Now try the import
 from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
-from shared.models import APIResponse
+from shared.models import APIResponse, AnomalyModelConfig
 from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
 from shared.openai_helper import chat_completion # Assuming this is needed
