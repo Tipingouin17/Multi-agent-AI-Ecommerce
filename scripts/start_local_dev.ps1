@@ -58,7 +58,7 @@ function Cleanup {
         # Fallback: Find processes listening on the ports and kill them
         for ($i = 0; $i -lt $AgentModules.Count; $i++) {
             $Port = $StartPort + $i
-            $Process = Get-NetTCPConnection -LocalPort $Port -State Listen | Select-Object -ExpandProperty OwningProcess -Unique
+            $Process = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
             if ($Process) {
                 try {
                     Stop-Process -Id $Process -Force -ErrorAction Stop
