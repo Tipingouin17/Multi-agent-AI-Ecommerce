@@ -56,7 +56,7 @@ except ImportError as e:
 
 app = FastAPI()
 
-
+
     """
     Production-ready Warehouse Agent with capacity management and full database integration.
 
