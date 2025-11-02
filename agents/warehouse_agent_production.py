@@ -57,6 +57,7 @@ except ImportError as e:
 app = FastAPI()
 
 
+class WarehouseAgent(BaseAgentV2):
     """
     Production-ready Warehouse Agent with capacity management and full database integration.
 
@@ -65,7 +66,6 @@ app = FastAPI()
     It exposes a FastAPI interface for external communication and integrates with a database
     for persistent storage of warehouse-related data.
     """
-
     def __init__(self):
         """
         Initializes the WarehouseAgent, setting up its ID, type, database connection,
