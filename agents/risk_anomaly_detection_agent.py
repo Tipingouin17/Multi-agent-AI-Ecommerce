@@ -213,7 +213,7 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         async def create_alert_endpoint(alert: RiskAlert):
             """Endpoint to manually create a new risk alert."""
             try:
-                await self.db_helper.insert_one("risk_alerts", alert.dict())
+                await self.db_helper.create("risk_alerts", alert.dict())
                 self.logger.warning("Manual Alert Created", alert_id=alert.alert_id, title=alert.title)
                 return alert
             except Exception as e:
@@ -253,7 +253,7 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         async def submit_assessment_endpoint(assessment: RiskAssessment):
             """Endpoint to submit a new risk assessment."""
             try:
-                await self.db_helper.insert_one("risk_assessments", assessment.dict())
+                await self.db_helper.create("risk_assessments", assessment.dict())
                 self.logger.info("New Risk Assessment Submitted", assessment_id=assessment.assessment_id)
                 return assessment
             except Exception as e:
@@ -355,7 +355,7 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
             
             # 1. Store indicator
             if self._db_initialized:
-                await self.db_helper.insert_one("market_indicators", indicator.dict())
+                await self.db_helper.create("market_indicators", indicator.dict())
             
             # 2. Assess impact using AI
             impact_assessment = await self._assess_market_impact_ai(indicator)
@@ -463,7 +463,7 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
     async def _store_metrics(self, metrics: SystemMetrics):
         """Stores metrics in the database and in memory for training."""
         if self._db_initialized:
-            await self.db_helper.insert_one("system_metrics", metrics.dict())
+            await self.db_helper.create("system_metrics", metrics.dict())
         
         # Store in memory for active models
         for model_id, config in self.model_configs.items():
@@ -566,7 +566,7 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         )
         
         if self._db_initialized:
-            await self.db_helper.insert_one("risk_alerts", alert.dict())
+            await self.db_helper.create("risk_alerts", alert.dict())
         
         # Send alert message to Monitoring Agent
         await self.send_message(
