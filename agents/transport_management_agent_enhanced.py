@@ -682,37 +682,37 @@ Select the best carrier and explain your reasoning. Respond in JSON format:
         @app.get("/health", summary="Health Check", tags=["Monitoring"])
         async def health_check():
             """Endpoint to check the health of the agent and its connections."""
-            if not transport_agent.is_initialized:
+            if not self.is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
-            return {"status": "healthy", "db_connected": transport_agent.db_conn is not None}
+            return {"status": "healthy", "db_connected": self.db_conn is not None}
 
         @app.post("/select_carrier", summary="Select the best carrier for a shipment", tags=["Transportation"])
         async def select_carrier_endpoint(shipment_details: Dict = Body(..., description="Shipment details")):
             """Endpoint to select the best carrier using AI."""
-            if not transport_agent.is_initialized:
+            if not self.is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
-            return transport_agent.select_carrier(shipment_details)
+            return self.select_carrier(shipment_details)
 
         @app.post("/generate_label", summary="Generate shipping label", tags=["Transportation"])
         async def generate_label_endpoint(shipment_id: int = Body(..., embed=True), carrier_code: str = Body(..., embed=True)):
             """Endpoint to generate a shipping label."""
-            if not transport_agent.is_initialized:
+            if not self.is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
-            return transport_agent.generate_shipping_label(shipment_id, carrier_code)
+            return self.generate_shipping_label(shipment_id, carrier_code)
 
         @app.get("/track_shipment", summary="Track a shipment", tags=["Transportation"])
         async def track_shipment_endpoint(tracking_number: str, carrier_code: str):
             """Endpoint to track a shipment."""
-            if not transport_agent.is_initialized:
+            if not self.is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
-            return transport_agent.track_shipment(tracking_number, carrier_code)
+            return self.track_shipment(tracking_number, carrier_code)
 
         @app.post("/optimize_route", summary="Optimize a delivery route", tags=["Transportation"])
         async def optimize_route_endpoint(shipment_details: Dict = Body(..., description="Shipment details")):
             """Endpoint to optimize a delivery route."""
-            if not transport_agent.is_initialized:
+            if not self.is_initialized:
                 raise HTTPException(status_code=503, detail="Agent not initialized")
-            return transport_agent.optimize_route(shipment_details)
+            return self.optimize_route(shipment_details)
 
     # --- Kafka Processing (Can be run in a separate thread/process) ---
     async def run_kafka_consumer(self):
