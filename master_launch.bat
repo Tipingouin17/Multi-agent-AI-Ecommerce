@@ -3,8 +3,35 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 
 REM ============================================================================
 REM MASTER LAUNCH SCRIPT - Multi-Agent E-Commerce Platform (Windows)
-REM Enable verbose output by setting VERBOSE=1 before running
 REM ============================================================================
+
+REM Parse command-line arguments
+set VERBOSE=0
+
+:parse_args
+if "%~1"=="" goto args_done
+if /i "%~1"=="-v" set VERBOSE=1
+if /i "%~1"=="--verbose" set VERBOSE=1
+if /i "%~1"=="-h" goto show_help
+if /i "%~1"=="--help" goto show_help
+if /i "%~1"=="/?" goto show_help
+shift
+goto parse_args
+
+:show_help
+echo Usage: %~nx0 [-v^|--verbose] [-h^|--help]
+echo.
+echo Options:
+echo   -v, --verbose    Enable verbose output with detailed command tracing
+echo   -h, --help, /?   Show this help message
+echo.
+echo Examples:
+echo   %~nx0                # Normal mode
+echo   %~nx0 --verbose      # Verbose mode with detailed output
+echo   %~nx0 -v             # Verbose mode (short form)
+exit /b 0
+
+:args_done
 
 if "%VERBOSE%"=="1" echo on
 
@@ -387,8 +414,8 @@ echo Management:
 echo   Stop agents:  stop_all_agents.bat
 echo   Check health: python check_all_26_agents_health.py
 echo.
-echo TIP: Run with VERBOSE=1 for even more detailed output
-echo      Example: set VERBOSE=1 ^&^& master_launch.bat
+echo TIP: Run with -v or --verbose for even more detailed output
+echo      Example: master_launch.bat --verbose
 echo.
 echo ================================================================================
 echo.

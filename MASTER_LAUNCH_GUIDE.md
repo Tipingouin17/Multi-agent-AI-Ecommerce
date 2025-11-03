@@ -58,25 +58,44 @@ master_launch.bat
 
 ## Verbose Mode
 
-For even more detailed output, you can run the master launch script in **verbose mode**.
+For even more detailed output, you can run the master launch script in **verbose mode** using the `-v` or `--verbose` parameter.
 
 ### Linux/macOS
 
 ```bash
-VERBOSE=1 ./master_launch.sh
+# Long form
+./master_launch.sh --verbose
+
+# Short form
+./master_launch.sh -v
 ```
 
 ### Windows
 
 ```batch
-set VERBOSE=1
-master_launch.bat
+REM Long form
+master_launch.bat --verbose
+
+REM Short form
+master_launch.bat -v
 ```
 
 Verbose mode will:
-- Print every command as it is executed (`set -x`)
+- Print every command as it is executed
 - Show detailed error messages in the console
 - Provide real-time feedback on every step of the startup process
+
+## Help Message
+
+You can also use the `-h` or `--help` parameter to show the help message:
+
+```bash
+./master_launch.sh --help
+```
+
+```batch
+master_launch.bat --help
+```
 
 ---
 

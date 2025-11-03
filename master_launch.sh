@@ -11,9 +11,33 @@
 # - Ensures 100% visibility into system state
 #
 
-# Enable error handling (verbose mode available via VERBOSE=1 environment variable)
-if [ "${VERBOSE:-0}" = "1" ]; then
-    set -x  # Print commands as they execute (only if VERBOSE=1)
+# Parse command-line arguments
+VERBOSE=0
+for arg in "$@"; do
+    case $arg in
+        -v|--verbose)
+            VERBOSE=1
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [-v|--verbose] [-h|--help]"
+            echo ""
+            echo "Options:"
+            echo "  -v, --verbose    Enable verbose output with detailed command tracing"
+            echo "  -h, --help       Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  $0                # Normal mode"
+            echo "  $0 --verbose      # Verbose mode with detailed output"
+            echo "  $0 -v             # Verbose mode (short form)"
+            exit 0
+            ;;
+    esac
+done
+
+# Enable error handling
+if [ "$VERBOSE" = "1" ]; then
+    set -x  # Print commands as they execute (only if verbose)
 fi
 set -e  # Exit on error
 set -o pipefail  # Catch errors in pipes
