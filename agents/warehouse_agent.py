@@ -541,7 +541,7 @@ if __name__ == "__main__":
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
     
-    port = int(os.getenv("PORT", 8013))
+    port = int(os.getenv("PORT", 8016))
     logger.info(f"Starting Warehouse Agent on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 

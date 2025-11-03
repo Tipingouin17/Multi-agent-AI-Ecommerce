@@ -1179,7 +1179,8 @@ async def startup_event():
     """Initialize the Customer Communication Agent on startup."""
     global customer_communication_agent
     customer_communication_agent = CustomerCommunicationAgent()
-    await customer_communication_agent.start()
+    # Start initialization in background to not block HTTP server
+    asyncio.create_task(customer_communication_agent.start())
 
 
 @app.on_event("shutdown")

@@ -958,8 +958,8 @@ agent = CustomerAgent(agent_id="customer_agent")
 
 if __name__ == "__main__":
     import uvicorn
-    # Use environment variable for port, default to 8008
-    port = int(os.getenv("CUSTOMER_AGENT_PORT", 8008))
+    # Use environment variable for port, default to 8007
+    port = int(os.getenv("CUSTOMER_AGENT_PORT", 8007))
     host = os.getenv("CUSTOMER_AGENT_HOST", "0.0.0.0")
     logger.info(f"Starting Customer Agent API on {host}:{port}")
     uvicorn.run(app, host=host, port=port)
