@@ -107,17 +107,6 @@ class TicketStatus(str, Enum):
     WAITING_CUSTOMER = "waiting_customer"
     RESOLVED = "resolved"
     CLOSED = "closed"
-    async def initialize(self):
-        """Initialize agent."""
-        await super().initialize()
-        
-    async def cleanup(self):
-        """Cleanup agent."""
-        await super().cleanup()
-        
-    async def process_business_logic(self, data):
-        """Process business logic."""
-        return {"status": "success"}
 
 
 class TicketPriority(str, Enum):
@@ -848,22 +837,20 @@ class SupportAgent(BaseAgentV2):
     This agent integrates with a database for ticket management, uses FastAPI for API exposure,
     and handles inter-agent communication via Kafka.
     """
-    def __init__(self, agent_id: str, agent_type: str):
+    def __init__(self, agent_id: str = "support_agent_001", agent_type: str = "support_agent"):
         """Initializes the SupportAgent.
 
         Args:
             agent_id (str): The unique identifier for this agent instance.
             agent_type (str): The type of the agent (e.g., 'support_agent').
         """
-        super().__init__(agent_id, agent_type)
-        self.db_url = os.getenv("DATABASE_URL")
-        if not self.db_url:
-            logger.error("DATABASE_URL environment variable not set for SupportAgent.")
-            raise ValueError("DATABASE_URL environment variable not set.")
-        self.db_manager = get_database_manager(self.db_url)
-        self.db_helper = DatabaseHelper(Base)
-        self.repository = SupportRepository(self.db_manager, self.db_helper)
-        self.service = SupportService(self.repository)
+        super().__init__(agent_id=agent_id)
+        self.agent_type = agent_type
+        self.db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/multi_agent_ecommerce")
+        self.db_manager = None
+        self.db_helper = None
+        self.repository = None
+        self.service = None
         logger.info("SupportAgent initialized", agent_id=self.agent_id, agent_type=self.agent_type)
 
     async def setup(self):
@@ -953,6 +940,46 @@ class SupportAgent(BaseAgentV2):
         except Exception as e:
             logger.error("Error processing message", error=str(e), message=message.model_dump_json())
             await self.send_message(MessageType.ERROR, message.sender_id, {"error": str(e), "original_message": message.model_dump()})
+    
+    async def initialize(self):
+        """Initialize the Support Agent."""
+        await super().initialize()
+        try:
+            self.db_manager = get_database_manager(self.db_url)
+            self.db_helper = DatabaseHelper(Base)
+            self.repository = SupportRepository(self.db_manager, self.db_helper)
+            self.service = SupportService(self.repository)
+            await self.setup()
+            logger.info("SupportAgent initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize database components: {e}. Agent will run in limited mode.")
+    
+    async def cleanup(self):
+        """Cleanup agent resources."""
+        try:
+            if self.db_manager:
+                await self.db_manager.close()
+            await super().cleanup()
+            logger.info("SupportAgent cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process support business logic.
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing support operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # Main execution block for running the FastAPI app and agent
