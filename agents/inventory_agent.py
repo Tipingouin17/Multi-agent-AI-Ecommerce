@@ -380,6 +380,71 @@ class InventoryAgent(BaseAgentV2):
         await asyncio.sleep(1)
         return {"status": "ok", "message": "Business logic loop executed."}
     
+    async def _get_inventory(
+        self,
+        product_id: Optional[str] = None,
+        warehouse_id: Optional[str] = None,
+        page: int = 1,
+        per_page: int = 100
+    ) -> Dict[str, Any]:
+        """Get inventory records with optional filtering and pagination.
+        
+        Args:
+            product_id: Optional product ID filter
+            warehouse_id: Optional warehouse ID filter
+            page: Page number (1-indexed)
+            per_page: Items per page
+            
+        Returns:
+            Dictionary containing inventory items and pagination info
+        """
+        try:
+            async with self.db_manager.get_session() as session:
+                # Build query
+                from shared.models import InventoryDB
+                query = select(InventoryDB)
+                
+                # Apply filters
+                if product_id:
+                    query = query.where(InventoryDB.product_id == product_id)
+                if warehouse_id:
+                    query = query.where(InventoryDB.warehouse_id == warehouse_id)
+                
+                # Get total count
+                from sqlalchemy import func
+                count_query = select(func.count()).select_from(query.subquery())
+                total_result = await session.execute(count_query)
+                total = total_result.scalar() or 0
+                
+                # Apply pagination
+                offset = (page - 1) * per_page
+                query = query.limit(per_page).offset(offset)
+                
+                # Execute query
+                result = await session.execute(query)
+                items = result.scalars().all()
+                
+                return {
+                    "items": [{
+                        "id": item.id,
+                        "product_id": item.product_id,
+                        "warehouse_id": item.warehouse_id,
+                        "quantity": item.quantity,
+                        "reserved_quantity": item.reserved_quantity,
+                        "available_quantity": item.quantity - item.reserved_quantity,
+                        "reorder_point": item.reorder_point,
+                        "max_stock": item.max_stock,
+                        "last_updated": item.last_updated.isoformat() if item.last_updated else None
+                    } for item in items],
+                    "total": total,
+                    "page": page,
+                    "per_page": per_page,
+                    "total_pages": (total + per_page - 1) // per_page
+                }
+        except Exception as e:
+            self.logger.error("Error getting inventory", error=str(e))
+            raise
+    
     def setup_routes(self):
         """Setup FastAPI routes for the Inventory Agent API.
         """
