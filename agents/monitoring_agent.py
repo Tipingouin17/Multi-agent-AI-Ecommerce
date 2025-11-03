@@ -36,9 +36,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create module-level FastAPI app
-# This is the app instance that uvicorn will load.
-app = FastAPI(title="Monitoring Agent API")
+# Lifespan function will be defined after agent creation
+from contextlib import asynccontextmanager
+
+# Placeholder for agent - will be set below
+_agent = None
+
+@asynccontextmanager
+async def app_lifespan(app: FastAPI):
+    """FastAPI lifespan that initializes the agent"""
+    global _agent
+    if _agent:
+        async with _agent.lifespan_context(app):
+            yield
+    else:
+        yield
+
+# Create module-level FastAPI app with lifespan
+app = FastAPI(title="Monitoring Agent API", lifespan=app_lifespan)
 
 # Add project root to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -606,8 +621,9 @@ class MonitoringAgent(BaseAgentV2):
         logger.info("Processing monitoring business logic", data=data)
         return {"status": "processed", "data": data}
 
-# Instantiate the agent to register routes and middleware on the module-level 'app'
+# Instantiate the agent and set global reference for lifespan
 agent = MonitoringAgent()
+_agent = agent
 
 if __name__ == "__main__":
     import uvicorn
