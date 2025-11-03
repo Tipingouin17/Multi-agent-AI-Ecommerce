@@ -1,8 +1,8 @@
 {
   "summary": {
-    "healthy": 17,
+    "healthy": 20,
     "unhealthy": 0,
-    "not_running": 9,
+    "not_running": 6,
     "total": 26
   },
   "agents": {
@@ -22,7 +22,7 @@
         "status": "healthy",
         "agent": "product_agent",
         "database": "connected",
-        "timestamp": "2025-11-03T20:03:17.351621"
+        "timestamp": "2025-11-03T20:15:47.321031"
       }
     },
     "inventory_agent": {
@@ -57,9 +57,33 @@
       }
     },
     "carrier_selection_agent": {
-      "status": "\u274c NOT RUNNING",
-      "code": null,
-      "details": "Connection refused"
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent_status": {
+          "agent_id": "carrier_selection_agent",
+          "status": "degraded",
+          "degradation_level": 2,
+          "uptime_seconds": 348.843381,
+          "last_heartbeat": "2025-11-03T15:15:47.330631",
+          "error_count": 0,
+          "last_error": null,
+          "performance_metrics": {
+            "messages_sent": 0.0,
+            "messages_received": 0.0,
+            "errors_handled": 0.0,
+            "avg_response_time": 0.0,
+            "db_queries": 0.0,
+            "kafka_reconnects": 0.0
+          },
+          "dependencies": {
+            "database": "connected",
+            "kafka": "degraded",
+            "redis": "disconnected"
+          }
+        }
+      }
     },
     "customer_agent": {
       "status": "\u274c NOT RUNNING",
@@ -133,9 +157,12 @@
       }
     },
     "transport_agent": {
-      "status": "\u274c NOT RUNNING",
-      "code": null,
-      "details": "Connection refused"
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "db_connected": true
+      }
     },
     "warehouse_agent": {
       "status": "\u274c NOT RUNNING",
@@ -157,9 +184,33 @@
       "details": "Connection refused"
     },
     "d2c_ecommerce_agent": {
-      "status": "\u274c NOT RUNNING",
-      "code": null,
-      "details": "Connection refused"
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent_status": {
+          "agent_id": "d2c_ecommerce_agent",
+          "status": "degraded",
+          "degradation_level": 2,
+          "uptime_seconds": 109.553707,
+          "last_heartbeat": "2025-11-03T15:15:47.354541",
+          "error_count": 0,
+          "last_error": null,
+          "performance_metrics": {
+            "messages_sent": 0.0,
+            "messages_received": 0.0,
+            "errors_handled": 0.0,
+            "avg_response_time": 0.0,
+            "db_queries": 0.0,
+            "kafka_reconnects": 0.0
+          },
+          "dependencies": {
+            "database": "connected",
+            "kafka": "degraded",
+            "redis": "disconnected"
+          }
+        }
+      }
     },
     "after_sales_agent": {
       "status": "\u2705 HEALTHY",
