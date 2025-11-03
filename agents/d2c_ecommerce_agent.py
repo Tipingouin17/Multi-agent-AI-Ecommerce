@@ -32,6 +32,9 @@ import aiohttp
 import sys
 import os
 
+# Initialize logger early
+logger = structlog.get_logger(__name__)
+
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
 
@@ -66,9 +69,6 @@ except ImportError as e:
 from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
 from shared.models import APIResponse
 from shared.database import DatabaseManager, get_database_manager
-
-
-logger = structlog.get_logger(__name__)
 
 
 class D2CPlatform(str, Enum):
@@ -2413,33 +2413,16 @@ if __name__ == "__main__":
     import os
     
     # Initialize database
+    password = os.getenv("POSTGRES_PASSWORD")
+    if not password:
+        raise ValueError("Database password must be set in environment variables")
+    
     db_config = DatabaseConfig(
         host=os.getenv("POSTGRES_HOST", "localhost"),
         port=int(os.getenv("POSTGRES_PORT", "5432")),
         database=os.getenv("POSTGRES_DB", "multi_agent_ecommerce"),
         username=os.getenv("POSTGRES_USER", "postgres"),
-        password=os.getenv("POSTGRES_PASSWORD")
-        if not password:
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-            raise ValueError("Database password must be set in environment variables")
+        password=password
     )
     initialize_database_manager(db_config)
     
