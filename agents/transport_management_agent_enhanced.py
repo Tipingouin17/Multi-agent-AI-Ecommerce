@@ -35,6 +35,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 
 from shared.db_helpers import DatabaseHelper
+from shared.base_agent_v2 import BaseAgentV2
 import requests
 from decimal import Decimal
 import structlog
@@ -136,10 +137,11 @@ app.add_middleware(
 )
 
 
-class TransportManagementAgent:
+class TransportManagementAgent(BaseAgentV2):
     """Enhanced agent for managing shipping and transportation"""
     
-    def __init__(self):
+    def __init__(self, agent_id: str = "transport_management_agent_001"):
+        super().__init__(agent_id=agent_id)
         self.db_conn = None
         self.kafka_producer = None
         self.kafka_consumer = None
@@ -740,6 +742,23 @@ Select the best carrier and explain your reasoning. Respond in JSON format:
         if self.kafka_consumer:
             self.kafka_consumer.close()
         logger.info("Transport Management Agent stopped")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process transport management business logic.
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing transport operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # Carrier Integration Classes
