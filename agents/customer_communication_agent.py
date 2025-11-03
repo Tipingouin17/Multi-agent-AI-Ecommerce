@@ -1220,19 +1220,8 @@ if __name__ == "__main__":
         port=int(os.getenv("POSTGRES_PORT", "5432")),
         database=os.getenv("POSTGRES_DB", "multi_agent_ecommerce"),
         username=os.getenv("POSTGRES_USER", "postgres"),
-        password=os.getenv("POSTGRES_PASSWORD")
-        if not password:
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
-    pass
+        password=os.getenv("POSTGRES_PASSWORD", "postgres")
+    )
     pass
     pass
     pass
