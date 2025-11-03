@@ -26,6 +26,9 @@ import structlog
 import sys
 import os
 
+# Initialize logger early
+logger = structlog.get_logger(__name__)
+
 # Get the absolute path of the current file
 current_file_path = os.path.abspath(__file__)
 
@@ -65,9 +68,6 @@ from shared.models import (
     Carrier, CarrierType, APIResponse
 )
 from shared.database import DatabaseManager, BaseRepository, get_database_manager
-
-
-logger = structlog.get_logger(__name__)
 
 
 class PackageDetails(BaseModel):
@@ -458,34 +458,7 @@ class CarrierSelectionAgent(BaseAgentV2):
         try:
             # Check if carrier can deliver to destination
             if not self._can_deliver_to_destination(carrier, delivery_requirements.destination_country):
-                pass
-                if not self._db_initialized:
-                    pass
-            return None
-        
-        async with self.db_manager.get_session() as session:
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            pass
-            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
-            return self.db_helper.to_dict(record) if record else None
+                return None
             
             # Calculate base cost
             base_cost = float(carrier.base_rate)
@@ -533,12 +506,7 @@ class CarrierSelectionAgent(BaseAgentV2):
         
         except Exception as e:
             self.logger.error("Failed to calculate carrier quote", error=str(e), carrier_id=carrier.id)
-            if not self._db_initialized:
             return None
-        
-        async with self.db_manager.get_session() as session:
-            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
-            return self.db_helper.to_dict(record) if record else None
     
     def _can_deliver_to_destination(self, carrier: Carrier, destination_country: str) -> bool:
         """Check if carrier can deliver to the destination country."""
@@ -784,12 +752,7 @@ class CarrierSelectionAgent(BaseAgentV2):
         try:
             if not os.getenv("OPENAI_API_KEY"):
                 self.logger.warning("OpenAI API key not configured, skipping AI selection")
-                if not self._db_initialized:
-            return None
-        
-        async with self.db_manager.get_session() as session:
-            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
-            return self.db_helper.to_dict(record) if record else None
+                return None
             
             response = await chat_completion(
                 model="gpt-3.5-turbo",
@@ -808,21 +771,11 @@ class CarrierSelectionAgent(BaseAgentV2):
                 return json.loads(content)
             except json.JSONDecodeError:
                 self.logger.error("Failed to parse AI response as JSON", response=content)
-                if not self._db_initialized:
-            return None
-        
-        async with self.db_manager.get_session() as session:
-            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
-            return self.db_helper.to_dict(record) if record else None
+                return None
         
         except Exception as e:
             self.logger.error("OpenAI API call failed", error=str(e))
-            if not self._db_initialized:
             return None
-        
-        async with self.db_manager.get_session() as session:
-            record = await self.db_helper.get_by_id(session, CarrierDB, record_id)
-            return self.db_helper.to_dict(record) if record else None
     
     def _rule_based_carrier_selection(self, quotes: List[CarrierQuote], delivery_requirements: DeliveryRequirements) -> CarrierQuote:
         """Fallback rule-based carrier selection."""
@@ -1121,14 +1074,16 @@ if __name__ == "__main__":
     import os
     
     # Initialize database
+    password = os.getenv("POSTGRES_PASSWORD")
+    if not password:
+        raise ValueError("Database password must be set in environment variables")
+    
     db_config = DatabaseConfig(
         host=os.getenv("POSTGRES_HOST", "localhost"),
         port=int(os.getenv("POSTGRES_PORT", "5432")),
         database=os.getenv("POSTGRES_DB", "multi_agent_ecommerce"),
         username=os.getenv("POSTGRES_USER", "postgres"),
-        password=os.getenv("POSTGRES_PASSWORD")
-        if not password:
-            raise ValueError("Database password must be set in environment variables")
+        password=password
     )
     initialize_database_manager(db_config)
     
