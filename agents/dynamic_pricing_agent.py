@@ -466,6 +466,10 @@ agent_instance.app = app
 
 # --- Main Execution ---
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = DynamicPricingAgent()
+
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting Dynamic Pricing Agent with Uvicorn")

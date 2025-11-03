@@ -678,6 +678,10 @@ async def get_customer_returns_api(
 
 
 # Main execution block
+
+# Create agent instance at module level to ensure routes are registered
+agent = ReturnsAgent()
+
 if __name__ == "__main__":
     # Initialize agent and FastAPI app
     # The agent will be initialized and setup in the startup_event of FastAPI

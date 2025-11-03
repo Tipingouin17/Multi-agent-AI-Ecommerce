@@ -821,6 +821,10 @@ async def get_all_agents_health():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = AIMonitoringAgent()
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8023))

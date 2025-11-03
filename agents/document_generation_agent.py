@@ -846,6 +846,10 @@ async def generate_packing_slip_api(order_id: int):
     return result
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = DocumentGenerationAgent()
+
 if __name__ == '__main__':
     # The main entry point for running the FastAPI application with Uvicorn.
     # This block ensures that the Uvicorn server is started when the script is executed directly.

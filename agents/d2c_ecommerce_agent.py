@@ -2403,6 +2403,10 @@ async def health_check():
 app.mount("/api/v1", d2c_ecommerce_agent.app if d2c_ecommerce_agent else FastAPI())
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = D2CEcommerceAgent()
+
 if __name__ == "__main__":
     import uvicorn
     from shared.database import initialize_database_manager, DatabaseConfig

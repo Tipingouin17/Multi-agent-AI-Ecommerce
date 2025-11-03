@@ -1111,6 +1111,10 @@ async def health_check():
 app.mount("/api/v1", carrier_selection_agent.app if carrier_selection_agent else FastAPI())
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = CarrierSelectionAgent()
+
 if __name__ == "__main__":
     import uvicorn
     from shared.database import initialize_database_manager, DatabaseConfig

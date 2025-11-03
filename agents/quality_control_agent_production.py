@@ -281,3 +281,7 @@ class QualityControlAgent(BaseAgentV2):
             lifespan=self.lifespan_context
         )
         
+
+
+# Create agent instance at module level to ensure routes are registered
+agent = QualityControlAgent(agent_id="quality_control_agent")

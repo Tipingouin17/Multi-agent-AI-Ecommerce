@@ -780,6 +780,10 @@ class BackofficeAgent(BaseAgentV2):
             return {"status": "error", "message": str(e)}
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = BackofficeAgent()
+
 if __name__ == "__main__":
     agent = BackofficeAgent()
     asyncio.run(agent.run())

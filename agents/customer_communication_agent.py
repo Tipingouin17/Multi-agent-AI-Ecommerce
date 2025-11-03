@@ -1205,6 +1205,10 @@ async def health_check():
 app.mount("/api/v1", customer_communication_agent.app if customer_communication_agent else FastAPI())
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = CustomerCommunicationAgent()
+
 if __name__ == "__main__":
     import uvicorn
     from shared.database import initialize_database_manager, DatabaseConfig

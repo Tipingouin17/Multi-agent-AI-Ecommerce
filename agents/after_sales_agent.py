@@ -757,6 +757,10 @@ class AfterSalesAgent(BaseAgentV2):
             return {"status": "error", "message": str(e)}
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = AfterSalesAgent()
+
 if __name__ == "__main__":
     agent = AfterSalesAgent()
     asyncio.run(agent.run())

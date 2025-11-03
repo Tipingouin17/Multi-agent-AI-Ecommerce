@@ -698,6 +698,10 @@ async def file_warranty_claim_endpoint(claim: WarrantyClaim):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = AfterSalesAgent()
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8020))
     logger.info(f"Starting After-Sales Agent on port {port}")

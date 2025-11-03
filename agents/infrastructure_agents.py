@@ -869,6 +869,10 @@ class AdminAgent(BaseAgent):
 
 # ==================== MAIN APPLICATION ENTRY POINT ====================
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = InfrastructureAgent()
+
 if __name__ == "__main__":
     import argparse
     

@@ -956,6 +956,10 @@ class SupportAgent(BaseAgentV2):
 
 
 # Main execution block for running the FastAPI app and agent
+
+# Create agent instance at module level to ensure routes are registered
+agent = SupportAgent()
+
 if __name__ == "__main__":
     # Environment variables for agent and FastAPI
     AGENT_ID = os.getenv("AGENT_ID", "support_agent_001")
