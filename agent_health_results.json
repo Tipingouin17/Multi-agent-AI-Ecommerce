@@ -1,8 +1,8 @@
 {
   "summary": {
-    "healthy": 14,
-    "unhealthy": 2,
-    "not_running": 10,
+    "healthy": 17,
+    "unhealthy": 0,
+    "not_running": 9,
     "total": 26
   },
   "agents": {
@@ -22,7 +22,7 @@
         "status": "healthy",
         "agent": "product_agent",
         "database": "connected",
-        "timestamp": "2025-11-03T19:44:03.785979"
+        "timestamp": "2025-11-03T19:54:00.769864"
       }
     },
     "inventory_agent": {
@@ -86,14 +86,22 @@
       }
     },
     "fraud_detection_agent": {
-      "status": "\u274c NOT RUNNING",
-      "code": null,
-      "details": "Connection refused"
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "fraud_detection_agent",
+        "version": "1.0.0"
+      }
     },
     "recommendation_agent": {
-      "status": "\u26a0\ufe0f  UNHEALTHY",
-      "code": 404,
-      "details": "HTTP 404"
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "recommendation_agent",
+        "version": "1.0.0"
+      }
     },
     "promotion_agent": {
       "status": "\u2705 HEALTHY",
@@ -195,9 +203,13 @@
       "details": "Connection refused"
     },
     "quality_control_agent": {
-      "status": "\u26a0\ufe0f  UNHEALTHY",
-      "code": 404,
-      "details": "HTTP 404"
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "quality_control_agent",
+        "version": "1.0.0"
+      }
     }
   }
 }

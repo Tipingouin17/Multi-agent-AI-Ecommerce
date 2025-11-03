@@ -625,7 +625,15 @@ app = FastAPI(
 
 # FraudDetectionAgent class is complete with all required methods
 
-
+# Add health endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "agent": "fraud_detection_agent",
+        "version": "1.0.0"
+    }
 
 # Create agent instance at module level for lifespan context
 fraud_agent = None

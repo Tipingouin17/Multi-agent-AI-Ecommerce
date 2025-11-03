@@ -878,7 +878,7 @@ class SupportAgent(BaseAgentV2):
             
             # Ensure database tables are created if not exist (for development/testing)
             # In a production environment, migrations would handle this.
-            async with self.db_manager.engine.begin() as conn:
+            async with self.db_manager.async_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("Database tables checked/created")
 
