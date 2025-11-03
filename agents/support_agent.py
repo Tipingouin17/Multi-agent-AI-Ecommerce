@@ -73,8 +73,8 @@ from typing import Dict, List, Optional, Any
 from uuid import uuid4, UUID
 from enum import Enum
 
-from sqlalchemy import Column, String, TIMESTAMP, Boolean, Integer, JSONB, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy import Column, String, TIMESTAMP, Boolean, Integer, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.future import select
