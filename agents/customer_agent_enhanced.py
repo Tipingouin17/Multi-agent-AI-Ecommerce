@@ -203,7 +203,7 @@ class CustomerAgent(BaseAgentV2):
     - Exposing functionalities via a FastAPI interface.
     """
 
-    def __init__(self, agent_id: str, agent_type: str = "customer_agent"):
+    def __init__(self, agent_id: str = "customer_agent_001", agent_type: str = "customer_agent"):
         """Initializes the CustomerAgent with a unique ID and type."""
         super().__init__(agent_id=agent_id)
         
