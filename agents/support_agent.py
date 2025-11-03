@@ -75,7 +75,6 @@ from enum import Enum
 
 from sqlalchemy import Column, String, TIMESTAMP, Boolean, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.future import select
 from sqlalchemy.sql import func
@@ -123,8 +122,8 @@ class SenderType(str, Enum):
     AGENT = "agent"
     SYSTEM = "system"
 
-# SQLAlchemy Base
-Base = declarative_base()
+# SQLAlchemy Base - import from shared models
+from shared.models import Base
 
 # SQLAlchemy Models
 class SupportTicketDB(Base):
@@ -893,7 +892,8 @@ class SupportAgent(BaseAgentV2):
                         SLAPolicyDB(priority=TicketPriority.URGENT.value, first_response_minutes=10, resolution_minutes=180),
                     ]
                     for sla in default_slas:
-                        await self.db_helper.create(session, sla)
+                        session.add(sla)
+                    await session.commit()
                     logger.info("Default SLA policies inserted")
                 else:
                     logger.info("SLA policies already exist")
@@ -1014,9 +1014,12 @@ if __name__ == "__main__":
 
     async def start_agent_and_api():
         await support_agent_instance.setup()
-        agent_task = asyncio.create_task(support_agent_instance.start_kafka_consumer([AGENT_TYPE]))
-        api_task = asyncio.create_task(uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=API_PORT)).serve())
-        await asyncio.gather(agent_task, api_task)
+        # Start agent initialization in background (non-blocking)
+        asyncio.create_task(support_agent_instance.start())
+        # Start API server
+        config = uvicorn.Config(app, host="0.0.0.0", port=API_PORT)
+        server = uvicorn.Server(config)
+        await server.serve()
 
     # Run the combined agent and API
     asyncio.run(start_agent_and_api())
