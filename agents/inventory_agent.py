@@ -301,8 +301,16 @@ class InventoryAgent(BaseAgentV2):
         """Initializes the agent, database, and Kafka connections.
         """
         await super().initialize()
-        self.db_manager = get_database_manager()
-        await self.db_manager.initialize()
+        try:
+            # Try to get the globally initialized database manager
+            self.db_manager = get_database_manager()
+        except RuntimeError:
+            # If not initialized globally, initialize it locally
+            from shared.database import DatabaseManager, DatabaseConfig
+            self.db_manager = DatabaseManager(DatabaseConfig())
+            await self.db_manager.initialize()
+            self.logger.warning("Database manager was not initialized globally, initialized locally.")
+            
         self.inventory_repo = InventoryRepository(self.db_manager)
         self.stock_movement_repo = StockMovementRepository(self.db_manager)
         self.logger.info("Inventory Agent initialized.")
