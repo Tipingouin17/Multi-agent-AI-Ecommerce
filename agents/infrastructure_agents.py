@@ -43,17 +43,6 @@ class SyncStatus(str, Enum):
     SYNCING = "syncing"
     COMPLETED = "completed"
     FAILED = "failed"
-    async def initialize(self):
-        """Initialize agent."""
-        await super().initialize()
-        
-    async def cleanup(self):
-        """Cleanup agent."""
-        await super().cleanup()
-        
-    async def process_business_logic(self, data):
-        """Process business logic."""
-        return {"status": "success"}
 
 
 class SyncRequest(BaseModel):
@@ -78,7 +67,7 @@ class DataSyncAgent(BaseAgent):
             db_manager (DatabaseManager): An instance of the DatabaseManager for database access.
             kafka_bootstrap_servers (str): Kafka bootstrap servers for producer/consumer.
         """
-        super().__init__(agent_id, "data_sync", kafka_bootstrap_servers)
+        super().__init__(agent_id, kafka_bootstrap_servers)
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
         self._db_initialized = False # Placeholder for actual DB initialization check
@@ -178,12 +167,27 @@ class DataSyncAgent(BaseAgent):
         else:
             logger.warning("Unhandled message type or command", message_type=message.message_type, command=message.payload.get("command"))
 
+    async def initialize(self):
+        """Initialize the Data Sync Agent."""
+        await super().initialize()
+        logger.info("DataSyncAgent initialized")
+        
+    async def cleanup(self):
+        """Cleanup the Data Sync Agent."""
+        await super().cleanup()
+        logger.info("DataSyncAgent cleaned up")
+        
+    async def process_business_logic(self, data):
+        """Process business logic for Data Sync Agent."""
+        logger.info("Processing business logic", data=data)
+        return {"status": "success"}
+
     async def start_fastapi_app(self):
         """Starts the FastAPI application for the Data Sync Agent.
 
         The port is configured via the DATA_SYNC_AGENT_PORT environment variable, defaulting to 8022.
         """
-        port = int(os.getenv("DATA_SYNC_AGENT_PORT", "8022"))
+        port = int(os.getenv("API_PORT", os.getenv("DATA_SYNC_AGENT_PORT", "8022")))
         config = uvicorn.Config(self.app, host="0.0.0.0", port=port)
         server = uvicorn.Server(config)
         logger.info(f"Data Sync Agent FastAPI app starting on port {port}")
@@ -213,7 +217,7 @@ class APIGatewayAgent(BaseAgent):
             db_manager (DatabaseManager): An instance of the DatabaseManager for database access.
             kafka_bootstrap_servers (str): Kafka bootstrap servers for producer/consumer.
         """
-        super().__init__(agent_id, "api_gateway", kafka_bootstrap_servers)
+        super().__init__(agent_id, kafka_bootstrap_servers)
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
         self._db_initialized = False
@@ -350,7 +354,7 @@ class MonitoringAgent(BaseAgent):
             db_manager (DatabaseManager): An instance of the DatabaseManager for database access.
             kafka_bootstrap_servers (str): Kafka bootstrap servers for producer/consumer.
         """
-        super().__init__(agent_id, "monitoring", kafka_bootstrap_servers)
+        super().__init__(agent_id, kafka_bootstrap_servers)
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
         self._db_initialized = False
@@ -521,7 +525,7 @@ class BackupAgent(BaseAgent):
             db_manager (DatabaseManager): An instance of the DatabaseManager for database access.
             kafka_bootstrap_servers (str): Kafka bootstrap servers for producer/consumer.
         """
-        super().__init__(agent_id, "backup", kafka_bootstrap_servers)
+        super().__init__(agent_id, kafka_bootstrap_servers)
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
         self._db_initialized = False
@@ -714,7 +718,7 @@ class AdminAgent(BaseAgent):
             db_manager (DatabaseManager): An instance of the DatabaseManager for database access.
             kafka_bootstrap_servers (str): Kafka bootstrap servers for producer/consumer.
         """
-        super().__init__(agent_id, "admin", kafka_bootstrap_servers)
+        super().__init__(agent_id, kafka_bootstrap_servers)
         self.db_manager = db_manager
         self.db_helper = DatabaseHelper(db_manager)
         self._db_initialized = False
@@ -917,7 +921,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Run a specific infrastructure agent.")
     parser.add_argument("--agent", choices=["data_sync", "api_gateway", "monitoring", "backup", "admin"],
-                       required=True, help="Specify which agent to run.")
+                       default="data_sync", help="Specify which agent to run (default: data_sync).")
     args = parser.parse_args()
     
     agent_type = args.agent
@@ -940,24 +944,17 @@ if __name__ == "__main__":
         agent = AdminAgent(agent_id, db_manager, kafka_servers)
 
     if agent:
-        loop = asyncio.get_event_loop()
         try:
             # Simulate database initialization. In a real scenario, this would involve migrations or schema creation.
             agent._db_initialized = True 
             logger.info(f"Database connection for {agent_type} agent initialized: {db_url}")
             
-            # Run both the agent's Kafka message processing loop and FastAPI app concurrently
-            loop.run_until_complete(asyncio.gather(
-                agent.run(),
-                agent.start_fastapi_app()
-            ))
+            # Run the FastAPI app (agent.start() is called internally)
+            asyncio.run(agent.start_fastapi_app())
         except KeyboardInterrupt:
             logger.info(f"{agent_type} Agent shutting down due to KeyboardInterrupt.")
         except Exception as e:
             logger.error(f"An unexpected error occurred in {agent_type} Agent: {e}", exc_info=True)
-        finally:
-            agent.stop()
-            loop.close()
     else:
         logger.error(f"Unknown agent type specified: {agent_type}. Please choose from: data_sync, api_gateway, monitoring, backup, admin.")
 

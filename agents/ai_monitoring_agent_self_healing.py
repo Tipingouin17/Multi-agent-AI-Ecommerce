@@ -870,7 +870,7 @@ agent = SelfHealingMonitoringAgent()
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8023))
+    port = int(os.getenv("API_PORT", os.getenv("PORT", 8023)))
     logger.info(f"Starting Self-Healing Monitoring Agent on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 

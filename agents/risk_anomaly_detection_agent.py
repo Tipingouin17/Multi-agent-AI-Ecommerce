@@ -670,6 +670,6 @@ if __name__ == "__main__":
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
     
-    port = int(os.getenv("PORT", 8012))
+    port = int(os.getenv("API_PORT", os.getenv("PORT", 8013)))
     logger.info(f"Starting Risk and Anomaly Detection Agent on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
