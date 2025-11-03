@@ -56,6 +56,30 @@ master_launch.bat
 
 ---
 
+## Verbose Mode
+
+For even more detailed output, you can run the master launch script in **verbose mode**.
+
+### Linux/macOS
+
+```bash
+VERBOSE=1 ./master_launch.sh
+```
+
+### Windows
+
+```batch
+set VERBOSE=1
+master_launch.bat
+```
+
+Verbose mode will:
+- Print every command as it is executed (`set -x`)
+- Show detailed error messages in the console
+- Provide real-time feedback on every step of the startup process
+
+---
+
 ## How It Works
 
 ### Startup Sequence

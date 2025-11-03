@@ -11,7 +11,12 @@
 # - Ensures 100% visibility into system state
 #
 
+# Enable error handling (verbose mode available via VERBOSE=1 environment variable)
+if [ "${VERBOSE:-0}" = "1" ]; then
+    set -x  # Print commands as they execute (only if VERBOSE=1)
+fi
 set -e  # Exit on error
+set -o pipefail  # Catch errors in pipes
 
 # ============================================================================
 # CONFIGURATION
@@ -117,21 +122,29 @@ check_infrastructure() {
     
     # Check Python
     log_info "Checking Python installation..."
+    echo -e "${CYAN}  → Running: which python3.11${NC}"
     if command -v python3.11 &> /dev/null; then
         PYTHON_VERSION=$(python3.11 --version)
         log_success "Python: $PYTHON_VERSION"
         echo "$PYTHON_VERSION" > "$INFRASTRUCTURE_LOG_DIR/python.log"
+        echo -e "${GREEN}  → Python path: $(which python3.11)${NC}"
     else
         log_error "Python 3.11 not found"
+        echo -e "${RED}  → Please install Python 3.11${NC}"
         all_ok=false
     fi
     
     # Check PostgreSQL
     log_info "Checking PostgreSQL..."
+    echo -e "${CYAN}  → Running: pg_isready -h localhost -p 5432${NC}"
     if pg_isready -h localhost -p 5432 > "$INFRASTRUCTURE_LOG_DIR/postgresql.log" 2>&1; then
         log_success "PostgreSQL: Running on port 5432"
+        pg_isready -h localhost -p 5432 | head -1
     else
         log_error "PostgreSQL: Not running on port 5432"
+        echo -e "${RED}  → Error output:${NC}"
+        cat "$INFRASTRUCTURE_LOG_DIR/postgresql.log"
+        echo -e "${YELLOW}  → Please start PostgreSQL: sudo systemctl start postgresql${NC}"
         all_ok=false
     fi
     
@@ -166,6 +179,9 @@ check_infrastructure() {
     
     if [ "$all_ok" = false ]; then
         log_error "Infrastructure check failed. Please fix the issues above."
+        echo -e "${RED}═══════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}CRITICAL ERROR: Infrastructure prerequisites not met${NC}"
+        echo -e "${RED}═══════════════════════════════════════════════════════════════════════════${NC}"
         exit 1
     fi
     
@@ -220,14 +236,41 @@ start_agent() {
     local pid_file="$AGENT_LOG_DIR/${agent_name}.pid"
     
     log_info "Starting $agent_name on port $agent_port..."
+    echo -e "${CYAN}  → Command: python3.11 agents/${agent_file}.py${NC}"
+    echo -e "${CYAN}  → Port: $agent_port${NC}"
+    echo -e "${CYAN}  → Log: $log_file${NC}"
     
     # Set environment variables
     export API_PORT=$agent_port
     export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/multi_agent_ecommerce"
     
-    # Start agent in background
+    # Check if agent file exists
+    if [ ! -f "agents/${agent_file}.py" ]; then
+        log_error "Agent file not found: agents/${agent_file}.py"
+        return 1
+    fi
+    
+    # Start agent in background with verbose output
+    echo -e "${YELLOW}  → Executing: nohup python3.11 agents/${agent_file}.py > $log_file 2>&1 &${NC}"
     nohup python3.11 "agents/${agent_file}.py" > "$log_file" 2>&1 &
     local pid=$!
+    local start_result=$?
+    
+    if [ $start_result -ne 0 ]; then
+        log_error "Failed to start $agent_name (exit code: $start_result)"
+        log_error "Check log file: $log_file"
+        tail -20 "$log_file" 2>/dev/null || echo "No log output yet"
+        return 1
+    fi
+    
+    # Verify process is running
+    sleep 0.5
+    if ! ps -p $pid > /dev/null 2>&1; then
+        log_error "Agent $agent_name died immediately after start!"
+        log_error "Last 20 lines of log:"
+        tail -20 "$log_file" 2>/dev/null || echo "No log output"
+        return 1
+    fi
     
     # Save PID
     echo $pid > "$pid_file"
@@ -300,18 +343,33 @@ check_agent_health() {
         local agent_name=${AGENT_NAMES[$port]:-"unknown"}
         local health_log="$AGENT_LOG_DIR/${agent_name}_health.log"
         
+        echo -e "${CYAN}Checking port $port ($agent_name)...${NC}"
+        echo -e "${CYAN}  → Running: curl -s -f -m 5 http://localhost:$port/health${NC}"
+        
         if curl -s -f -m 5 "http://localhost:$port/health" > "$health_log" 2>&1; then
             log_success "✓ Port $port ($agent_name) - HEALTHY"
+            echo -e "${GREEN}  → Health response:${NC}"
+            head -3 "$health_log" | sed 's/^/    /'
             healthy=$((healthy + 1))
         else
             if nc -z localhost $port 2>/dev/null; then
                 log_warning "⚠ Port $port ($agent_name) - UNHEALTHY (port open but /health failed)"
+                echo -e "${YELLOW}  → Port is open but health check failed${NC}"
+                echo -e "${YELLOW}  → Error output:${NC}"
+                cat "$health_log" 2>/dev/null | head -10 | sed 's/^/    /'
                 unhealthy=$((unhealthy + 1))
             else
                 log_error "✗ Port $port ($agent_name) - NOT RUNNING"
+                echo -e "${RED}  → Port is not listening${NC}"
+                echo -e "${RED}  → Check agent log: $AGENT_LOG_DIR/${agent_name}.log${NC}"
+                if [ -f "$AGENT_LOG_DIR/${agent_name}.log" ]; then
+                    echo -e "${RED}  → Last 10 lines of log:${NC}"
+                    tail -10 "$AGENT_LOG_DIR/${agent_name}.log" 2>/dev/null | sed 's/^/    /'
+                fi
                 not_running=$((not_running + 1))
             fi
         fi
+        echo ""
     done
     
     echo ""
