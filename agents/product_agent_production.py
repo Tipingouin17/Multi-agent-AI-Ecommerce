@@ -24,7 +24,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy import Column, String, DateTime, Numeric, Float, Text, Integer, and_, or_, func
+from sqlalchemy import Column, String, DateTime, Numeric, Float, Text, Integer, and_, or_, func, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.future import select
@@ -139,7 +139,24 @@ class ProductCategory(BaseModel):
     parent_id: Optional[str] = None
     description: Optional[str] = None
 
-app = FastAPI()
+# Lifespan function will be defined after agent creation
+from contextlib import asynccontextmanager
+
+# Placeholder for agent - will be set below
+_agent = None
+
+@asynccontextmanager
+async def app_lifespan(app: FastAPI):
+    """FastAPI lifespan that initializes the agent"""
+    global _agent
+    if _agent:
+        await _agent.initialize()
+        yield
+        await _agent.cleanup()
+    else:
+        yield
+
+app = FastAPI(lifespan=app_lifespan)
 
 
 class ProductAgent(BaseAgentV2):
@@ -177,6 +194,17 @@ class ProductAgent(BaseAgentV2):
         try:
             async with self.engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
+                
+                # Migration: Add stock_quantity column if it doesn't exist
+                try:
+                    await conn.execute(text("""
+                        ALTER TABLE products 
+                        ADD COLUMN IF NOT EXISTS stock_quantity INTEGER DEFAULT 0
+                    """))
+                    logger.info("Migration: stock_quantity column added/verified")
+                except Exception as migration_error:
+                    logger.warning(f"Migration warning (may be normal if column exists): {migration_error}")
+                
             self._db_initialized = True
             logger.info("Product Agent database tables created/verified")
         except Exception as e:
@@ -562,6 +590,7 @@ class ProductAgent(BaseAgentV2):
 
 # Create agent instance at module level to ensure routes are registered
 agent = ProductAgent()
+_agent = agent  # Set global reference for lifespan
 
 async def run_agent():
     """Run the Product Agent"""
