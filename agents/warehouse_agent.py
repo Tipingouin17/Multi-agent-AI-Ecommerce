@@ -393,6 +393,8 @@ async def lifespan(app: FastAPI):
     global warehouse_service
     logger.info("Warehouse Agent Startup: Initializing Database and Service")
     try:
+        # Initialize database manager first
+        await initialize_database_manager()
         db_manager = await get_database_manager()
         repo = WarehouseRepository(db_manager)
         warehouse_service = WarehouseService(repo)

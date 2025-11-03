@@ -167,7 +167,20 @@ class AgentMessage:
         data = asdict(self)
         data['timestamp'] = self.timestamp.isoformat()
         data['message_type'] = self.message_type.value
+        # Recursively convert datetime objects in payload
+        data['payload'] = self._convert_datetime_to_iso(data['payload'])
         return data
+    
+    def _convert_datetime_to_iso(self, obj: Any) -> Any:
+        """Recursively convert datetime objects to ISO format strings."""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, dict):
+            return {k: self._convert_datetime_to_iso(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self._convert_datetime_to_iso(item) for item in obj]
+        else:
+            return obj
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'AgentMessage':

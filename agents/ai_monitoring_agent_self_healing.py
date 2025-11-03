@@ -157,8 +157,17 @@ class AIErrorAnalyzer:
     """Uses OpenAI LLM to analyze errors and propose fixes"""
     
     def __init__(self):
-        self.client = OpenAI()  # API key from environment
-        self.model = "gpt-4.1-mini"  # Fast and cost-effective
+        import os
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            self.client = OpenAI(api_key=api_key)
+            self.model = "gpt-4.1-mini"  # Fast and cost-effective
+            self.enabled = True
+        else:
+            logger.warning("OpenAI API key not set - AI error analysis disabled")
+            self.client = None
+            self.model = None
+            self.enabled = False
     
     async def analyze_error(
         self,
@@ -171,6 +180,9 @@ class AIErrorAnalyzer:
         Returns:
             (proposed_code, explanation, confidence)
         """
+        if not self.enabled:
+            return ("", "AI analysis disabled - OpenAI API key not configured", 0.0)
+        
         try:
             prompt = f"""You are an expert Python developer analyzing a production error in a multi-agent e-commerce system.
 

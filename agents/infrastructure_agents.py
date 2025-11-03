@@ -901,6 +901,17 @@ class InfrastructureAgent(BaseAgentV2):
 # Create agent instance at module level to ensure routes are registered
 agent = InfrastructureAgent()
 
+# Create module-level FastAPI app for uvicorn
+app = FastAPI(title="Infrastructure Agents", version="1.0.0")
+
+@app.get("/")
+async def root():
+    return {"message": "Infrastructure Agents API", "status": "running"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "agent": "infrastructure"}
+
 if __name__ == "__main__":
     import argparse
     
