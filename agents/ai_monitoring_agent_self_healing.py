@@ -667,6 +667,37 @@ class SelfHealingMonitoringAgent(BaseAgentV2):
             uptime_seconds=3600,
             last_heartbeat=datetime.utcnow()
         )
+    
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        try:
+            if self.kafka_producer:
+                await self.kafka_producer.stop()
+            if self.kafka_consumer:
+                await self.kafka_consumer.stop()
+            if self.db_manager:
+                await self.db_manager.close()
+            await super().cleanup()
+            logger.info("SelfHealingMonitoringAgent cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process self-healing monitoring business logic.
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing self-healing operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # =====================================================
@@ -823,7 +854,7 @@ async def get_all_agents_health():
 
 
 # Create agent instance at module level to ensure routes are registered
-agent = AIMonitoringAgent()
+agent = SelfHealingMonitoringAgent()
 
 if __name__ == "__main__":
     import uvicorn

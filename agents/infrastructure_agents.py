@@ -12,7 +12,7 @@ import os
 import sys
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from uuid import UUID, uuid4
 
 import structlog
@@ -31,6 +31,7 @@ if project_root not in sys.path:
 from shared.database import DatabaseManager, get_database_manager
 from shared.db_helpers import DatabaseHelper
 from shared.base_agent import BaseAgent, AgentMessage, MessageType
+from shared.base_agent_v2 import BaseAgentV2
 
 logger = structlog.get_logger(__name__)
 
@@ -869,6 +870,33 @@ class AdminAgent(BaseAgent):
 
 # ==================== MAIN APPLICATION ENTRY POINT ====================
 
+
+# Wrapper class for infrastructure agents collection
+class InfrastructureAgent(BaseAgentV2):
+    """Placeholder wrapper for infrastructure agents collection."""
+    
+    def __init__(self, agent_id: str = "infrastructure_agent"):
+        super().__init__(agent_id=agent_id)
+        self.agent_name = "Infrastructure Agent"
+    
+    async def initialize(self):
+        """Initialize the infrastructure agent."""
+        await super().initialize()
+        logger.info("Infrastructure Agent initialized")
+    
+    async def cleanup(self):
+        """Cleanup agent resources."""
+        await super().cleanup()
+        logger.info("Infrastructure Agent cleaned up")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process infrastructure business logic."""
+        try:
+            operation = data.get("operation", "process")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 # Create agent instance at module level to ensure routes are registered
 agent = InfrastructureAgent()
