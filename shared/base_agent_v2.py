@@ -518,7 +518,7 @@ class BaseAgentV2(ABC):
                 )
                 await self.producer.start()
                 
-                # Initialize Kafka consumer
+                # Initialize Kafka consumer with timeout
                 self.consumer = AIOKafkaConsumer(
                     f"{self.agent_id}_topic",
                     "broadcast_topic",
@@ -529,7 +529,13 @@ class BaseAgentV2(ABC):
                     api_version='auto',
                     request_timeout_ms=30000
                 )
-                await self.consumer.start()
+                # Add timeout to prevent hanging if topics don't exist
+                try:
+                    await asyncio.wait_for(self.consumer.start(), timeout=15.0)
+                except asyncio.TimeoutError:
+                    self.logger.warning("Kafka consumer start timed out after 15s - topics may not exist")
+                    await self.consumer.stop()
+                    raise Exception("Kafka consumer initialization timeout")
                 
                 self.kafka_status = ServiceStatus.CONNECTED
                 self.logger.info("Kafka initialized successfully")
