@@ -1097,10 +1097,11 @@ if __name__ == "__main__":
     initialize_database_manager(db_config)
     
     # Run the agent
+    port = int(os.getenv("API_PORT", "8006"))
     uvicorn.run(
         "carrier_selection_agent:app",
         host="0.0.0.0",
-        port=8005,
+        port=port,
         reload=False,
         log_level="info"
     )

@@ -260,7 +260,7 @@ class BaseAgentV2(ABC):
         log_level: str = "INFO",
         allow_sqlite_fallback: bool = False,
         max_db_retries: int = 5,
-        max_kafka_retries: int = 10
+        max_kafka_retries: int = 2
     ):
         self.agent_id = agent_id
         self.agent_name = agent_id
