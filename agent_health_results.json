@@ -1,0 +1,194 @@
+{
+  "summary": {
+    "healthy": 12,
+    "unhealthy": 3,
+    "not_running": 11,
+    "total": 26
+  },
+  "agents": {
+    "order_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent_id": "order_agent",
+        "database_connected": false
+      }
+    },
+    "product_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "inventory_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "marketplace_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "ok",
+        "agent_id": "inventory_agent"
+      }
+    },
+    "payment_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "payment_agent_enhanced",
+        "version": "1.0.0"
+      }
+    },
+    "dynamic_pricing_agent": {
+      "status": "\u26a0\ufe0f  UNHEALTHY",
+      "code": 404,
+      "details": "HTTP 404"
+    },
+    "carrier_selection_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "customer_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "customer_communication_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "ok",
+        "database": "ok",
+        "kafka_consumer": "ok"
+      }
+    },
+    "returns_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "returns_agent",
+        "version": "1.0.0",
+        "database_status": "connected"
+      }
+    },
+    "fraud_detection_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "recommendation_agent": {
+      "status": "\u26a0\ufe0f  UNHEALTHY",
+      "code": 404,
+      "details": "HTTP 404"
+    },
+    "promotion_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "promotion_agent",
+        "version": "1.0.0",
+        "db_connected": false
+      }
+    },
+    "risk_anomaly_detection_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "warehouse_agent",
+        "version": "1.0.0"
+      }
+    },
+    "knowledge_management_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "knowledge_management_agent_001",
+        "type": "knowledge_management",
+        "version": "0.1.0"
+      }
+    },
+    "transport_agent": {
+      "status": "\u26a0\ufe0f  UNHEALTHY",
+      "code": 503,
+      "details": "HTTP 503"
+    },
+    "warehouse_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "document_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "document_generation",
+        "agent_id": "document_generation_agent_001"
+      }
+    },
+    "support_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "d2c_ecommerce_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "after_sales_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "AfterSalesAgent",
+        "version": "1.0.0",
+        "database": true
+      }
+    },
+    "backoffice_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "BackofficeAgent",
+        "version": "1.0.0",
+        "database": true
+      }
+    },
+    "infrastructure_agents": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "ai_monitoring_agent": {
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "SelfHealingMonitoringAgent",
+        "version": "2.0.0",
+        "ai_enabled": true,
+        "database": true
+      }
+    },
+    "monitoring_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    },
+    "quality_control_agent": {
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
+    }
+  }
+}
