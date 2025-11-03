@@ -94,6 +94,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from shared.database import DatabaseManager, get_database_manager
+from shared.base_agent_v2 import BaseAgentV2
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -320,6 +321,72 @@ class WarehouseService:
         return pick_list
 
 # --- FastAPI Lifespan ---
+# WAREHOUSE AGENT CLASS
+class WarehouseAgent(BaseAgentV2):
+    """Warehouse Agent for managing multi-warehouse operations."""
+    
+    def __init__(self, agent_id: str = "warehouse_agent"):
+        super().__init__(agent_id=agent_id)
+        self.agent_name = "Warehouse Agent"
+        self.db_manager: Optional[DatabaseManager] = None
+        self.service: Optional[WarehouseService] = None
+    
+    async def initialize(self):
+        """Initialize the Warehouse Agent with database connections."""
+        await super().initialize()
+        logger.info("WarehouseAgent initialize initiated.")
+        
+        try:
+            # Initialize database manager
+            try:
+                self.db_manager = get_database_manager()
+                logger.info("Using global database manager")
+            except RuntimeError:
+                from shared.models import DatabaseConfig
+                db_config = DatabaseConfig()
+                self.db_manager = DatabaseManager(db_config)
+                await self.db_manager.initialize()
+                logger.info("Created new database manager")
+            
+            # Initialize repository and service
+            db_helper = DatabaseHelper(self.db_manager)
+            repo = WarehouseRepository(db_helper)
+            self.service = WarehouseService(repo)
+            
+            logger.info("WarehouseAgent initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Error during initialization: {e}")
+            raise
+    
+    async def cleanup(self):
+        """Cleanup agent resources."""
+        try:
+            if self.db_manager:
+                await self.db_manager.close()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process warehouse business logic.
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing warehouse operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initializes the database connection and service layer."""
@@ -448,6 +515,9 @@ async def get_pending_pick_lists(
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "agent": "warehouse_agent", "version": "1.0.0"}
+
+# Create agent instance at module level
+agent = WarehouseAgent()
 
 if __name__ == "__main__":
     import uvicorn
