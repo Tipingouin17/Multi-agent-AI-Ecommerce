@@ -955,7 +955,7 @@ async def create_interaction_api(
 # Uvicorn runner for FastAPI
 
 # Create agent instance at module level to ensure routes are registered
-agent = CustomerAgent()
+agent = CustomerAgent(agent_id="customer_agent")
 
 if __name__ == "__main__":
     import uvicorn
