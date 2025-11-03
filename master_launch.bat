@@ -33,7 +33,7 @@ exit /b 0
 
 :args_done
 
-if "%VERBOSE%"=="1" echo on
+REM Note: VERBOSE mode shows detailed results/logs, not command traces
 
 echo ================================================================================
 echo MASTER LAUNCH SCRIPT - Multi-Agent E-Commerce Platform
@@ -109,12 +109,12 @@ set ALL_OK=1
 
 REM Check Python
 echo [INFO] Checking Python installation...
-echo   -^> Running: python --version
+if "%VERBOSE%"=="1" echo   -^> Running: python --version
 python --version > "%INFRASTRUCTURE_LOG_DIR%\python.log" 2>&1
 if %ERRORLEVEL% EQU 0 (
     for /f "tokens=*" %%i in ('python --version') do set PYTHON_VERSION=%%i
     echo [OK] Python: !PYTHON_VERSION!
-    for /f "tokens=*" %%i in ('where python') do echo   -^> Python path: %%i
+    if "%VERBOSE%"=="1" for /f "tokens=*" %%i in ('where python') do echo   -^> Python path: %%i
     echo [%date% %time%] Python: !PYTHON_VERSION! >> "%STARTUP_LOG%"
 ) else (
     echo [ERROR] Python not found
@@ -126,11 +126,11 @@ echo.
 
 REM Check PostgreSQL
 echo [INFO] Checking PostgreSQL...
-echo   -^> Running: pg_isready -h localhost -p 5432
+if "%VERBOSE%"=="1" echo   -^> Running: pg_isready -h localhost -p 5432
 pg_isready -h localhost -p 5432 > "%INFRASTRUCTURE_LOG_DIR%\postgresql.log" 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo [OK] PostgreSQL: Running on port 5432
-    pg_isready -h localhost -p 5432
+    if "%VERBOSE%"=="1" pg_isready -h localhost -p 5432
     echo [%date% %time%] PostgreSQL: Running >> "%STARTUP_LOG%"
 ) else (
     echo [ERROR] PostgreSQL: Not running on port 5432
@@ -144,7 +144,7 @@ echo.
 
 REM Check Kafka (optional)
 echo [INFO] Checking Kafka...
-echo   -^> Running: netstat -an ^| findstr :9092
+if "%VERBOSE%"=="1" echo   -^> Running: netstat -an ^| findstr :9092
 netstat -an | findstr :9092 | findstr LISTENING > nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo [OK] Kafka: Running on port 9092
@@ -159,12 +159,12 @@ echo.
 
 REM Check Node.js
 echo [INFO] Checking Node.js...
-echo   -^> Running: node --version
+if "%VERBOSE%"=="1" echo   -^> Running: node --version
 node --version > "%INFRASTRUCTURE_LOG_DIR%\nodejs.log" 2>&1
 if %ERRORLEVEL% EQU 0 (
     for /f "tokens=*" %%i in ('node --version') do set NODE_VERSION=%%i
     echo [OK] Node.js: !NODE_VERSION!
-    for /f "tokens=*" %%i in ('where node') do echo   -^> Node.js path: %%i
+    if "%VERBOSE%"=="1" for /f "tokens=*" %%i in ('where node') do echo   -^> Node.js path: %%i
     echo [%date% %time%] Node.js: !NODE_VERSION! >> "%STARTUP_LOG%"
 ) else (
     echo [WARNING] Node.js: Not found (dashboard will not start)
@@ -259,22 +259,28 @@ set UNHEALTHY=0
 set NOT_RUNNING=0
 
 for /L %%p in (8000,1,8025) do (
-    echo [INFO] Checking port %%p...
-    echo   -^> Running: curl -s -f -m 5 http://localhost:%%p/health
+    if "%VERBOSE%"=="1" (
+        echo [INFO] Checking port %%p...
+        echo   -^> Running: curl -s -f -m 5 http://localhost:%%p/health
+    )
     
     curl -s -f -m 5 http://localhost:%%p/health > "%AGENT_LOG_DIR%\port_%%p_health.log" 2>&1
     if !ERRORLEVEL! EQU 0 (
         echo [OK] Port %%p - HEALTHY
-        echo   -^> Health response:
-        type "%AGENT_LOG_DIR%\port_%%p_health.log" | findstr /C:"status" /C:"healthy"
+        if "%VERBOSE%"=="1" (
+            echo   -^> Health response:
+            type "%AGENT_LOG_DIR%\port_%%p_health.log" | findstr /C:"status" /C:"healthy"
+        )
         set /a HEALTHY+=1
     ) else (
         netstat -an | findstr :%%p | findstr LISTENING > nul 2>&1
         if !ERRORLEVEL! EQU 0 (
             echo [WARNING] Port %%p - UNHEALTHY (port open but /health failed)
             echo   -^> Port is listening but health check failed
-            echo   -^> Error output:
-            type "%AGENT_LOG_DIR%\port_%%p_health.log" 2>nul
+            if "%VERBOSE%"=="1" (
+                echo   -^> Error output:
+                type "%AGENT_LOG_DIR%\port_%%p_health.log" 2>nul
+            )
             set /a UNHEALTHY+=1
         ) else (
             echo [ERROR] Port %%p - NOT RUNNING
@@ -437,9 +443,11 @@ set LOG_FILE=%AGENT_LOG_DIR%\%AGENT_NAME%.log
 set PID_FILE=%AGENT_LOG_DIR%\%AGENT_NAME%.pid
 
 echo [%AGENT_COUNT%/26] Starting %AGENT_NAME% on port %AGENT_PORT%...
-echo   -^> Command: python agents\%AGENT_FILE%.py
-echo   -^> Port: %AGENT_PORT%
-echo   -^> Log: %LOG_FILE%
+if "%VERBOSE%"=="1" (
+    echo   -^> Command: python agents\%AGENT_FILE%.py
+    echo   -^> Port: %AGENT_PORT%
+    echo   -^> Log: %LOG_FILE%
+)
 
 REM Check if agent file exists
 if not exist "agents\%AGENT_FILE%.py" (
@@ -449,7 +457,7 @@ if not exist "agents\%AGENT_FILE%.py" (
 )
 
 set API_PORT=%AGENT_PORT%
-echo   -^> Executing: start "%AGENT_NAME% Agent" /B python agents\%AGENT_FILE%.py ^> "%LOG_FILE%" 2^>^&1
+if "%VERBOSE%"=="1" echo   -^> Executing: start "%AGENT_NAME% Agent" /B python agents\%AGENT_FILE%.py ^> "%LOG_FILE%" 2^>^&1
 start "%AGENT_NAME% Agent" /B python agents\%AGENT_FILE%.py > "%LOG_FILE%" 2>&1
 
 echo   [OK] %AGENT_NAME% started (Port: %AGENT_PORT%)

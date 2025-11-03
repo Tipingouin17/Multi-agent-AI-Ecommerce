@@ -36,9 +36,7 @@ for arg in "$@"; do
 done
 
 # Enable error handling
-if [ "$VERBOSE" = "1" ]; then
-    set -x  # Print commands as they execute (only if verbose)
-fi
+# Note: VERBOSE mode shows detailed results/logs, not command traces
 set -e  # Exit on error
 set -o pipefail  # Catch errors in pipes
 
@@ -146,12 +144,16 @@ check_infrastructure() {
     
     # Check Python
     log_info "Checking Python installation..."
-    echo -e "${CYAN}  → Running: which python3.11${NC}"
+    if [ "$VERBOSE" = "1" ]; then
+        echo -e "${CYAN}  → Running: which python3.11${NC}"
+    fi
     if command -v python3.11 &> /dev/null; then
         PYTHON_VERSION=$(python3.11 --version)
         log_success "Python: $PYTHON_VERSION"
         echo "$PYTHON_VERSION" > "$INFRASTRUCTURE_LOG_DIR/python.log"
-        echo -e "${GREEN}  → Python path: $(which python3.11)${NC}"
+        if [ "$VERBOSE" = "1" ]; then
+            echo -e "${GREEN}  → Python path: $(which python3.11)${NC}"
+        fi
     else
         log_error "Python 3.11 not found"
         echo -e "${RED}  → Please install Python 3.11${NC}"
@@ -160,10 +162,14 @@ check_infrastructure() {
     
     # Check PostgreSQL
     log_info "Checking PostgreSQL..."
-    echo -e "${CYAN}  → Running: pg_isready -h localhost -p 5432${NC}"
+    if [ "$VERBOSE" = "1" ]; then
+        echo -e "${CYAN}  → Running: pg_isready -h localhost -p 5432${NC}"
+    fi
     if pg_isready -h localhost -p 5432 > "$INFRASTRUCTURE_LOG_DIR/postgresql.log" 2>&1; then
         log_success "PostgreSQL: Running on port 5432"
-        pg_isready -h localhost -p 5432 | head -1
+        if [ "$VERBOSE" = "1" ]; then
+            pg_isready -h localhost -p 5432 | head -1
+        fi
     else
         log_error "PostgreSQL: Not running on port 5432"
         echo -e "${RED}  → Error output:${NC}"
@@ -260,9 +266,11 @@ start_agent() {
     local pid_file="$AGENT_LOG_DIR/${agent_name}.pid"
     
     log_info "Starting $agent_name on port $agent_port..."
-    echo -e "${CYAN}  → Command: python3.11 agents/${agent_file}.py${NC}"
-    echo -e "${CYAN}  → Port: $agent_port${NC}"
-    echo -e "${CYAN}  → Log: $log_file${NC}"
+    if [ "$VERBOSE" = "1" ]; then
+        echo -e "${CYAN}  → Command: python3.11 agents/${agent_file}.py${NC}"
+        echo -e "${CYAN}  → Port: $agent_port${NC}"
+        echo -e "${CYAN}  → Log: $log_file${NC}"
+    fi
     
     # Set environment variables
     export API_PORT=$agent_port
@@ -274,8 +282,10 @@ start_agent() {
         return 1
     fi
     
-    # Start agent in background with verbose output
-    echo -e "${YELLOW}  → Executing: nohup python3.11 agents/${agent_file}.py > $log_file 2>&1 &${NC}"
+    # Start agent in background
+    if [ "$VERBOSE" = "1" ]; then
+        echo -e "${YELLOW}  → Executing: nohup python3.11 agents/${agent_file}.py > $log_file 2>&1 &${NC}"
+    fi
     nohup python3.11 "agents/${agent_file}.py" > "$log_file" 2>&1 &
     local pid=$!
     local start_result=$?
@@ -294,6 +304,12 @@ start_agent() {
         log_error "Last 20 lines of log:"
         tail -20 "$log_file" 2>/dev/null || echo "No log output"
         return 1
+    fi
+    
+    # In verbose mode, show initial log output
+    if [ "$VERBOSE" = "1" ]; then
+        echo -e "${CYAN}  → Initial log output (first 5 lines):${NC}"
+        head -5 "$log_file" 2>/dev/null | sed 's/^/    /' || echo "    (no output yet)"
     fi
     
     # Save PID
@@ -367,20 +383,26 @@ check_agent_health() {
         local agent_name=${AGENT_NAMES[$port]:-"unknown"}
         local health_log="$AGENT_LOG_DIR/${agent_name}_health.log"
         
-        echo -e "${CYAN}Checking port $port ($agent_name)...${NC}"
-        echo -e "${CYAN}  → Running: curl -s -f -m 5 http://localhost:$port/health${NC}"
+        if [ "$VERBOSE" = "1" ]; then
+            echo -e "${CYAN}Checking port $port ($agent_name)...${NC}"
+            echo -e "${CYAN}  → Running: curl -s -f -m 5 http://localhost:$port/health${NC}"
+        fi
         
         if curl -s -f -m 5 "http://localhost:$port/health" > "$health_log" 2>&1; then
             log_success "✓ Port $port ($agent_name) - HEALTHY"
-            echo -e "${GREEN}  → Health response:${NC}"
-            head -3 "$health_log" | sed 's/^/    /'
+            if [ "$VERBOSE" = "1" ]; then
+                echo -e "${GREEN}  → Health response:${NC}"
+                head -3 "$health_log" | sed 's/^/    /'
+            fi
             healthy=$((healthy + 1))
         else
             if nc -z localhost $port 2>/dev/null; then
                 log_warning "⚠ Port $port ($agent_name) - UNHEALTHY (port open but /health failed)"
                 echo -e "${YELLOW}  → Port is open but health check failed${NC}"
-                echo -e "${YELLOW}  → Error output:${NC}"
-                cat "$health_log" 2>/dev/null | head -10 | sed 's/^/    /'
+                if [ "$VERBOSE" = "1" ]; then
+                    echo -e "${YELLOW}  → Error output:${NC}"
+                    cat "$health_log" 2>/dev/null | head -10 | sed 's/^/    /'
+                fi
                 unhealthy=$((unhealthy + 1))
             else
                 log_error "✗ Port $port ($agent_name) - NOT RUNNING"
@@ -393,7 +415,9 @@ check_agent_health() {
                 not_running=$((not_running + 1))
             fi
         fi
-        echo ""
+        if [ "$VERBOSE" = "1" ]; then
+            echo ""
+        fi
     done
     
     echo ""

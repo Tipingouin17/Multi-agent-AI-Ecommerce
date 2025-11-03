@@ -81,9 +81,11 @@ master_launch.bat -v
 ```
 
 Verbose mode will:
-- Print every command as it is executed
-- Show detailed error messages in the console
-- Provide real-time feedback on every step of the startup process
+- Show detailed results and logs in the console
+- Display the first 5 lines of each agent's log file on startup
+- Show full health check responses
+- Provide more detailed error messages and context
+- It does **not** show every command being executed (`set -x` `-x` `x`x`x), but rather the **results** of those commands.
 
 ## Help Message
 
