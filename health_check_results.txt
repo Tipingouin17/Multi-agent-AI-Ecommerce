@@ -1,0 +1,173 @@
+================================================================================
+COMPREHENSIVE DEEP HEALTH CHECK
+================================================================================
+Start Time: 2025-11-03 11:58:47.602405
+Agents to check: 17
+
+================================================================================
+Checking: MONITORING (port 8000)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /metrics: Connection refused
+  ✗ /agents: Connection refused
+
+  Status: ❌ FAILED (0/3 endpoints healthy)
+
+================================================================================
+Checking: ORDER (port 8001)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /orders: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: PRODUCT (port 8002)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /products: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: INVENTORY (port 8003)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /inventory: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: WAREHOUSE (port 8004)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /warehouse: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: PAYMENT (port 8005)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /payments: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: CUSTOMER (port 8008)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /customers: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: RISK (port 8010)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /risk: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: BACKOFFICE (port 8011)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /backoffice: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: KNOWLEDGE (port 8012)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /knowledge: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: PROMOTION (port 8014)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /promotions: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: RECOMMENDATION (port 8015)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /recommendations: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: AFTER_SALES (port 8016)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /after-sales: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: SUPPORT (port 8017)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /tickets: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: RETURNS (port 8018)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /returns: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: AI_MONITORING (port 8024)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /monitoring: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+Checking: INFRASTRUCTURE (port 8025)
+================================================================================
+  ✗ /health: Connection refused
+  ✗ /infrastructure: Connection refused
+
+  Status: ❌ FAILED (0/2 endpoints healthy)
+
+================================================================================
+SUMMARY
+================================================================================
+
+✅ Perfect: 0/17 agents
+
+❌ Failed: 17 agents
+   - monitoring: /health: Connection refused, /metrics: Connection refused, /agents: Connection refused
+   - order: /health: Connection refused, /orders: Connection refused
+   - product: /health: Connection refused, /products: Connection refused
+   - inventory: /health: Connection refused, /inventory: Connection refused
+   - warehouse: /health: Connection refused, /warehouse: Connection refused
+   - payment: /health: Connection refused, /payments: Connection refused
+   - customer: /health: Connection refused, /customers: Connection refused
+   - risk: /health: Connection refused, /risk: Connection refused
+   - backoffice: /health: Connection refused, /backoffice: Connection refused
+   - knowledge: /health: Connection refused, /knowledge: Connection refused
+   - promotion: /health: Connection refused, /promotions: Connection refused
+   - recommendation: /health: Connection refused, /recommendations: Connection refused
+   - after_sales: /health: Connection refused, /after-sales: Connection refused
+   - support: /health: Connection refused, /tickets: Connection refused
+   - returns: /health: Connection refused, /returns: Connection refused
+   - ai_monitoring: /health: Connection refused, /monitoring: Connection refused
+   - infrastructure: /health: Connection refused, /infrastructure: Connection refused
+
+📄 Detailed results saved to: deep_health_check_results.json
+
+================================================================================
+Production Readiness: 0/17 agents (100% perfect)
+================================================================================

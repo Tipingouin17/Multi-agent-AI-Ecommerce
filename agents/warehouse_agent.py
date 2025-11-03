@@ -79,20 +79,21 @@ from typing import Dict, List, Optional, Any
 from uuid import uuid4, UUID
 from enum import Enum
 
-from shared.db_helpers import DatabaseHelper
-
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body
 from pydantic import BaseModel, Field
 import structlog
 import sys
 import os
 
+# Add project root to path FIRST
 current_file_path = os.path.abspath(__file__)
 current_dir = os.path.dirname(current_file_path)
 project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
+# Now import shared modules
+from shared.db_helpers import DatabaseHelper
 from shared.database import DatabaseManager, get_database_manager, initialize_database_manager
 from shared.base_agent_v2 import BaseAgentV2
 from fastapi.middleware.cors import CORSMiddleware

@@ -55,6 +55,15 @@ async def app_lifespan(app: FastAPI):
 # Create module-level FastAPI app with lifespan
 app = FastAPI(title="Monitoring Agent API", lifespan=app_lifespan)
 
+# Add CORS middleware (must be done before app starts)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Add project root to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
@@ -187,14 +196,7 @@ class MonitoringAgent(BaseAgentV2):
         """
         # Startup
         logger.info("FastAPI Lifespan Startup: Monitoring Agent")
-        # Add CORS middleware here to ensure it's added to the module-level app
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+        # CORS middleware is added at module level before app starts
         await self.initialize()
         
         yield

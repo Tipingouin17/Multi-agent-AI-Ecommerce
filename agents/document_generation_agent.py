@@ -27,6 +27,7 @@ Technologies:
 """
 
 import os
+import sys
 import json
 import logging
 from datetime import datetime
@@ -36,6 +37,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import asyncio
+
+# Add project root to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from shared.db_helpers import DatabaseHelper
 from shared.base_agent_v2 import BaseAgentV2

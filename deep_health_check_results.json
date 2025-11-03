@@ -1,0 +1,337 @@
+{
+  "timestamp": "2025-11-03T11:58:57.021045",
+  "total_agents": 17,
+  "perfect": 0,
+  "partial": 0,
+  "failed": 17,
+  "results": [
+    {
+      "name": "monitoring",
+      "port": 8000,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/metrics": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/agents": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/metrics: Connection refused",
+        "/agents: Connection refused"
+      ]
+    },
+    {
+      "name": "order",
+      "port": 8001,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/orders": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/orders: Connection refused"
+      ]
+    },
+    {
+      "name": "product",
+      "port": 8002,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/products": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/products: Connection refused"
+      ]
+    },
+    {
+      "name": "inventory",
+      "port": 8003,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/inventory": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/inventory: Connection refused"
+      ]
+    },
+    {
+      "name": "warehouse",
+      "port": 8004,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/warehouse": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/warehouse: Connection refused"
+      ]
+    },
+    {
+      "name": "payment",
+      "port": 8005,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/payments": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/payments: Connection refused"
+      ]
+    },
+    {
+      "name": "customer",
+      "port": 8008,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/customers": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/customers: Connection refused"
+      ]
+    },
+    {
+      "name": "risk",
+      "port": 8010,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/risk": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/risk: Connection refused"
+      ]
+    },
+    {
+      "name": "backoffice",
+      "port": 8011,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/backoffice": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/backoffice: Connection refused"
+      ]
+    },
+    {
+      "name": "knowledge",
+      "port": 8012,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/knowledge": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/knowledge: Connection refused"
+      ]
+    },
+    {
+      "name": "promotion",
+      "port": 8014,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/promotions": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/promotions: Connection refused"
+      ]
+    },
+    {
+      "name": "recommendation",
+      "port": 8015,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/recommendations": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/recommendations: Connection refused"
+      ]
+    },
+    {
+      "name": "after_sales",
+      "port": 8016,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/after-sales": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/after-sales: Connection refused"
+      ]
+    },
+    {
+      "name": "support",
+      "port": 8017,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/tickets": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/tickets: Connection refused"
+      ]
+    },
+    {
+      "name": "returns",
+      "port": 8018,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/returns": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/returns: Connection refused"
+      ]
+    },
+    {
+      "name": "ai_monitoring",
+      "port": 8024,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/monitoring": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/monitoring: Connection refused"
+      ]
+    },
+    {
+      "name": "infrastructure",
+      "port": 8025,
+      "endpoints": {
+        "/health": {
+          "success": false,
+          "message": "Connection refused"
+        },
+        "/infrastructure": {
+          "success": false,
+          "message": "Connection refused"
+        }
+      },
+      "overall_status": "failed",
+      "issues": [
+        "/health: Connection refused",
+        "/infrastructure: Connection refused"
+      ]
+    }
+  ]
+}
