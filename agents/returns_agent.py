@@ -53,17 +53,6 @@ class ReturnStatus(str, Enum):
     INSPECTED = "inspected"
     REFUNDED = "refunded"
     CANCELLED = "cancelled"
-    async def initialize(self):
-        """Initialize agent."""
-        await super().initialize()
-        
-    async def cleanup(self):
-        """Cleanup agent."""
-        await super().cleanup()
-        
-    async def process_business_logic(self, data):
-        """Process business logic."""
-        return {"status": "success"}
 
 
 class RefundMethod(str, Enum):
@@ -380,7 +369,8 @@ class ReturnsService:
 # AGENT
 class ReturnsAgent(BaseAgentV2):
     """Returns Agent for managing product returns and refunds in the e-commerce system."""
-    def __init__(self, agent_id: str, agent_type: str, kafka_broker_url: str, database_url: str):
+    def __init__(self, agent_id: str = "returns_agent", agent_type: str = "returns_management", 
+                 kafka_broker_url: str = None, database_url: str = None):
         """
         Initializes the ReturnsAgent.
 
@@ -390,7 +380,11 @@ class ReturnsAgent(BaseAgentV2):
             kafka_broker_url (str): URL for the Kafka broker.
             database_url (str): URL for the database connection.
         """
-        super().__init__(agent_id=agent_id, kafka_broker_url=kafka_broker_url)
+        # Use environment variables if not provided
+        kafka_broker_url = kafka_broker_url or os.getenv("KAFKA_BROKER_URL", "localhost:9092")
+        database_url = database_url or os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/ecommerce")
+        
+        super().__init__(agent_id=agent_id)
         self.db_manager = DatabaseManager(database_url)
         self.returns_repo = ReturnsRepository(self.db_manager)
         self.returns_service = ReturnsService(self.returns_repo)
@@ -464,16 +458,49 @@ class ReturnsAgent(BaseAgentV2):
         except Exception as e:
             logger.error("Error processing Kafka message", error=str(e), message=message.model_dump_json())
 
-    async def shutdown(self):
-        """
-        Performs cleanup operations during agent shutdown.
-        """
-        logger.info("ReturnsAgent shutdown initiated.")
+    async def initialize(self):
+        """Initialize the Returns Agent with database connections."""
+        await super().initialize()
+        logger.info("ReturnsAgent initialize initiated.")
         try:
-            await self.db_manager.close()
-            logger.info("ReturnsAgent database disconnected.")
+            await self.db_manager.initialize_async()
+            self._db_initialized = True
+            logger.info("ReturnsAgent database connected successfully.")
         except Exception as e:
-            logger.error("ReturnsAgent database disconnection failed", error=str(e))
+            logger.error("ReturnsAgent database connection failed", error=str(e))
+            raise
+    
+    async def cleanup(self):
+        """Cleanup agent resources."""
+        logger.info("ReturnsAgent cleanup initiated.")
+        try:
+            if self.db_manager:
+                await self.db_manager.close()
+            await super().cleanup()
+            logger.info("ReturnsAgent cleaned up successfully.")
+        except Exception as e:
+            logger.error("ReturnsAgent cleanup failed", error=str(e))
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process returns business logic.
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing returns operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def shutdown(self):
+        """Performs cleanup operations during agent shutdown (legacy method)."""
+        await self.cleanup()
 
 # FastAPI APP
 app = FastAPI(title="Returns Agent API", version="1.0.0",
