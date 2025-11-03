@@ -18,8 +18,6 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 
-from shared.db_helpers import DatabaseHelper
-
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import structlog
@@ -38,16 +36,17 @@ current_dir = os.path.dirname(current_file_path)
 # Get the parent directory (project root)
 project_root = os.path.dirname(current_dir)
 
-# Add the project root to the Python path
+# Add the project root to the Python path FIRST
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
     logger.info(f"Added {project_root} to Python path")
 
-# Now try the import
+# Now import shared modules
 try:
+    from shared.db_helpers import DatabaseHelper
     from shared.openai_helper import chat_completion
     from shared.base_agent_v2 import BaseAgentV2, MessageType, AgentMessage
-    logger.info("Successfully imported shared.base_agent")
+    logger.info("Successfully imported shared modules")
 except ImportError as e:
     logger.error(f"Import error: {e}")
     logger.info(f"Current sys.path: {sys.path}")

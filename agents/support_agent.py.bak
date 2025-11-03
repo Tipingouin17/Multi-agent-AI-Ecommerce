@@ -80,6 +80,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.future import select
 from sqlalchemy.sql import func
 
+from shared.db_helpers import DatabaseHelper
+from shared.database import DatabaseManager, get_database_manager
+from shared.base_agent_v2 import BaseAgentV2, AgentMessage, MessageType
+
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body
 from pydantic import BaseModel, Field
 import structlog
@@ -88,17 +92,12 @@ import uvicorn
 # Configure logging
 logger = structlog.get_logger(__name__)
 
-# Add project root to sys.path for shared modules FIRST
+# Add project root to sys.path for shared modules
 current_file_path = os.path.abspath(__file__)
 current_dir = os.path.dirname(current_file_path)
 project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-
-# Now import shared modules
-from shared.db_helpers import DatabaseHelper
-from shared.database import DatabaseManager, get_database_manager
-from shared.base_agent_v2 import BaseAgentV2, AgentMessage, MessageType
 
 # ENUMS
 class TicketStatus(str, Enum):
