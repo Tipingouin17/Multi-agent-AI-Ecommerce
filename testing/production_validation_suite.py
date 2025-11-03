@@ -444,9 +444,15 @@ class ProductionValidationSuite:
 # MAIN EXECUTION
 # =====================================================
 
-async def start_local_environment():
+async def start_local_environment(skip_startup: bool = False):
     """Starts the local development environment using the shell script."""
-    script_path = Path(__file__).parent.parent / "scripts" / "start_local_dev.sh"
+    if skip_startup:
+        logger.info("Skipping local environment startup as requested.")
+        return True  # Return a truthy value to indicate success
+
+    import platform
+    script_name = "start_local_dev.ps1" if platform.system() == "Windows" else "start_local_dev.sh"
+    script_path = Path(__file__).parent.parent / "scripts" / script_name
     logger.info(f"Attempting to start local environment using: {script_path}")
     
     try:
@@ -456,8 +462,13 @@ async def start_local_environment():
         # Use nohup to ensure the script continues running even if the parent process dies,
         # and redirect output to a file for later inspection.
         log_file = script_path.parent.parent / "start_local_dev.log"
+        if platform.system() == "Windows":
+            command = ["powershell.exe", "-File", str(script_path)]
+        else:
+            command = ["/usr/bin/nohup", "/bin/bash", str(script_path)]
+
         process = subprocess.Popen(
-            ["/usr/bin/nohup", "/bin/bash", str(script_path)],
+            command,
             cwd=script_path.parent.parent, # Run from the project root
             stdout=open(log_file, "w"),
             stderr=open(log_file, "a"),
