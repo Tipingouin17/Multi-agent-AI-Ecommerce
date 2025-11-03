@@ -2412,9 +2412,13 @@ if __name__ == "__main__":
     import os
     
     # Initialize database
-    password = os.getenv("POSTGRES_PASSWORD")
-    if not password:
-        raise ValueError("Database password must be set in environment variables")
+    # Try DATABASE_URL first, then individual env vars
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # Parse DATABASE_URL if provided
+        password = "postgres"  # Default from DATABASE_URL
+    else:
+        password = os.getenv("POSTGRES_PASSWORD", "postgres")  # Default to 'postgres'
     
     db_config = DatabaseConfig(
         host=os.getenv("POSTGRES_HOST", "localhost"),

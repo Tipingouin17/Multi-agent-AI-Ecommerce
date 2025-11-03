@@ -602,5 +602,11 @@ async def run_agent():
 
 
 if __name__ == "__main__":
-    asyncio.run(run_agent())
+    import uvicorn
+    import os
+    
+    API_PORT = int(os.getenv("API_PORT", "8001"))
+    logger.info(f"Starting Product Agent on port {API_PORT}")
+    
+    uvicorn.run(app, host="0.0.0.0", port=API_PORT)
 

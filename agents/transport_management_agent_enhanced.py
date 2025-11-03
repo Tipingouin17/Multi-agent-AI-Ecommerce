@@ -128,6 +128,7 @@ logger = structlog.get_logger(__name__)
 
 # --- FastAPI Setup ---
 # Module-level app instance for Uvicorn
+# Note: lifespan will be set after agent instance is created
 app = FastAPI(title="Transport Management Agent API",
               description="Enhanced agent for managing shipping and transportation.")
 
@@ -1085,6 +1086,40 @@ class ColisPriveIntegration(CarrierIntegration):
 
 # Create agent instance at module level to ensure routes are registered
 agent = TransportManagementAgent()
+
+# Create app with lifespan
+import asyncio
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for the FastAPI app"""
+    # Startup
+    logger.info("FastAPI Lifespan Startup: Transport Management Agent")
+    await agent.initialize()
+    yield
+    # Shutdown
+    logger.info("FastAPI Lifespan Shutdown: Transport Management Agent")
+    await agent.cleanup()
+
+# Recreate app with lifespan
+app = FastAPI(
+    title="Transport Management Agent API",
+    description="Enhanced agent for managing shipping and transportation.",
+    lifespan=lifespan
+)
+
+# Re-add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Re-setup routes
+agent.setup_routes()
 
 if __name__ == '__main__':
     import uvicorn

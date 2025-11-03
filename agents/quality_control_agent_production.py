@@ -335,3 +335,12 @@ class QualityControlAgent(BaseAgentV2):
 
 # Create agent instance at module level to ensure routes are registered
 agent = QualityControlAgent(agent_id="quality_control_agent")
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    
+    API_PORT = int(os.getenv("API_PORT", "8025"))
+    logger.info(f"Starting Quality Control Agent on port {API_PORT}")
+    
+    uvicorn.run(app, host="0.0.0.0", port=API_PORT)

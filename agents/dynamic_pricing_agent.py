@@ -464,6 +464,16 @@ app = FastAPI(
 agent_instance.app = app
 # agent_instance.setup_routes() - Routes are set up in the agent class and registered via the app instance
 
+# Add health endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "agent": "dynamic_pricing_agent",
+        "version": "1.0.0"
+    }
+
 # --- Main Execution ---
 
 

@@ -862,6 +862,20 @@ class SupportAgent(BaseAgentV2):
         """
         logger.info("SupportAgent setup initiated")
         try:
+            # Initialize database manager first
+            if self.db_manager is None:
+                try:
+                    self.db_manager = get_database_manager()
+                    logger.info("Using global database manager")
+                except RuntimeError:
+                    from shared.models import DatabaseConfig
+                    db_config = DatabaseConfig()
+                    self.db_manager = DatabaseManager(db_config)
+                    await self.db_manager.initialize()
+                    logger.info("Created new database manager")
+                
+                self.db_helper = DatabaseHelper(self.db_manager)
+            
             # Ensure database tables are created if not exist (for development/testing)
             # In a production environment, migrations would handle this.
             async with self.db_manager.engine.begin() as conn:

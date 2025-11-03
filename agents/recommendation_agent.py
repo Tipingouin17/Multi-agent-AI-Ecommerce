@@ -265,6 +265,16 @@ class RecommendationService:
 # AGENT CLASS
 app = FastAPI()
 
+# Add health endpoint at module level
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "agent": "recommendation_agent",
+        "version": "1.0.0"
+    }
+
 
 class RecommendationAgent(BaseAgentV2):
     """
