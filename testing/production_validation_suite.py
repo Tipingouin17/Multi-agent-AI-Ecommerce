@@ -446,7 +446,7 @@ class ProductionValidationSuite:
 
 async def start_local_environment(skip_startup: bool = False):
     """Starts the local development environment using the shell script."""
-        if skip_startup:
+    if skip_startup:
         logger.info("Skipping local environment startup as requested.")
         return True  # Return a truthy value to indicate success
 
