@@ -394,8 +394,12 @@ async def lifespan(app: FastAPI):
     logger.info("Warehouse Agent Startup: Initializing Database and Service")
     try:
         # Initialize database manager first
-        await initialize_database_manager()
-        db_manager = await get_database_manager()
+        from shared.models import DatabaseConfig
+        import os
+        db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/multi_agent_ecommerce")
+        db_config = DatabaseConfig(url=db_url)
+        db_manager = initialize_database_manager(db_config)
+        await db_manager.initialize_async()
         repo = WarehouseRepository(db_manager)
         warehouse_service = WarehouseService(repo)
         logger.info("Warehouse Agent Startup: Initialization Complete")

@@ -606,9 +606,6 @@ async def lifespan_context(app: FastAPI):
     agent_id = os.getenv("AGENT_ID", "fraud_detection_agent_001")
     fraud_agent = FraudDetectionAgent(agent_id=agent_id)
     
-    # Set lifespan context on the agent's app instance
-    app.router.lifespan_context = fraud_agent.lifespan_context
-    
     await fraud_agent.initialize()
     
     yield
