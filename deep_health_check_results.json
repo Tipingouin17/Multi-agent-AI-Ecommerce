@@ -1,32 +1,31 @@
 {
-  "timestamp": "2025-11-03T11:58:57.021045",
+  "timestamp": "2025-11-03T13:29:26.735466",
   "total_agents": 17,
   "perfect": 0,
-  "partial": 0,
-  "failed": 17,
+  "partial": 5,
+  "failed": 12,
   "results": [
     {
       "name": "monitoring",
       "port": 8000,
       "endpoints": {
         "/health": {
-          "success": false,
-          "message": "Connection refused"
+          "success": true,
+          "message": "OK (200)"
         },
         "/metrics": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 404"
         },
         "/agents": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 404"
         }
       },
-      "overall_status": "failed",
+      "overall_status": "partial",
       "issues": [
-        "/health: Connection refused",
-        "/metrics: Connection refused",
-        "/agents: Connection refused"
+        "/metrics: HTTP 404",
+        "/agents: HTTP 404"
       ]
     },
     {
@@ -72,18 +71,17 @@
       "port": 8003,
       "endpoints": {
         "/health": {
-          "success": false,
-          "message": "Connection refused"
+          "success": true,
+          "message": "OK (200)"
         },
         "/inventory": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 500"
         }
       },
-      "overall_status": "failed",
+      "overall_status": "partial",
       "issues": [
-        "/health: Connection refused",
-        "/inventory: Connection refused"
+        "/inventory: HTTP 500"
       ]
     },
     {
@@ -129,18 +127,17 @@
       "port": 8008,
       "endpoints": {
         "/health": {
-          "success": false,
-          "message": "Connection refused"
+          "success": true,
+          "message": "OK (200)"
         },
         "/customers": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 500"
         }
       },
-      "overall_status": "failed",
+      "overall_status": "partial",
       "issues": [
-        "/health: Connection refused",
-        "/customers: Connection refused"
+        "/customers: HTTP 500"
       ]
     },
     {
@@ -168,17 +165,17 @@
       "endpoints": {
         "/health": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 404"
         },
         "/backoffice": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 404"
         }
       },
       "overall_status": "failed",
       "issues": [
-        "/health: Connection refused",
-        "/backoffice: Connection refused"
+        "/health: HTTP 404",
+        "/backoffice: HTTP 404"
       ]
     },
     {
@@ -186,18 +183,17 @@
       "port": 8012,
       "endpoints": {
         "/health": {
-          "success": false,
-          "message": "Connection refused"
+          "success": true,
+          "message": "OK (200)"
         },
         "/knowledge": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 404"
         }
       },
-      "overall_status": "failed",
+      "overall_status": "partial",
       "issues": [
-        "/health: Connection refused",
-        "/knowledge: Connection refused"
+        "/knowledge: HTTP 404"
       ]
     },
     {
@@ -206,17 +202,17 @@
       "endpoints": {
         "/health": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 503"
         },
         "/promotions": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 404"
         }
       },
       "overall_status": "failed",
       "issues": [
-        "/health: Connection refused",
-        "/promotions: Connection refused"
+        "/health: HTTP 503",
+        "/promotions: HTTP 404"
       ]
     },
     {
@@ -224,18 +220,17 @@
       "port": 8015,
       "endpoints": {
         "/health": {
-          "success": false,
-          "message": "Connection refused"
+          "success": true,
+          "message": "OK (200)"
         },
         "/recommendations": {
           "success": false,
-          "message": "Connection refused"
+          "message": "HTTP 404"
         }
       },
-      "overall_status": "failed",
+      "overall_status": "partial",
       "issues": [
-        "/health: Connection refused",
-        "/recommendations: Connection refused"
+        "/recommendations: HTTP 404"
       ]
     },
     {
