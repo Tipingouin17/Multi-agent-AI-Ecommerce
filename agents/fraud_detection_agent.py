@@ -8,6 +8,7 @@ for transactions, orders, and user behavior.
 """
 
 import asyncio
+import contextlib
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
@@ -521,34 +522,7 @@ class FraudDetectionAgent(BaseAgentV2):
         self.db_helper = DatabaseHelper(self.db_manager)
         self.repository = FraudDetectionRepository(self.db_helper)
         self.service = FraudDetectionService(self.repository)
-
-        # Use module-level app
-        self.app = app
-        self._db_initial@contextlib.asynccontextmanager
-async def lifespan_context(app: FastAPI):
-    """
-    FastAPI Lifespan Context Manager for agent startup and shutdown.
-    """
-    global fraud_agent
-    
-    # Startup
-    logger.info("FastAPI Lifespan Startup: Fraud Detection Agent")
-    
-    # Initialize agent instance
-    agent_id = os.getenv("AGENT_ID", "fraud_detection_agent_001")
-    fraud_agent = FraudDetectionAgent(agent_id=agent_id)
-    
-    # Set lifespan context on the agent's app instance
-    app.router.lifespan_context = fraud_agent.lifespan_context
-    
-    await fraud_agent.initialize()
-    
-    yield
-    
-    # Shutdown
-    logger.info("FastAPI Lifespan Shutdown: Fraud Detection Agent")
-    await fraud_agent.cleanup()
-    logger.info("Fraud Detection Agent API shutdown complete")
+        self._db_initialized = False
 
     async def initialize(self):
         """Initializes the agent with robust error handling."""
@@ -592,115 +566,6 @@ async def lifespan_context(app: FastAPI):
                     logger.error("Failed to initialize database after all retries")
                     self._db_initialized = False
 
-    async def on_startup(self):
-        """Handles agent startup tasks, such as initializing the database connection."""
-        logger.info("Fraud Detection Agent starting up...")
-        await self.initialize()
-
-    async def on_shutdown(self):
-        """Handles agent shutdown tasks, such as disconnecting from the database."""
-        logger.info("Fraud Detection Agent shutting down...")
-        await self.db_manager.close()
-
-    def setup_routes(self):
-        """Sets up FastAPI routes for the agent.
-
-        Includes health check, root endpoint, and business logic endpoints.
-        """
-        @app.get("/health", summary="Health Check", tags=["Monitoring"])
-        async def health_check():
-            """Endpoint to check the health of the agent and its database connection."""
-            logger.info("Health check requested")
-            if not self._db_initialized:
-                logger.error("Health check failed: Database not initialized")
-                raise HTTPException(status_code=503, detail="Database not initialized")
-            return {"status": "healthy", "db_connected": self._db_initialized}
-
-        @app.get("/", summary="Root endpoint", tags=["General"])
-        async def root():
-            """Root endpoint providing a simple status message."""
-            logger.info("Root endpoint accessed")
-            return {"message": "Fraud Detection Agent is running"}
-
-        @app.post("/check_fraud", response_model=FraudCheckResult, summary="Perform a fraud check", tags=["Fraud Detection"])
-        async def check_fraud_endpoint(request: FraudCheckRequest):
-            """Endpoint to perform a comprehensive fraud check on an entity."""
-            logger.info("Fraud check endpoint called", entity_type=request.entity_type, entity_id=request.entity_id)
-            if not self._db_initialized:
-                logger.error("Fraud check failed: Database not initialized")
-                raise HTTPException(status_code=503, detail="Database not initialized")
-            return await self.service.perform_fraud_check(request)
-
-        @app.post("/block_entity", summary="Block an entity", tags=["Fraud Management"])
-        async def block_entity_endpoint(request: BlockEntityRequest, blocked_by: str = Body(..., embed=True)):
-            """Endpoint to block an entity from performing transactions."""
-            logger.info("Block entity endpoint called", entity_type=request.entity_type, entity_value=request.entity_value)
-            if not self._db_initialized:
-                logger.error("Block entity failed: Database not initialized")
-                raise HTTPException(status_code=503, detail="Database not initialized")
-            return await self.service.block_entity(request, blocked_by)
-
-        @app.get("/customer_fraud_history/{customer_id}", response_model=List[Dict[str, Any]], summary="Get customer fraud history", tags=["Fraud Detection"])
-        async def get_customer_history_endpoint(customer_id: str = Path(..., description="The ID of the customer"), limit: int = 10):
-            """Endpoint to retrieve the fraud history for a specific customer."""
-            logger.info("Customer fraud history endpoint called", customer_id=customer_id, limit=limit)
-            if not self._db_initialized:
-                logger.error("Get customer fraud history failed: Database not initialized")
-                raise HTTPException(status_code=503, detail="Database not initialized")
-            return await self.repository.get_customer_fraud_history(customer_id, limit)
-
-    async def process_message(self, message: AgentMessage):
-        """Processes incoming messages for the agent from the Kafka bus.
-
-        Args:
-            message (AgentMessage): The incoming message to process.
-        """
-        logger.info("Received message", message_type=message.message_type, sender=message.sender)
-
-        try:
-            if not self._db_initialized:
-                logger.warning("Database not initialized, cannot process message.")
-                await self.send_message(
-                    recipient_agent_id=message.sender,
-                    message_type=MessageType.ERROR,
-                    body={"error": "Database not initialized", "original_message": message.dict()}
-                )
-                return
-
-            if message.message_type == MessageType.FRAUD_CHECK_REQUEST:
-                fraud_request = FraudCheckRequest(**message.body)
-                result = await self.service.perform_fraud_check(fraud_request)
-                await self.send_message(
-                    recipient_agent_id=message.sender,
-                    message_type=MessageType.FRAUD_CHECK_RESPONSE,
-                    body=result.dict()
-                )
-                logger.info("Processed FRAUD_CHECK_REQUEST and sent response", check_id=str(result.check_id))
-            elif message.message_type == MessageType.BLOCK_ENTITY_REQUEST:
-                block_request = BlockEntityRequest(**message.body)
-                blocked_by = message.sender  # Assuming the sender is the one initiating the block
-                block_id = await self.service.block_entity(block_request, blocked_by)
-                await self.send_message(
-                    recipient_agent_id=message.sender,
-                    message_type=MessageType.BLOCK_ENTITY_RESPONSE,
-                    body={"block_id": str(block_id), "status": "success"}
-                )
-                logger.info("Processed BLOCK_ENTITY_REQUEST and sent response", block_id=str(block_id))
-            else:
-                logger.warning("Unknown message type received", message_type=message.message_type)
-                await self.send_message(
-                    recipient_agent_id=message.sender,
-                    message_type=MessageType.ERROR,
-                    body={"error": f"Unknown message type: {message.message_type}", "original_message": message.dict()}
-                )
-        except Exception as e:
-            logger.error("Error processing message", error=str(e), message=message.dict())
-            await self.send_message(
-                recipient_agent_id=message.sender,
-                message_type=MessageType.ERROR,
-                body={"error": str(e), "original_message": message.dict()}
-            )
-
     async def cleanup(self):
         """Cleanup agent resources"""
         try:
@@ -710,7 +575,6 @@ async def lifespan_context(app: FastAPI):
             logger.info(f"{self.agent_name} cleaned up successfully")
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
-
 
     async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Process agent-specific business logic
@@ -728,10 +592,46 @@ async def lifespan_context(app: FastAPI):
             logger.error(f"Error in process_business_logic: {e}")
             return {"status": "error", "message": str(e)}
 
+@contextlib.asynccontextmanager
+async def lifespan_context(app: FastAPI):
+    """
+    FastAPI Lifespan Context Manager for agent startup and shutdown.
+    """
+    global fraud_agent
+    
+    # Startup
+    logger.info("FastAPI Lifespan Startup: Fraud Detection Agent")
+    
+    # Initialize agent instance
+    agent_id = os.getenv("AGENT_ID", "fraud_detection_agent_001")
+    fraud_agent = FraudDetectionAgent(agent_id=agent_id)
+    
+    # Set lifespan context on the agent's app instance
+    app.router.lifespan_context = fraud_agent.lifespan_context
+    
+    await fraud_agent.initialize()
+    
+    yield
+    
+    # Shutdown
+    logger.info("FastAPI Lifespan Shutdown: Fraud Detection Agent")
+    await fraud_agent.cleanup()
+    logger.info("Fraud Detection Agent API shutdown complete")
+
+# Module-level app instance
+app = FastAPI(
+    title="Fraud Detection Agent",
+    description="ML-based fraud detection and risk scoring",
+    version="1.0.0",
+    lifespan=lifespan_context
+)
+
+# FraudDetectionAgent class is complete with all required methods
 
 
-# Create agent instance at module level to ensure routes are registered
-agent = FraudDetectionAgent()
+
+# Create agent instance at module level for lifespan context
+fraud_agent = None
 
 if __name__ == "__main__":
     """Main entry point for running the Fraud Detection Agent.
