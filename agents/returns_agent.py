@@ -385,7 +385,10 @@ class ReturnsAgent(BaseAgentV2):
         database_url = database_url or os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/ecommerce")
         
         super().__init__(agent_id=agent_id)
-        self.db_manager = DatabaseManager(database_url)
+        # Create DatabaseConfig from URL string
+        from shared.models import DatabaseConfig
+        db_config = DatabaseConfig(url=database_url)
+        self.db_manager = DatabaseManager(db_config)
         self.returns_repo = ReturnsRepository(self.db_manager)
         self.returns_service = ReturnsService(self.returns_repo)
         self._db_initialized = False
