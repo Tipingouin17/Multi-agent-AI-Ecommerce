@@ -866,9 +866,9 @@ if __name__ == '__main__':
     agent_instance = DocumentGenerationAgent()
     asyncio.run(agent_instance.initialize_agent())
     
-    # Register event handlers
-    agent_instance.app.add_event_handler("startup", startup_event)
-    agent_instance.app.add_event_handler("shutdown", shutdown_event)
+    # Register event handlers on module-level app
+    app.add_event_handler("startup", startup_event)
+    app.add_event_handler("shutdown", shutdown_event)
     
     uvicorn.run(app, host="0.0.0.0", port=API_PORT)
 

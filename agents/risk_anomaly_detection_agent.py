@@ -307,8 +307,8 @@ class RiskAnomalyDetectionAgent(BaseAgentV2):
         """Performs cleanup tasks."""
         self.logger.info("Cleaning up Risk Anomaly Detection Agent...")
         await super().cleanup()
-        if self._db_initialized:
-            await self.db_manager.disconnect()
+        if self._db_initialized and hasattr(self.db_manager, 'close'):
+            await self.db_manager.close()
             self.logger.info("Database connection closed.")
         self.logger.info("Risk Anomaly Detection Agent cleanup complete.")
 

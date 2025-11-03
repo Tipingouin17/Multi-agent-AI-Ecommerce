@@ -95,8 +95,8 @@ API_PORT=8014 nohup python3.11 agents/knowledge_management_agent.py > logs/agent
 echo "✓ [8014] knowledge_agent"
 sleep 1
 
-# Port 8015: Transport Management Agent
-API_PORT=8015 nohup python3.11 agents/transport_management_agent_enhanced.py > logs/agents/transport.log 2>&1 &
+# Port 8015: Transport Management Agent (uses PORT not API_PORT)
+PORT=8015 nohup python3.11 agents/transport_management_agent_enhanced.py > logs/agents/transport.log 2>&1 &
 echo "✓ [8015] transport_agent"
 sleep 1
 
