@@ -284,7 +284,7 @@ async def lifespan_context(app: FastAPI):
         await agent_instance.cleanup()
     logger.info("After-Sales Agent API shutdown complete")
 
-class AfterSalesAgent:(BaseAgentV2):
+class AfterSalesAgent(BaseAgentV2):
     """
     After-Sales Agent - Production Ready
     
