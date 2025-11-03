@@ -254,6 +254,16 @@ class QualityControlRepository:
 
 app = FastAPI()
 
+# Add health endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "agent": "quality_control_agent",
+        "version": "1.0.0"
+    }
+
 
 class QualityControlAgent(BaseAgentV2):
     """

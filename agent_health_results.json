@@ -1,8 +1,8 @@
 {
   "summary": {
-    "healthy": 12,
-    "unhealthy": 3,
-    "not_running": 11,
+    "healthy": 14,
+    "unhealthy": 2,
+    "not_running": 10,
     "total": 26
   },
   "agents": {
@@ -16,9 +16,14 @@
       }
     },
     "product_agent": {
-      "status": "\u274c NOT RUNNING",
-      "code": null,
-      "details": "Connection refused"
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "product_agent",
+        "database": "connected",
+        "timestamp": "2025-11-03T19:44:03.785979"
+      }
     },
     "inventory_agent": {
       "status": "\u274c NOT RUNNING",
@@ -43,9 +48,13 @@
       }
     },
     "dynamic_pricing_agent": {
-      "status": "\u26a0\ufe0f  UNHEALTHY",
-      "code": 404,
-      "details": "HTTP 404"
+      "status": "\u2705 HEALTHY",
+      "code": 200,
+      "details": {
+        "status": "healthy",
+        "agent": "dynamic_pricing_agent",
+        "version": "1.0.0"
+      }
     },
     "carrier_selection_agent": {
       "status": "\u274c NOT RUNNING",
@@ -116,9 +125,9 @@
       }
     },
     "transport_agent": {
-      "status": "\u26a0\ufe0f  UNHEALTHY",
-      "code": 503,
-      "details": "HTTP 503"
+      "status": "\u274c NOT RUNNING",
+      "code": null,
+      "details": "Connection refused"
     },
     "warehouse_agent": {
       "status": "\u274c NOT RUNNING",
@@ -186,9 +195,9 @@
       "details": "Connection refused"
     },
     "quality_control_agent": {
-      "status": "\u274c NOT RUNNING",
-      "code": null,
-      "details": "Connection refused"
+      "status": "\u26a0\ufe0f  UNHEALTHY",
+      "code": 404,
+      "details": "HTTP 404"
     }
   }
 }
