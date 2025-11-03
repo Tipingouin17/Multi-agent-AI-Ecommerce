@@ -462,7 +462,7 @@ async def start_local_environment(skip_startup: bool = False):
         # Use nohup to ensure the script continues running even if the parent process dies,
         # and redirect output to a file for later inspection.
         log_file = script_path.parent.parent / "start_local_dev.log"
-                if platform.system() == "Windows":
+        if platform.system() == "Windows":
             command = ["powershell.exe", "-File", str(script_path)]
         else:
             command = ["/usr/bin/nohup", "/bin/bash", str(script_path)]
