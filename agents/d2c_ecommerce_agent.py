@@ -2377,7 +2377,8 @@ async def startup_event():
     """Initialize the D2C E-commerce Agent on startup."""
     global d2c_ecommerce_agent
     d2c_ecommerce_agent = D2CEcommerceAgent()
-    await d2c_ecommerce_agent.start()
+    # Start initialization in background to not block HTTP server
+    asyncio.create_task(d2c_ecommerce_agent.start())
 
 
 @app.on_event("shutdown")
@@ -2430,10 +2431,11 @@ if __name__ == "__main__":
     initialize_database_manager(db_config)
     
     # Run the agent
+    port = int(os.getenv("API_PORT", "8019"))
     uvicorn.run(
         "d2c_ecommerce_agent:app",
         host="0.0.0.0",
-        port=8013,
+        port=port,
         reload=False,
         log_level="info"
     )

@@ -192,22 +192,33 @@ class TransportManagementAgent(BaseAgentV2):
             self.db_conn = psycopg2.connect(**DATABASE_CONFIG)
             logger.info("Connected to database")
             
-            # Kafka producer
-            self.kafka_producer = KafkaProducer(
-                bootstrap_servers=KAFKA_CONFIG['bootstrap_servers'],
-                value_serializer=lambda v: json.dumps(v).encode('utf-8')
-            )
-            logger.info("Kafka producer initialized")
+            # Kafka producer (optional)
+            try:
+                self.kafka_producer = KafkaProducer(
+                    bootstrap_servers=KAFKA_CONFIG['bootstrap_servers'],
+                    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                    request_timeout_ms=5000,
+                    max_block_ms=5000
+                )
+                logger.info("Kafka producer initialized")
+            except Exception as e:
+                logger.warning(f"Kafka producer initialization failed: {e}. Running in degraded mode.")
+                self.kafka_producer = None
             
-            # Kafka consumer
-            self.kafka_consumer = KafkaConsumer(
-                KAFKA_CONFIG['transport_topic'],
-                bootstrap_servers=KAFKA_CONFIG['bootstrap_servers'],
-                value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-                group_id='transport_management_agent',
-                auto_offset_reset='latest'
-            )
-            logger.info("Kafka consumer initialized")
+            # Kafka consumer (optional)
+            try:
+                self.kafka_consumer = KafkaConsumer(
+                    KAFKA_CONFIG['transport_topic'],
+                    bootstrap_servers=KAFKA_CONFIG['bootstrap_servers'],
+                    value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+                    group_id='transport_management_agent',
+                    auto_offset_reset='latest',
+                    consumer_timeout_ms=5000
+                )
+                logger.info("Kafka consumer initialized")
+            except Exception as e:
+                logger.warning(f"Kafka consumer initialization failed: {e}. Running in degraded mode.")
+                self.kafka_consumer = None
             
             # OpenAI client
             self.openai_client = OpenAI()
@@ -1096,7 +1107,8 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI app"""
     # Startup
     logger.info("FastAPI Lifespan Startup: Transport Management Agent")
-    await agent.initialize()
+    # Start initialization in background to not block HTTP server
+    asyncio.create_task(agent.initialize())
     yield
     # Shutdown
     logger.info("FastAPI Lifespan Shutdown: Transport Management Agent")

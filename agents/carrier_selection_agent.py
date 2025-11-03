@@ -208,29 +208,37 @@ class CarrierSelectionAgent(BaseAgentV2):
         self.register_handler(MessageType.ORDER_UPDATED, self._handle_order_updated)
     
     async def initialize(self):
-        await super().initialize()
-
         """Initialize the Carrier Selection Agent."""
+        self.logger.info("[INIT] Starting carrier agent initialization")
+        await super().initialize()
+        self.logger.info("[INIT] BaseAgentV2 initialization complete")
+        
         self.logger.info("Initializing Carrier Selection Agent")
         
-        # Initialize database manager first
-        from shared.models import DatabaseConfig
-        import os
-        db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/multi_agent_ecommerce")
-        db_config = DatabaseConfig(url=db_url)
-        from shared.database import initialize_database_manager
-        db_manager = initialize_database_manager(db_config)
-        await db_manager.initialize_async()
-        self.repository = CarrierRepository(db_manager)
+        # Use BaseAgentV2's database manager (already initialized)
+        if self.db_manager:
+            self.logger.info("[INIT] Creating CarrierRepository")
+            self.repository = CarrierRepository(self.db_manager)
+            self.logger.info("[INIT] CarrierRepository created")
+        else:
+            self.logger.warning("No database manager available, agent will run in degraded mode")
+            self.repository = None
         
-        # Initialize carrier performance metrics
-        await self._initialize_carrier_performance()
+        # Initialize carrier performance metrics (optional)
+        try:
+            if self.repository:
+                self.logger.info("[INIT] Starting carrier performance initialization")
+                await self._initialize_carrier_performance()
+                self.logger.info("[INIT] Carrier performance initialized")
+                # Start background tasks only if repository is available
+                self.logger.info("[INIT] Starting background tasks")
+                asyncio.create_task(self._update_carrier_performance())
+                asyncio.create_task(self._monitor_carrier_capacity())
+                self.logger.info("[INIT] Background tasks started")
+        except Exception as e:
+            self.logger.warning(f"[INIT] Could not initialize carrier performance: {e}")
         
-        # Start background tasks
-        asyncio.create_task(self._update_carrier_performance())
-        asyncio.create_task(self._monitor_carrier_capacity())
-        
-        self.logger.info("Carrier Selection Agent initialized successfully")
+        self.logger.info("[INIT] Carrier Selection Agent initialized successfully")
     
     async def cleanup(self):
         """Cleanup resources."""
@@ -1044,7 +1052,8 @@ async def startup_event():
     """Initialize the Carrier Selection Agent on startup."""
     global carrier_selection_agent
     carrier_selection_agent = CarrierSelectionAgent()
-    await carrier_selection_agent.start()
+    # Start initialization in background to not block HTTP server
+    asyncio.create_task(carrier_selection_agent.start())
 
 
 @app.on_event("shutdown")
