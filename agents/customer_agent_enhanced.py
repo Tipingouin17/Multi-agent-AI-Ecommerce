@@ -537,9 +537,8 @@ class CustomerAgent(BaseAgentV2):
 
         logger.info("Customer Agent shutting down...")
         try:
-            await self.stop_kafka_consumer()
-            if self.db_manager:
-                await self.db_manager.disconnect()
+            # Cleanup is handled by BaseAgentV2.cleanup()
+            await self.cleanup()
             logger.info("Customer Agent shutdown complete.")
         except Exception as e:
             logger.error("Customer Agent shutdown failed", error=str(e))

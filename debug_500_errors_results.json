@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-11-03T11:57:24.963801",
+  "total_endpoints": 4,
+  "results": [
+    {
+      "agent": "monitoring",
+      "url": "http://localhost:8000/agents",
+      "method": "GET",
+      "status_code": null,
+      "error": "Connection refused",
+      "response_body": null,
+      "headers": null
+    },
+    {
+      "agent": "product",
+      "url": "http://localhost:8002/products",
+      "method": "GET",
+      "status_code": null,
+      "error": "Connection refused",
+      "response_body": null,
+      "headers": null
+    },
+    {
+      "agent": "inventory",
+      "url": "http://localhost:8003/inventory",
+      "method": "GET",
+      "status_code": null,
+      "error": "Connection refused",
+      "response_body": null,
+      "headers": null
+    },
+    {
+      "agent": "customer",
+      "url": "http://localhost:8008/customers",
+      "method": "GET",
+      "status_code": null,
+      "error": "Connection refused",
+      "response_body": null,
+      "headers": null
+    }
+  ]
+}
