@@ -88,7 +88,7 @@ class AgentHealthDB(Base):
     """Agent health status tracking"""
     __tablename__ = "agent_health"
     
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     agent_id = Column(String, nullable=False, index=True)
     agent_name = Column(String, nullable=False)
     status = Column(String, nullable=False)  # healthy, warning, critical, offline
@@ -105,7 +105,7 @@ class SystemAlertDB(Base):
     """System alerts and notifications"""
     __tablename__ = "system_alerts"
     
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     severity = Column(String, nullable=False)  # low, medium, high, critical
     title = Column(String, nullable=False)
     description = Column(Text)
@@ -119,7 +119,7 @@ class PerformanceMetricDB(Base):
     """System performance metrics"""
     __tablename__ = "performance_metrics"
     
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     metric_type = Column(String, nullable=False, index=True)  # cpu, memory, disk, network, response_time
     metric_value = Column(Float, nullable=False)
     agent_id = Column(String, nullable=True, index=True)
@@ -267,7 +267,6 @@ class MonitoringAgent(BaseAgentV2):
                 if not existing:
                     # Create initial health record
                     health_record = AgentHealthDB(
-                        id=f"{agent_id}_health",
                         agent_id=agent_id,
                         agent_name=agent_name,
                         status="offline",
@@ -630,7 +629,7 @@ _agent = agent
 if __name__ == "__main__":
     import uvicorn
     # Use environment variable for port, default to 8015
-    port = int(os.getenv("MONITORING_AGENT_PORT", 8015))
+    port = int(os.getenv("API_PORT", os.getenv("MONITORING_AGENT_PORT", "8024")))
     host = os.getenv("MONITORING_AGENT_HOST", "0.0.0.0")
     
     logger.info(f"Starting Monitoring Agent API on {host}:{port}")
