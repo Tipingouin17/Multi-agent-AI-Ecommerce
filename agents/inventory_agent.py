@@ -277,9 +277,7 @@ class InventoryAgent(BaseAgentV2):
             **kwargs: Arbitrary keyword arguments passed to the BaseAgent constructor.
         """
         super().__init__(agent_id="inventory_agent")
-        self.db_manager = get_database_manager()
-        self.inventory_repo = InventoryRepository(self.db_manager)
-        self.stock_movement_repo = StockMovementRepository(self.db_manager)
+
         self.reservations: Dict[str, Dict[str, Any]] = {}
         self.app = FastAPI(
             title="Inventory Agent API",
@@ -303,7 +301,10 @@ class InventoryAgent(BaseAgentV2):
         """Initializes the agent, database, and Kafka connections.
         """
         await super().initialize()
+        self.db_manager = get_database_manager()
         await self.db_manager.initialize()
+        self.inventory_repo = InventoryRepository(self.db_manager)
+        self.stock_movement_repo = StockMovementRepository(self.db_manager)
         self.logger.info("Inventory Agent initialized.")
 
     async def cleanup(self):
