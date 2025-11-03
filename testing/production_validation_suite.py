@@ -125,7 +125,7 @@ class ProductionValidationSuite:
         # Generate final report
         return self.generate_production_readiness_report()
     
-    async def validate_agent_health(self, max_retries=10, delay=5) -> Dict[str, Any]:
+    async def validate_agent_health(self, max_retries=3, delay=5) -> Dict[str, Any]:
         """Validate health of all agents with retries"""
         import aiohttp
         
