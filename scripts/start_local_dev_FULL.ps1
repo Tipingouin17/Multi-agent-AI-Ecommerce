@@ -1,5 +1,9 @@
-# Multi-Agent E-Commerce System - Complete Production Startup Script
+# Multi-Agent E-Commerce System - Full Production Startup Script
 # This script starts ALL 26 production-ready agents
+
+param(
+    [string]$Action = ""
+)
 
 # --- Configuration ---
 $AgentModules = @(
@@ -35,9 +39,6 @@ $LogDir = ".\logs\agents"
 $PIDsFile = ".\logs\agent_pids.txt"
 
 # --- Cleanup Function ---
-param(
-    [string]$Action = ""
-)
 
 if ($Action -eq "cleanup") {
     Write-Host "`n--- Cleanup Mode ---" -ForegroundColor Yellow
@@ -130,7 +131,7 @@ $UIDir = ".\ui"
 $UILogFile = Join-Path $LogDir "ui_startup.log"
 
 if (Test-Path $UIDir) {
-    $UICommand = "cd '$UIDir' && npm run dev"
+    $UICommand = "Set-Location '$UIDir'; npm run dev"
     $UIProcess = Start-Process -FilePath "powershell.exe" -ArgumentList "-Command `"$UICommand > '$UILogFile' 2>&1`"" -PassThru -NoNewWindow
     $UIProcess.Id | Out-File -Append $PIDsFile
     Write-Host "  -> PID: $($UIProcess.Id). Log: $UILogFile" -ForegroundColor DarkGreen
