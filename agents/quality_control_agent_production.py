@@ -274,13 +274,63 @@ class QualityControlAgent(BaseAgentV2):
         self.kafka_consumer: Optional[KafkaConsumer] = None
         self.db_manager: Optional[DatabaseManager] = None
         self.repository: Optional[QualityControlRepository] = None
+    
+    async def initialize(self):
+        """Initialize the Quality Control Agent with database and Kafka connections."""
+        await super().initialize()
         
-        # Initialize FastAPI app with lifespan
-        self.app = FastAPI(
-            title=f"{self.agent_name} API",
-            lifespan=self.lifespan_context
-        )
+        try:
+            # Initialize database manager
+            try:
+                self.db_manager = get_database_manager()
+                logger.info("Using global database manager")
+            except RuntimeError:
+                from shared.models import DatabaseConfig
+                db_config = DatabaseConfig()
+                self.db_manager = DatabaseManager(db_config)
+                await self.db_manager.initialize()
+                logger.info("Created new database manager")
+            
+            # Initialize repository
+            db_helper = DatabaseHelper(self.db_manager)
+            self.repository = QualityControlRepository(db_helper)
+            
+            logger.info(f"{self.agent_name} initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Error during initialization: {e}")
+            raise
+    
+    async def cleanup(self):
+        """Cleanup agent resources."""
+        try:
+            if self.kafka_producer:
+                await self.kafka_producer.stop()
+            if self.kafka_consumer:
+                await self.kafka_consumer.stop()
+            if self.db_manager:
+                await self.db_manager.close()
+            await super().cleanup()
+            logger.info(f"{self.agent_name} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process quality control business logic.
         
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing quality control operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # Create agent instance at module level to ensure routes are registered
