@@ -214,8 +214,14 @@ class CarrierSelectionAgent(BaseAgentV2):
         """Initialize the Carrier Selection Agent."""
         self.logger.info("Initializing Carrier Selection Agent")
         
-        # Initialize database repository
-        db_manager = get_database_manager()
+        # Initialize database manager first
+        from shared.models import DatabaseConfig
+        import os
+        db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/multi_agent_ecommerce")
+        db_config = DatabaseConfig(url=db_url)
+        from shared.database import initialize_database_manager
+        db_manager = initialize_database_manager(db_config)
+        await db_manager.initialize_async()
         self.repository = CarrierRepository(db_manager)
         
         # Initialize carrier performance metrics
