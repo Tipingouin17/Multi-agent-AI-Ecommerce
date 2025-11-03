@@ -953,6 +953,10 @@ async def create_interaction_api(
 # Uvicorn Runner
 # =====================================================
 # Uvicorn runner for FastAPI
+
+# Create agent instance at module level to ensure routes are registered
+agent = CustomerAgent()
+
 if __name__ == "__main__":
     import uvicorn
     # Use environment variable for port, default to 8008

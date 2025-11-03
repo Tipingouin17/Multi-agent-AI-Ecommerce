@@ -642,19 +642,14 @@ class OrderAgent(BaseAgent):
             return {"status": "error", "message": str(e)}
 
 
+# Create agent instance at module level to ensure routes are registered
+agent = OrderAgent()
+
 # Uvicorn runner for FastAPI
 if __name__ == "__main__":
     import uvicorn
-    agent = OrderAgent()
     # Use environment variable for port, default to 8000
     port = int(os.getenv("ORDER_AGENT_PORT", 8000))
     host = os.getenv("ORDER_AGENT_HOST", "0.0.0.0")
     logger.info(f"Starting Order Agent API on {host}:{port}")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Allows all origins
-        allow_credentials=True,
-        allow_methods=["*"],  # Allows all methods
-        allow_headers=["*"],  # Allows all headers
-    )
     uvicorn.run(app, host=host, port=port)

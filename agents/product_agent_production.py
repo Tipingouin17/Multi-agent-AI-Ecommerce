@@ -164,6 +164,9 @@ class ProductAgent(BaseAgentV2):
         )
         self._db_initialized = False
         
+        # Setup routes
+        self.setup_routes()
+        
         logger.info("Product Agent initialized with database connection")
     
     async def initialize(self):
@@ -557,9 +560,11 @@ class ProductAgent(BaseAgentV2):
         return {"status": "success", "message": "Product agent uses REST API for operations"}
 
 
+# Create agent instance at module level to ensure routes are registered
+agent = ProductAgent()
+
 async def run_agent():
     """Run the Product Agent"""
-    agent = ProductAgent()
     try:
         await agent.start()
     except KeyboardInterrupt:

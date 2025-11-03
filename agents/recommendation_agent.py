@@ -397,6 +397,10 @@ class RecommendationAgent(BaseAgentV2):
                 "db_connected": self.db_manager is not None and self.db_manager.is_initialized
             }
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = RecommendationAgent()
+
 if __name__ == "__main__":
     agent = RecommendationAgent()
     

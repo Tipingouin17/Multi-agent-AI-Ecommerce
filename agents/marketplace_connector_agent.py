@@ -816,6 +816,10 @@ class MarketplaceConnectorAgent(BaseAgentV2):
 #     return marketplace_agent_instance
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = MarketplaceConnectorAgent()
+
 if __name__ == "__main__":
     # Environment variables for agent configuration
     AGENT_ID = os.getenv("AGENT_ID", "marketplace_connector_001")

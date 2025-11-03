@@ -612,6 +612,10 @@ async def mark_article_helpful_endpoint(
         return {"status": "processed", "data": data}
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = KnowledgeManagementAgent()
+
 if __name__ == "__main__":
     # This block is for local development/testing and will not be run in the agent's async loop
     # The agent's run() method is started in the startup_event for the FastAPI application.

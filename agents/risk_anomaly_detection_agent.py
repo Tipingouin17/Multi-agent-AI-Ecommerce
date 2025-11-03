@@ -653,6 +653,10 @@ risk_agent = RiskAnomalyDetectionAgent()
 risk_agent.setup_routes(app)
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = RiskAnomalyDetectionAgent()
+
 if __name__ == "__main__":
     # Setup logging
     structlog.configure(

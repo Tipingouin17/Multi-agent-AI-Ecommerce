@@ -1299,6 +1299,10 @@ async def get_revenue_analytics(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = PaymentAgent()
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PAYMENT_AGENT_PORT", 8004))

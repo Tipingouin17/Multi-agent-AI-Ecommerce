@@ -729,6 +729,10 @@ async def lifespan_context(app: FastAPI):
             return {"status": "error", "message": str(e)}
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = FraudDetectionAgent()
+
 if __name__ == "__main__":
     """Main entry point for running the Fraud Detection Agent.
 

@@ -1056,6 +1056,10 @@ class ColisPriveIntegration(CarrierIntegration):
         }
 
 
+
+# Create agent instance at module level to ensure routes are registered
+agent = TransportManagementAgent()
+
 if __name__ == '__main__':
     import uvicorn
     
