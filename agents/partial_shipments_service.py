@@ -15,6 +15,8 @@ from decimal import Decimal
 from pydantic import BaseModel
 from enum import Enum
 import structlog
+from shared.base_agent_v2 import BaseAgentV2
+from typing import Any
 
 logger = structlog.get_logger(__name__)
 
@@ -112,10 +114,11 @@ class ShipmentSummary(BaseModel):
 # PARTIAL SHIPMENTS SERVICE
 # ===========================
 
-class PartialShipmentsService:
+class PartialShipmentsService(BaseAgentV2):
     """Service for managing partial shipments."""
     
-    def __init__(self, db_manager, message_broker=None):
+    def __init__(self, agent_id: str = "partial_shipments_service_001", db_manager=None, message_broker=None):
+        super().__init__(agent_id=agent_id)
         self.db_manager = db_manager
         self.message_broker = message_broker
         self.logger = logger.bind(service="partial_shipments")
@@ -531,4 +534,34 @@ class PartialShipmentsService:
             self.logger.error("Failed to send shipment notification",
                             error=str(e),
                             shipment_id=shipment_id)
+    
+    async def initialize(self):
+        """Initialize the service."""
+        await super().initialize()
+        logger.info("PartialShipmentsService initialized successfully")
+    
+    async def cleanup(self):
+        """Cleanup service resources."""
+        try:
+            await super().cleanup()
+            logger.info("PartialShipmentsService cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process service business logic.
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing PartialShipmentsService operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 

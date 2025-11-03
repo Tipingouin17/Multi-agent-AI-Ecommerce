@@ -26,6 +26,7 @@ from enum import Enum
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import structlog
+from shared.base_agent_v2 import BaseAgentV2
 
 logger = structlog.get_logger(__name__)
 
@@ -100,12 +101,13 @@ class AutoCorrectionRule(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
 
 
-class AIMarketplaceMonitoringService:
+class AIMarketplaceMonitoringService(BaseAgentV2):
     """
     AI-powered marketplace monitoring and auto-correction service.
     """
     
-    def __init__(self):
+    def __init__(self, agent_id: str = "ai_marketplace_monitoring_service_001"):
+        super().__init__(agent_id=agent_id)
         self.logger = logger.bind(service="ai_marketplace_monitoring")
         self.knowledge_base: Dict[str, IssuePattern] = {}
         self.auto_correction_rules: Dict[UUID, AutoCorrectionRule] = {}
@@ -477,6 +479,36 @@ class AIMarketplaceMonitoringService:
             corrected_data[field] = value
         
         return corrected_data
+    
+    async def initialize(self):
+        """Initialize the AI Marketplace Monitoring Service."""
+        await super().initialize()
+        logger.info("AIMarketplaceMonitoringService initialized successfully")
+    
+    async def cleanup(self):
+        """Cleanup service resources."""
+        try:
+            await super().cleanup()
+            logger.info("AIMarketplaceMonitoringService cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process AI monitoring business logic.
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing AI monitoring operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # FastAPI app

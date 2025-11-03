@@ -13,6 +13,8 @@ from datetime import datetime
 from uuid import UUID, uuid4
 from pydantic import BaseModel
 import structlog
+from shared.base_agent_v2 import BaseAgentV2
+from typing import Any
 
 logger = structlog.get_logger(__name__)
 
@@ -85,10 +87,11 @@ class CreateVariantRequest(BaseModel):
 # PRODUCT VARIANTS SERVICE
 # ===========================
 
-class ProductVariantsService:
+class ProductVariantsService(BaseAgentV2):
     """Service for managing product variants."""
     
-    def __init__(self, db_manager):
+    def __init__(self, agent_id: str = "productvariantsservice_001", db_manager=None):
+        super().__init__(agent_id=agent_id)
         self.db_manager = db_manager
         self.logger = logger.bind(service="product_variants")
     
@@ -342,4 +345,33 @@ class ProductVariantsService:
             self.logger.info("Deleted variant", variant_id=str(variant_id))
             
             return True
+    async def initialize(self):
+        """Initialize the service."""
+        await super().initialize()
+        logger.info(f"{self.__class__.__name__} initialized successfully")
+    
+    async def cleanup(self):
+        """Cleanup service resources."""
+        try:
+            await super().cleanup()
+            logger.info(f"{self.__class__.__name__} cleaned up successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    async def process_business_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process service business logic.
+        
+        Args:
+            data: Dictionary containing operation type and parameters
+            
+        Returns:
+            Dictionary with processing results
+        """
+        try:
+            operation = data.get("operation", "process")
+            logger.info(f"Processing {self.__class__.__name__} operation: {operation}")
+            return {"status": "success", "operation": operation, "data": data}
+        except Exception as e:
+            logger.error(f"Error in process_business_logic: {e}")
+            return {"status": "error", "message": str(e)}
 
