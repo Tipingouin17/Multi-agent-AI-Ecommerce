@@ -28,8 +28,8 @@ sys.path.insert(0, project_root)
 
 # Import shared modules
 from shared.db_models import (
-    Order, Product, Customer, Payment, Shipment, 
-    Inventory, Alert, User, Merchant, Return
+    Order, Product, Customer, OrderItem,
+    Inventory, Alert, User, Merchant, Carrier, Warehouse, Address, Category
 )
 from shared.db_connection import get_database_url
 from sqlalchemy import create_engine
@@ -111,9 +111,9 @@ def get_system_overview(db: Session = Depends(get_db)):
             Order.created_at >= datetime.utcnow() - timedelta(hours=24)
         ).scalar()
         
-        # Revenue
-        total_revenue = db.query(func.sum(Payment.amount)).filter(
-            Payment.status == "completed"
+        # Revenue (calculated from orders)
+        total_revenue = db.query(func.sum(Order.total)).filter(
+            Order.status == "completed"
         ).scalar() or 0
         
         # Active alerts
