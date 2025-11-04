@@ -16,7 +16,7 @@ This document tracks the progress of Phase 3: Merchant Pages Expansion, which ai
 
 **Goal:** Build the most critical merchant pages for product and order management.  
 **Target:** 10 pages  
-**Completed:** 2 pages (20%)
+**Completed:** 6 pages (60%)
 
 ### Completed Pages
 
@@ -73,16 +73,84 @@ This document tracks the progress of Phase 3: Merchant Pages Expansion, which ai
 
 ## Remaining Pages for Sub-phase 3.1
 
-### 3. Bulk Product Upload (Planned)
+#### 3. BulkProductUpload.jsx ✅
 **Route:** `/products/bulk-upload`  
 **Features:**
-- CSV template download
-- File upload with drag-and-drop
-- Data validation and error reporting
-- Preview before import
-- Progress tracking
+- CSV template download with sample data
+- Drag-and-drop file upload interface
+- Real-time CSV parsing and validation
+- Preview table showing all products
+- Error reporting with row numbers
+- Progress tracking during upload
+- Validation summary (total, valid, errors)
+- Bulk import with single click
+- Success confirmation with redirect
+- Connected to real API endpoints
 
-### 4. Variant Management (Planned)
+**API Endpoints Used:**
+- `POST /api/products/parse-csv` - Parse and validate CSV
+- `POST /api/products/bulk-create` - Create multiple products
+
+#### 4. OrderFulfillment.jsx ✅
+**Route:** `/orders/:id/fulfill`  
+**Features:**
+- 3-step fulfillment workflow (Pick, Pack, Ship)
+- Pick list with item verification checkboxes
+- Print pick list functionality
+- Package dimensions and weight entry
+- Packing checklist for quality control
+- Carrier selection with pricing
+- Shipping label generation
+- Manual tracking number entry
+- Progress indicator showing current step
+- Order and customer information display
+- Connected to real API endpoints
+
+**API Endpoints Used:**
+- `GET /api/orders/{id}` - Fetch order details
+- `GET /api/carriers` - Fetch available carriers
+- `POST /api/orders/{id}/shipment` - Create shipment
+- `POST /api/orders/{id}/label` - Generate shipping label
+
+#### 5. ProductAnalytics.jsx ✅
+**Route:** `/products/analytics`  
+**Features:**
+- Key metrics dashboard (revenue, units sold, conversion, views)
+- Time range selector (7d, 30d, 90d, 1y)
+- Category filter
+- Revenue trends line chart
+- Top 10 products ranking
+- Revenue by category (pie chart and bar chart)
+- Conversion funnel visualization
+- Export to CSV functionality
+- Responsive charts using Recharts
+- Real-time data updates
+
+**API Endpoints Used:**
+- `GET /api/analytics/products` - Fetch product analytics
+- `GET /api/categories` - Fetch categories for filter
+
+#### 6. ReturnsManagement.jsx ✅
+**Route:** `/returns`  
+**Features:**
+- Returns dashboard with key stats
+- Search by order number
+- Status filter (pending, approved, rejected, completed, refunded)
+- Approve/reject workflow with modal dialogs
+- RMA number generation
+- Refund processing
+- Exchange processing
+- Return reason display
+- Customer information
+- Action notes/comments
+- Connected to real API endpoints
+
+**API Endpoints Used:**
+- `GET /api/returns` - Fetch all returns
+- `POST /api/returns/{id}/process` - Process return (approve/reject/refund)
+
+### 7. Variant Management (Planned)
+
 **Route:** `/products/:id/variants`  
 **Features:**
 - Dedicated variant management interface
@@ -192,5 +260,5 @@ This document tracks the progress of Phase 3: Merchant Pages Expansion, which ai
 
 Phase 3 is off to a strong start with two comprehensive pages completed. The ProductForm and OrderDetails pages demonstrate the quality and functionality that will be maintained throughout the remaining pages.
 
-**Current Progress:** 2/10 pages (20%)  
+**Current Progress:** 6/10 pages (60%)  
 **Next Milestone:** Complete product management pages (4/10)
