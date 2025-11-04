@@ -307,7 +307,7 @@ if exist start_dashboard.bat (
     if %WAITED% GEQ 60 goto dashboard_timeout
     
     netstat -an | findstr :5173 | findstr LISTENING > nul 2>&1
-    if %ERRORLEVEL% EQU 0 (
+    if !ERRORLEVEL! EQU 0 (
         echo [OK] Dashboard is ready on http://localhost:5173
         goto dashboard_ready
     )
