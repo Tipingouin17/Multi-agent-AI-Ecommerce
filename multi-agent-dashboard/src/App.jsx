@@ -64,6 +64,15 @@ import ProductDetails from './pages/customer/ProductDetails'
 import ShoppingCart from './pages/customer/ShoppingCart'
 import OrderTracking from './pages/customer/OrderTracking'
 import Account from './pages/customer/Account'
+import Checkout from './pages/customer/Checkout'
+import OrderConfirmation from './pages/customer/OrderConfirmation'
+import SearchResults from './pages/customer/SearchResults'
+import OrderDetail from './pages/customer/OrderDetail'
+import AccountSettings from './pages/customer/AccountSettings'
+import AddressBook from './pages/customer/AddressBook'
+import Wishlist from './pages/customer/Wishlist'
+import CustomerReviews from './pages/customer/CustomerReviews'
+import Help from './pages/customer/Help'
 
 // Database test component
 import DatabaseTest from './components/DatabaseTest'
@@ -392,6 +401,15 @@ function App() {
               <Route path="/cart" element={<ShoppingCart />} />
               <Route path="/orders" element={<OrderTracking />} />
               <Route path="/account" element={<Account />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+              <Route path="/search" element={<SearchResults />} />
+              <Route path="/account/orders/:orderId" element={<OrderDetail />} />
+              <Route path="/account/settings" element={<AccountSettings />} />
+              <Route path="/account/addresses" element={<AddressBook />} />
+              <Route path="/account/wishlist" element={<Wishlist />} />
+              <Route path="/account/reviews" element={<CustomerReviews />} />
+              <Route path="/help" element={<Help />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
