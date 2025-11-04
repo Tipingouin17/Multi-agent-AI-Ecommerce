@@ -123,21 +123,28 @@ if %ERRORLEVEL% EQU 0 (
 )
 echo.
 
-REM Check PostgreSQL
+REM Check PostgreSQL (with fallback detection)
 echo [INFO] Checking PostgreSQL...
-if "%VERBOSE%"=="1" echo   -^> Running: pg_isready -h localhost -p 5432
+if "%VERBOSE%"=="1" echo   -^> Trying: pg_isready -h localhost -p 5432
 pg_isready -h localhost -p 5432 > "%INFRASTRUCTURE_LOG_DIR%\postgresql.log" 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo [OK] PostgreSQL: Running on port 5432
+    echo [OK] PostgreSQL: Running on port 5432 (verified with pg_isready)
     if "%VERBOSE%"=="1" pg_isready -h localhost -p 5432
     echo [%date% %time%] PostgreSQL: Running >> "%STARTUP_LOG%"
 ) else (
-    echo [ERROR] PostgreSQL: Not running on port 5432
-    echo   -^> Error output:
-    type "%INFRASTRUCTURE_LOG_DIR%\postgresql.log"
-    echo   -^> Please start PostgreSQL service
-    echo [%date% %time%] ERROR: PostgreSQL not running >> "%STARTUP_LOG%"
-    set ALL_OK=0
+    REM Fallback: Check if port 5432 is listening
+    if "%VERBOSE%"=="1" echo   -^> Fallback: Checking if port 5432 is listening...
+    netstat -an | findstr :5432 | findstr LISTENING > nul 2>&1
+    if !ERRORLEVEL! EQU 0 (
+        echo [OK] PostgreSQL: Port 5432 is listening (pg_isready not available)
+        echo [%date% %time%] PostgreSQL: Port listening >> "%STARTUP_LOG%"
+    ) else (
+        echo [WARNING] PostgreSQL: Not detected (port 5432 not listening)
+        echo   -^> PostgreSQL is recommended but not required for basic agent functionality
+        echo   -^> To install: https://www.postgresql.org/download/windows/
+        echo   -^> Some agents may run in degraded mode without database
+        echo [%date% %time%] WARNING: PostgreSQL not detected >> "%STARTUP_LOG%"
+    )
 )
 echo.
 
