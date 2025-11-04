@@ -227,6 +227,9 @@ class MonitoringAgent(BaseAgentV2):
             from shared.db_helpers import DatabaseHelper
             self.db_helper = DatabaseHelper(self.db_manager)
             
+            # Create tables if they don't exist
+            await self._create_tables()
+            
             # Initialize agent health records for all known agents
             await self._initialize_agent_health()
             
@@ -234,6 +237,17 @@ class MonitoringAgent(BaseAgentV2):
             
         except Exception as e:
             logger.error(f"Failed to initialize Monitoring Agent: {e}")
+            raise
+    
+    async def _create_tables(self):
+        """Create database tables if they don't exist"""
+        try:
+            logger.info("Creating monitoring agent tables if needed...")
+            async with self.db_manager.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Tables created/verified successfully")
+        except Exception as e:
+            logger.error(f"Error creating tables: {e}")
             raise
     
     async def _initialize_agent_health(self):

@@ -308,7 +308,7 @@ if exist start_dashboard.bat (
     echo [INFO] Waiting for dashboard to be ready (max 60 seconds)...
     set /a WAITED=0
     :wait_dashboard
-    if %WAITED% GEQ 60 goto dashboard_timeout
+    if !WAITED! GEQ 60 goto dashboard_timeout
     
     netstat -an | findstr :5173 | findstr LISTENING > nul 2>&1
     if !ERRORLEVEL! EQU 0 (

@@ -220,9 +220,18 @@ class TransportManagementAgent(BaseAgentV2):
                 logger.warning(f"Kafka consumer initialization failed: {e}. Running in degraded mode.")
                 self.kafka_consumer = None
             
-            # OpenAI client
-            self.openai_client = OpenAI()
-            logger.info("OpenAI client initialized")
+            # OpenAI client (optional - for AI-powered features)
+            try:
+                api_key = os.getenv("OPENAI_API_KEY")
+                if api_key:
+                    self.openai_client = OpenAI(api_key=api_key)
+                    logger.info("OpenAI client initialized")
+                else:
+                    self.openai_client = None
+                    logger.warning("OpenAI API key not found - AI features will be disabled")
+            except Exception as e:
+                self.openai_client = None
+                logger.warning(f"Failed to initialize OpenAI client: {e} - AI features will be disabled")
             
             # Initialize carrier integrations
             self.initialize_carrier_integrations()
@@ -372,6 +381,10 @@ class TransportManagementAgent(BaseAgentV2):
         - Special handling capabilities
         """
         try:
+            # If OpenAI client is not available, fall back to rule-based selection
+            if self.openai_client is None:
+                logger.info("OpenAI client not available, using rule-based carrier selection")
+                return self._rule_based_carrier_selection(shipment_details, carrier_quotes, performance_data)
             # Prepare context for AI
             context = f"""
 You are an AI assistant specialized in carrier selection for e-commerce shipping.
@@ -451,6 +464,51 @@ Select the best carrier and explain your reasoning. Respond in JSON format:
             if carrier_quotes:
                 return min(carrier_quotes, key=lambda x: x['price'])
             raise
+    
+    def _rule_based_carrier_selection(self, shipment_details: Dict, carrier_quotes: List[Dict], 
+                                      performance_data: Dict) -> Dict:
+        """
+        Fallback rule-based carrier selection when AI is not available
+        """
+        if not carrier_quotes:
+            raise ValueError("No carrier quotes available")
+        
+        # Score each carrier based on multiple factors
+        scored_quotes = []
+        for quote in carrier_quotes:
+            score = 0
+            carrier_code = quote['carrier_code']
+            
+            # Factor 1: Price (lower is better, 40% weight)
+            prices = [q['price'] for q in carrier_quotes]
+            price_score = 1 - (quote['price'] - min(prices)) / (max(prices) - min(prices) + 0.01)
+            score += price_score * 0.4
+            
+            # Factor 2: Transit time (faster is better, 30% weight)
+            transit_times = [q.get('transit_days', 7) for q in carrier_quotes]
+            transit_score = 1 - (quote.get('transit_days', 7) - min(transit_times)) / (max(transit_times) - min(transit_times) + 0.01)
+            score += transit_score * 0.3
+            
+            # Factor 3: Historical performance (30% weight)
+            if carrier_code in performance_data:
+                perf = performance_data[carrier_code]
+                on_time_rate = perf.get('on_time_rate', 0.8)
+                rating = perf.get('avg_rating', 4.0) / 5.0
+                score += (on_time_rate * 0.2 + rating * 0.1)
+            else:
+                score += 0.24  # Default score if no history
+            
+            scored_quotes.append((score, quote))
+        
+        # Select carrier with highest score
+        best_quote = max(scored_quotes, key=lambda x: x[0])[1]
+        
+        return {
+            **best_quote,
+            'ai_reasoning': 'Selected using rule-based scoring (price, transit time, performance)',
+            'confidence': 0.75,
+            'risk_factors': ['AI-powered selection not available']
+        }
     
     def generate_shipping_label(self, shipment_id: int, carrier_code: str) -> Dict[str, Any]:
         """
