@@ -79,24 +79,36 @@ REM Install dependencies if needed
 if not exist node_modules (
     echo [WARNING] node_modules not found, installing dependencies...
     echo.
-    
-    if "!PACKAGE_MANAGER!"=="pnpm" (
-        pnpm install
-    ) else (
-        npm install --legacy-peer-deps
-    )
-    
-    if !ERRORLEVEL! NEQ 0 (
-        echo [ERROR] Dependency installation failed
-        pause
-        exit /b 1
-    )
-    
-    echo.
-    echo [OK] Dependencies installed successfully
-) else (
-    echo [OK] Dependencies already installed
+    goto install_deps
 )
+
+REM Verify vite is installed
+if not exist node_modules\.bin\vite.cmd (
+    echo [WARNING] Vite not found in node_modules, reinstalling dependencies...
+    echo.
+    goto install_deps
+)
+
+echo [OK] Dependencies already installed
+goto deps_done
+
+:install_deps
+if "!PACKAGE_MANAGER!"=="pnpm" (
+    pnpm install
+) else (
+    npm install --legacy-peer-deps
+)
+
+if !ERRORLEVEL! NEQ 0 (
+    echo [ERROR] Dependency installation failed
+    pause
+    exit /b 1
+)
+
+echo.
+echo [OK] Dependencies installed successfully
+
+:deps_done
 
 echo.
 
