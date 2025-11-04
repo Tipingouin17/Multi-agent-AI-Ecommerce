@@ -1,0 +1,479 @@
+"""
+Order Agent V3 - Production Ready with New Schema
+Manages orders using the unified database schema
+"""
+
+import os
+import sys
+import logging
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+from decimal import Decimal
+
+from fastapi import FastAPI, HTTPException, Query, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, or_, and_, desc
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Add project root to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+sys.path.insert(0, project_root)
+
+# Import shared modules
+from shared.db_models import Order, OrderItem, Customer, Product, User, Address
+from shared.db_connection import get_database_url
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+# Create database engine
+engine = create_engine(get_database_url(), pool_pre_ping=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create FastAPI app
+app = FastAPI(title="Order Agent V3", version="3.0.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# ============================================================================
+# PYDANTIC MODELS
+# ============================================================================
+
+class OrderItemCreate(BaseModel):
+    product_id: int
+    quantity: int
+    unit_price: float
+
+class OrderCreate(BaseModel):
+    customer_id: int
+    merchant_id: Optional[int] = None
+    items: List[OrderItemCreate]
+    shipping_address_id: int
+    billing_address_id: Optional[int] = None
+    notes: Optional[str] = None
+    customer_notes: Optional[str] = None
+
+class OrderUpdate(BaseModel):
+    status: Optional[str] = None
+    payment_status: Optional[str] = None
+    fulfillment_status: Optional[str] = None
+    notes: Optional[str] = None
+
+# ============================================================================
+# ORDER ENDPOINTS
+# ============================================================================
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "agent": "order_agent_v3", "version": "3.0.0"}
+
+@app.get("/api/orders")
+def get_orders(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    customer_id: Optional[int] = None,
+    merchant_id: Optional[int] = None,
+    status: Optional[str] = None,
+    payment_status: Optional[str] = None,
+    fulfillment_status: Optional[str] = None,
+    sort_by: str = Query("created_at", regex="^(created_at|total|order_number)$"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all orders with filtering, pagination, and sorting
+    """
+    try:
+        # Build query
+        query = db.query(Order)
+        
+        # Apply filters
+        if customer_id:
+            query = query.filter(Order.customer_id == customer_id)
+        
+        if merchant_id:
+            query = query.filter(Order.merchant_id == merchant_id)
+        
+        if status:
+            query = query.filter(Order.status == status)
+        
+        if payment_status:
+            query = query.filter(Order.payment_status == payment_status)
+        
+        if fulfillment_status:
+            query = query.filter(Order.fulfillment_status == fulfillment_status)
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply sorting
+        sort_column = getattr(Order, sort_by)
+        if sort_order == "desc":
+            query = query.order_by(sort_column.desc())
+        else:
+            query = query.order_by(sort_column.asc())
+        
+        # Apply pagination
+        offset = (page - 1) * limit
+        orders = query.offset(offset).limit(limit).all()
+        
+        # Build response with related data
+        order_list = []
+        for order in orders:
+            order_dict = order.to_dict()
+            
+            # Add customer info
+            if order.customer:
+                customer = order.customer
+                if customer.user:
+                    order_dict['customer'] = {
+                        'id': customer.id,
+                        'name': f"{customer.user.first_name} {customer.user.last_name}",
+                        'email': customer.user.email
+                    }
+            
+            # Add items count
+            order_dict['items_count'] = len(order.order_items)
+            
+            order_list.append(order_dict)
+        
+        return {
+            "orders": order_list,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": (total + limit - 1) // limit
+            }
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orders/{order_id}")
+def get_order(order_id: int, db: Session = Depends(get_db)):
+    """Get a single order by ID with full details"""
+    try:
+        order = db.query(Order).filter(Order.id == order_id).first()
+        
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        order_dict = order.to_dict()
+        
+        # Add customer information
+        if order.customer and order.customer.user:
+            user = order.customer.user
+            order_dict['customer'] = {
+                'id': order.customer.id,
+                'user_id': user.id,
+                'name': f"{user.first_name} {user.last_name}",
+                'email': user.email,
+                'phone': user.phone
+            }
+        
+        # Add order items with product details
+        items = []
+        for item in order.order_items:
+            item_dict = item.to_dict()
+            if item.product:
+                item_dict['product'] = {
+                    'id': item.product.id,
+                    'name': item.product.name,
+                    'sku': item.product.sku,
+                    'images': item.product.images
+                }
+            items.append(item_dict)
+        order_dict['items'] = items
+        
+        # Add shipping address
+        if order.shipping_address_id:
+            shipping_addr = db.query(Address).filter(
+                Address.id == order.shipping_address_id
+            ).first()
+            if shipping_addr:
+                order_dict['shipping_address'] = shipping_addr.to_dict()
+        
+        # Add billing address
+        if order.billing_address_id:
+            billing_addr = db.query(Address).filter(
+                Address.id == order.billing_address_id
+            ).first()
+            if billing_addr:
+                order_dict['billing_address'] = billing_addr.to_dict()
+        
+        return order_dict
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting order: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/orders")
+def create_order(order_data: OrderCreate, db: Session = Depends(get_db)):
+    """Create a new order"""
+    try:
+        # Verify customer exists
+        customer = db.query(Customer).filter(Customer.id == order_data.customer_id).first()
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        
+        # Calculate order totals
+        subtotal = Decimal('0.00')
+        items_data = []
+        
+        for item in order_data.items:
+            # Verify product exists
+            product = db.query(Product).filter(Product.id == item.product_id).first()
+            if not product:
+                raise HTTPException(status_code=404, detail=f"Product {item.product_id} not found")
+            
+            unit_price = Decimal(str(item.unit_price))
+            quantity = item.quantity
+            total_price = unit_price * quantity
+            subtotal += total_price
+            
+            items_data.append({
+                'product_id': item.product_id,
+                'product': product,
+                'quantity': quantity,
+                'unit_price': unit_price,
+                'total_price': total_price
+            })
+        
+        # Calculate tax and total (simplified - 10% tax)
+        tax = subtotal * Decimal('0.10')
+        shipping_cost = Decimal('10.00')  # Flat shipping
+        total = subtotal + tax + shipping_cost
+        
+        # Generate order number
+        order_count = db.query(func.count(Order.id)).scalar()
+        order_number = f"ORD-{order_count + 1:06d}"
+        
+        # Create order
+        order = Order(
+            order_number=order_number,
+            customer_id=order_data.customer_id,
+            merchant_id=order_data.merchant_id,
+            status="pending",
+            payment_status="pending",
+            fulfillment_status="unfulfilled",
+            subtotal=subtotal,
+            tax=tax,
+            shipping_cost=shipping_cost,
+            total=total,
+            shipping_address_id=order_data.shipping_address_id,
+            billing_address_id=order_data.billing_address_id or order_data.shipping_address_id,
+            notes=order_data.notes,
+            customer_notes=order_data.customer_notes
+        )
+        
+        db.add(order)
+        db.flush()  # Get order ID
+        
+        # Create order items
+        for item_data in items_data:
+            order_item = OrderItem(
+                order_id=order.id,
+                product_id=item_data['product_id'],
+                sku=item_data['product'].sku,
+                name=item_data['product'].name,
+                quantity=item_data['quantity'],
+                unit_price=item_data['unit_price'],
+                total_price=item_data['total_price']
+            )
+            db.add(order_item)
+        
+        db.commit()
+        db.refresh(order)
+        
+        return order.to_dict()
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating order: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/orders/{order_id}")
+def update_order(
+    order_id: int,
+    order_data: OrderUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update an order"""
+    try:
+        order = db.query(Order).filter(Order.id == order_id).first()
+        
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        # Update fields
+        update_data = order_data.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(order, field, value)
+        
+        # Update timestamps based on status changes
+        if order_data.status == "confirmed" and not order.confirmed_at:
+            order.confirmed_at = datetime.utcnow()
+        elif order_data.fulfillment_status == "shipped" and not order.shipped_at:
+            order.shipped_at = datetime.utcnow()
+        elif order_data.fulfillment_status == "delivered" and not order.delivered_at:
+            order.delivered_at = datetime.utcnow()
+        elif order_data.status == "cancelled" and not order.cancelled_at:
+            order.cancelled_at = datetime.utcnow()
+        
+        order.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(order)
+        
+        return order.to_dict()
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating order: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/api/orders/{order_id}/status")
+def update_order_status(
+    order_id: int,
+    status: str,
+    db: Session = Depends(get_db)
+):
+    """Update order status"""
+    return update_order(order_id, OrderUpdate(status=status), db)
+
+@app.post("/api/orders/{order_id}/cancel")
+def cancel_order(
+    order_id: int,
+    reason: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Cancel an order"""
+    try:
+        order = db.query(Order).filter(Order.id == order_id).first()
+        
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        if order.status == "cancelled":
+            raise HTTPException(status_code=400, detail="Order already cancelled")
+        
+        if order.status in ["shipped", "delivered"]:
+            raise HTTPException(status_code=400, detail="Cannot cancel shipped/delivered order")
+        
+        order.status = "cancelled"
+        order.cancelled_at = datetime.utcnow()
+        if reason:
+            order.notes = f"Cancellation reason: {reason}\n{order.notes or ''}"
+        
+        db.commit()
+        db.refresh(order)
+        
+        return order.to_dict()
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling order: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orders/stats")
+def get_order_stats(
+    time_range: str = Query("30d", regex="^(7d|30d|90d|1y)$"),
+    merchant_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Get order statistics"""
+    try:
+        query = db.query(Order)
+        
+        if merchant_id:
+            query = query.filter(Order.merchant_id == merchant_id)
+        
+        # Calculate statistics
+        total_orders = query.count()
+        total_revenue = db.query(func.sum(Order.total)).filter(
+            Order.status != "cancelled"
+        ).scalar() or 0
+        
+        pending_orders = query.filter(Order.status == "pending").count()
+        confirmed_orders = query.filter(Order.status == "confirmed").count()
+        shipped_orders = query.filter(Order.fulfillment_status == "shipped").count()
+        delivered_orders = query.filter(Order.fulfillment_status == "delivered").count()
+        cancelled_orders = query.filter(Order.status == "cancelled").count()
+        
+        avg_order_value = float(total_revenue) / total_orders if total_orders > 0 else 0
+        
+        return {
+            "total_orders": total_orders,
+            "total_revenue": float(total_revenue),
+            "average_order_value": avg_order_value,
+            "pending_orders": pending_orders,
+            "confirmed_orders": confirmed_orders,
+            "shipped_orders": shipped_orders,
+            "delivered_orders": delivered_orders,
+            "cancelled_orders": cancelled_orders
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting order stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orders/recent")
+def get_recent_orders(
+    limit: int = Query(10, ge=1, le=50),
+    merchant_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Get recent orders"""
+    try:
+        query = db.query(Order).order_by(desc(Order.created_at))
+        
+        if merchant_id:
+            query = query.filter(Order.merchant_id == merchant_id)
+        
+        orders = query.limit(limit).all()
+        
+        return {"orders": [order.to_dict() for order in orders]}
+    
+    except Exception as e:
+        logger.error(f"Error getting recent orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# RUN SERVER
+# ============================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("API_PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
