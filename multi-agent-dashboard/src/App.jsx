@@ -49,6 +49,12 @@ import EmailTemplates from './pages/merchant/EmailTemplates'
 import NotificationSettings from './pages/merchant/NotificationSettings'
 import DomainSettings from './pages/merchant/DomainSettings'
 import APISettings from './pages/merchant/APISettings'
+import FinancialDashboard from './pages/merchant/FinancialDashboard'
+import SalesReports from './pages/merchant/SalesReports'
+import ProfitLossStatement from './pages/merchant/ProfitLossStatement'
+import RevenueAnalytics from './pages/merchant/RevenueAnalytics'
+import ExpenseTracking from './pages/merchant/ExpenseTracking'
+import TaxReports from './pages/merchant/TaxReports'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -366,6 +372,12 @@ function App() {
               <Route path="/settings/notifications" element={<NotificationSettings />} />
               <Route path="/settings/domain" element={<DomainSettings />} />
               <Route path="/settings/api" element={<APISettings />} />
+              <Route path="/financial/dashboard" element={<FinancialDashboard />} />
+              <Route path="/financial/sales-reports" element={<SalesReports />} />
+              <Route path="/financial/profit-loss" element={<ProfitLossStatement />} />
+              <Route path="/financial/revenue-analytics" element={<RevenueAnalytics />} />
+              <Route path="/financial/expenses" element={<ExpenseTracking />} />
+              <Route path="/financial/tax-reports" element={<TaxReports />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
