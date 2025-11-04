@@ -1,0 +1,93 @@
+09:51:47.313 [vite] connecting... client:789:9
+09:51:47.442 [vite] connected. client:912:15
+09:51:47.594 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools react-dom_client.js:17995:54
+09:51:47.782 Firefox can’t establish a connection to the server at ws://localhost:8015/ws. WebSocketContext.jsx:54:18
+09:51:47.829 The connection to ws://localhost:8015/ws was interrupted while the page was loading. WebSocketContext.jsx:54:18
+09:51:47.834 WebSocket error: 
+error { target: WebSocket, isTrusted: true, srcElement: WebSocket, eventPhase: 0, bubbles: false, cancelable: false, returnValue: true, defaultPrevented: false, composed: false, timeStamp: 2903, … }
+WebSocketContext.jsx:86:17
+09:51:47.847 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8001/analytics/kpis?timeRange=7d. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404. 2
+09:51:47.847 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8014/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.848 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8008/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.848 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8002/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.848 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8003/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.849 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8001/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.851 API Error (order): Network Error api.js:60:15
+09:51:47.851 Merchant KPIs unavailable, using mock data api.js:263:15
+09:51:47.853 API Error (order): Network Error api.js:60:15
+09:51:47.853 Merchant KPIs unavailable, using mock data api.js:263:15
+09:51:47.880 Firefox can’t establish a connection to the server at ws://localhost:8015/ws. WebSocketContext.jsx:54:18
+09:51:47.882 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8008/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.882 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8002/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.882 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8003/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.882 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8001/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.882 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8014/health. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 200.
+09:51:47.884 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8001/orders/recent?limit=10. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404.
+09:51:47.884 API Error (order): Network Error api.js:60:15
+09:51:47.884 Recent orders unavailable, using mock data api.js:273:15
+09:51:47.885 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8001/orders/recent?limit=10. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404.
+09:51:47.885 API Error (order): Network Error api.js:60:15
+09:51:47.885 Recent orders unavailable, using mock data api.js:273:15
+09:51:47.906 WebSocket error: 
+error { target: WebSocket, isTrusted: true, srcElement: WebSocket, eventPhase: 0, bubbles: false, cancelable: false, returnValue: true, defaultPrevented: false, composed: false, timeStamp: 2976, … }
+WebSocketContext.jsx:86:17
+09:51:47.943 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8002/alerts. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404.
+09:51:47.943 API Error (inventory): Network Error api.js:60:15
+09:51:47.943 Inventory alerts unavailable, using mock data api.js:283:15
+09:51:47.944 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8002/alerts. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404.
+09:51:47.944 API Error (inventory): Network Error api.js:60:15
+09:51:47.944 Inventory alerts unavailable, using mock data api.js:283:15
+09:51:48.177 API Error (marketplace): 
+Object { detail: "Not Found" }
+api.js:60:15
+09:51:48.177 Marketplace performance unavailable, using mock data api.js:293:15
+09:51:48.178 API Error (marketplace): 
+Object { detail: "Not Found" }
+api.js:60:15
+09:51:48.178 Marketplace performance unavailable, using mock data api.js:293:15
+09:51:48.203 Each child in a list should have a unique "key" prop.
+
+Check the render method of `Dashboard`. See https://react.dev/link/warning-keys for more information. react-dom_client.js:17525:23
+09:51:50.855 Firefox can’t establish a connection to the server at ws://localhost:8015/ws. WebSocketContext.jsx:54:18
+09:51:50.855 WebSocket error: 
+error { target: WebSocket, isTrusted: true, srcElement: WebSocket, eventPhase: 0, bubbles: false, cancelable: false, returnValue: true, defaultPrevented: false, composed: false, timeStamp: 5925, … }
+WebSocketContext.jsx:86:17
+09:51:53.939 Firefox can’t establish a connection to the server at ws://localhost:8015/ws. WebSocketContext.jsx:54:18
+09:51:53.940 WebSocket error: 
+error { target: WebSocket, isTrusted: true, srcElement: WebSocket, eventPhase: 0, bubbles: false, cancelable: false, returnValue: true, defaultPrevented: false, composed: false, timeStamp: 9010, … }
+WebSocketContext.jsx:86:17
+09:51:56.650 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8003/products?page=1&limit=10&search=&sortBy=updatedAt&sortDirection=desc&category=&status=&marketplace=. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404.
+09:51:56.650 API Error (product): Network Error api.js:60:15
+09:51:56.650 Product data unavailable, using mock data api.js:136:15
+09:51:56.650 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8003/products?page=1&limit=10&search=&sortBy=updatedAt&sortDirection=desc&category=&status=&marketplace=. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404.
+09:51:56.651 API Error (product): Network Error api.js:60:15
+09:51:56.651 Product data unavailable, using mock data api.js:136:15
+09:51:56.651 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8003/categories. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404.
+09:51:56.652 API Error (product): Network Error api.js:60:15
+09:51:56.652 Product categories unavailable, using mock data api.js:303:15
+09:51:56.652 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8003/categories. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404.
+09:51:56.653 API Error (product): Network Error api.js:60:15
+09:51:56.653 Product categories unavailable, using mock data api.js:303:15
+09:51:56.665 Uncaught TypeError: can't access property "total", product.inventory is undefined
+    children ProductManagement.jsx:611
+    ProductManagement ProductManagement.jsx:575
+    React 10
+    performWorkUntilDeadline scheduler.development.js:45
+ProductManagement.jsx:969:15
+09:51:56.665 An error occurred in the <ProductManagement> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+react-dom_client.js:6229:17
+09:51:56.684 API Error (marketplace): 
+Object { detail: "Not Found" }
+api.js:60:15
+09:51:56.684 Marketplaces unavailable, using mock data api.js:378:15
+09:51:56.685 API Error (marketplace): 
+Object { detail: "Not Found" }
+api.js:60:15
+09:51:56.685 Marketplaces unavailable, using mock data api.js:378:15
+09:51:59.955 Firefox can’t establish a connection to the server at ws://localhost:8015/ws. WebSocketContext.jsx:54:18
+09:51:59.955 WebSocket error: 
+error { target: WebSocket, isTrusted: true, srcElement: WebSocket, eventPhase: 0, bubbles: false, cancelable: false, returnValue: true, defaultPrevented: false, composed: false, timeStamp: 15025, … }
+WebSocketContext.jsx:86:17

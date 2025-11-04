@@ -1,0 +1,14 @@
+{
+  "admin": {
+    "pages": 28,
+    "loc": 17151
+  },
+  "merchant": {
+    "pages": 6,
+    "loc": 5123
+  },
+  "customer": {
+    "pages": 6,
+    "loc": 2886
+  }
+}
