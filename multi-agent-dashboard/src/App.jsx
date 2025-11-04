@@ -35,6 +35,8 @@ import CustomerList from './pages/merchant/CustomerList'
 import CustomerProfile from './pages/merchant/CustomerProfile'
 import CampaignManagement from './pages/merchant/CampaignManagement'
 import PromotionManager from './pages/merchant/PromotionManager'
+import ReviewManagement from './pages/merchant/ReviewManagement'
+import MarketingAnalytics from './pages/merchant/MarketingAnalytics'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -335,6 +337,8 @@ function App() {
               <Route path="/customers/:id" element={<CustomerProfile />} />
               <Route path="/marketing/campaigns" element={<CampaignManagement />} />
               <Route path="/marketing/promotions" element={<PromotionManager />} />
+              <Route path="/marketing/reviews" element={<ReviewManagement />} />
+              <Route path="/marketing/analytics" element={<MarketingAnalytics />} />
               <Route path="/inventory" element={<InventoryManagement />} />
               <Route path="/marketplaces" element={<MarketplaceIntegration />} />
               <Route path="/analytics" element={<MerchantAnalytics />} />
