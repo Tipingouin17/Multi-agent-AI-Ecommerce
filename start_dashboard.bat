@@ -45,8 +45,29 @@ if !ERRORLEVEL! EQU 0 (
 echo Using package manager: !PACKAGE_MANAGER!
 echo.
 
+REM Show current directory
+echo Current directory: %CD%
+echo.
+
 REM Navigate to dashboard directory
+echo [INFO] Navigating to dashboard directory...
+if not exist multi-agent-dashboard (
+    echo [ERROR] Dashboard directory 'multi-agent-dashboard' not found
+    echo [ERROR] Current directory: %CD%
+    echo [ERROR] Please ensure you're running this script from the project root
+    pause
+    exit /b 1
+)
+
 cd multi-agent-dashboard
+if !ERRORLEVEL! NEQ 0 (
+    echo [ERROR] Failed to navigate to dashboard directory
+    pause
+    exit /b 1
+)
+
+echo [OK] In dashboard directory: %CD%
+echo.
 
 REM Install dependencies if needed
 if not exist node_modules (
