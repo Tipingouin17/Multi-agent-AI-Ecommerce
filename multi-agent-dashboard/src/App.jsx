@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import './App.css'
 
 // Admin components
@@ -13,6 +11,7 @@ import AlertsManagement from './pages/admin/AlertsManagement'
 import PerformanceAnalytics from './pages/admin/PerformanceAnalytics'
 import SystemConfiguration from './pages/admin/SystemConfiguration'
 import { WebSocketProvider } from './contexts/WebSocketContext'
+import ErrorBoundary from './components/ErrorBoundary'
 // Merchant components
 import MerchantLayout from './components/layouts/MerchantLayout'
 import MerchantDashboard from './pages/merchant/Dashboard'
@@ -77,19 +76,6 @@ import Help from './pages/customer/Help'
 // Database test component
 import DatabaseTest from './components/DatabaseTest'
 
-// Create a client for React Query with database-optimized settings
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2, // Reduced retries for faster database error detection
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
-      staleTime: 2 * 60 * 1000, // 2 minutes - shorter for real-time data
-      cacheTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: true, // Refetch when window gains focus
-      refetchOnReconnect: true, // Refetch when network reconnects
-    },
-  },
-})
 
 // Interface selector component with database status
 function InterfaceSelector({ onSelect, databaseStatus }) {
@@ -317,7 +303,6 @@ function App() {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
       <WebSocketProvider>
       <BrowserRouter>
         {!selectedInterface && (
@@ -331,7 +316,7 @@ function App() {
           <Routes>
             <Route path="/" element={<AdminLayout onReset={handleInterfaceReset} />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<AdminDashboard />} />
+              <Route path="/dashboard" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
               <Route path="/agents" element={<AgentManagement />} />
               <Route path="/monitoring" element={<SystemMonitoring />} />
               <Route path="/alerts" element={<AlertsManagement />} />
@@ -420,8 +405,6 @@ function App() {
         )}
       </BrowserRouter>
       </WebSocketProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
   );
 }
 

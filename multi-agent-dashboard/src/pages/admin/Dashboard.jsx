@@ -56,11 +56,12 @@ const AdminDashboard = () => {
   })
 
   // Fetch alerts
-  const { data: alerts } = useQuery({
+  const { data: alertsData } = useQuery({
     queryKey: ['alerts'],
     queryFn: () => api.alert.getAlerts({ status: 'active', limit: 50 }),
     refetchInterval: 15000,
   })
+  const alerts = alertsData?.alerts || []
 
   // Update performance history from WebSocket
   useEffect(() => {
@@ -128,8 +129,8 @@ const AdminDashboard = () => {
     warningAgents: Object.values(agents || {}).filter(a => a.status === 'warning').length,
     criticalAgents: Object.values(agents || {}).filter(a => a.status === 'critical' || a.status === 'error').length,
     offlineAgents: Object.values(agents || {}).filter(a => a.status === 'offline' || a.status === 'stopped').length,
-    activeAlerts: (alerts?.length || 0) + systemAlerts.length,
-    criticalAlerts: (alerts?.filter(a => a.severity === 'critical').length || 0) + 
+    activeAlerts: (alerts.length || 0) + systemAlerts.length,
+    criticalAlerts: (alerts.filter(a => a.severity === 'critical').length || 0) + 
                     systemAlerts.filter(a => a.severity === 'critical').length,
     systemUptime: systemData?.system_uptime || 99.9,
     avgResponseTime: systemMetrics?.response_time || systemData?.avg_response_time || 0,
