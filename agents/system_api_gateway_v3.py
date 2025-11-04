@@ -238,6 +238,29 @@ async def get_all_agents():
     
     return {"agents": agents_with_health, "total": len(agents_with_health)}
 
+@app.get("/api/agents/stats")
+async def get_agent_stats_early():
+    """Get agent statistics"""
+    total = len(AGENTS)
+    # Count online agents by checking health
+    online = 0
+    async with httpx.AsyncClient(timeout=2.0) as client:
+        for agent in AGENTS:
+            try:
+                response = await client.get(f"http://localhost:{agent['port']}/health")
+                if response.status_code == 200:
+                    online += 1
+            except:
+                pass
+    
+    offline = total - online
+    return {
+        "total": total,
+        "online": online,
+        "offline": offline,
+        "uptime_percentage": (online / total * 100) if total > 0 else 0
+    }
+
 @app.get("/api/agents/{agent_id}")
 async def get_agent(agent_id: str):
     """Get specific agent details"""
