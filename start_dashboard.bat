@@ -24,27 +24,30 @@ echo [OK] Node.js installed: %NODE_VERSION%
 echo.
 
 REM Check for package manager
+set PACKAGE_MANAGER=
+set PM_VERSION=
+
 where pnpm >nul 2>nul
 if !ERRORLEVEL! EQU 0 (
     set PACKAGE_MANAGER=pnpm
     for /f "tokens=*" %%i in ('pnpm --version') do set PM_VERSION=%%i
     echo [OK] pnpm installed: !PM_VERSION!
-) else (
-    where npm >nul 2>nul
-    if !ERRORLEVEL! EQU 0 (
-        set PACKAGE_MANAGER=npm
-        for /f "tokens=*" %%i in ('npm --version') do set PM_VERSION=%%i
-        echo [OK] npm installed: !PM_VERSION!
-        echo [DEBUG] After npm version echo
-    ) else (
-        echo [ERROR] No package manager found (npm or pnpm)
-        pause
-        exit /b 1
-    )
+    goto pm_found
 )
 
-echo [DEBUG] After package manager detection block
-echo [DEBUG] PACKAGE_MANAGER value: !PACKAGE_MANAGER!
+where npm >nul 2>nul
+if !ERRORLEVEL! EQU 0 (
+    set PACKAGE_MANAGER=npm
+    for /f "tokens=*" %%i in ('npm --version') do set PM_VERSION=%%i
+    echo [OK] npm installed: !PM_VERSION!
+    goto pm_found
+)
+
+echo [ERROR] No package manager found (npm or pnpm)
+pause
+exit /b 1
+
+:pm_found
 echo Using package manager: !PACKAGE_MANAGER!
 echo.
 
