@@ -35,6 +35,7 @@ if !ERRORLEVEL! EQU 0 (
         set PACKAGE_MANAGER=npm
         for /f "tokens=*" %%i in ('npm --version') do set PM_VERSION=%%i
         echo [OK] npm installed: !PM_VERSION!
+        echo [DEBUG] After npm version echo
     ) else (
         echo [ERROR] No package manager found (npm or pnpm)
         pause
@@ -42,6 +43,8 @@ if !ERRORLEVEL! EQU 0 (
     )
 )
 
+echo [DEBUG] After package manager detection block
+echo [DEBUG] PACKAGE_MANAGER value: !PACKAGE_MANAGER!
 echo Using package manager: !PACKAGE_MANAGER!
 echo.
 
