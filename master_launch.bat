@@ -295,7 +295,6 @@ for /L %%p in (8000,1,8025) do (
             set /a NOT_RUNNING+=1
         )
     )
-    echo.
 )
 
 echo.
