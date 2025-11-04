@@ -351,15 +351,23 @@ set REPORT_FILE=%MASTER_LOG_DIR%\status_report_%TIMESTAMP%.txt
     echo Project Root: %PROJECT_ROOT%
     echo.
     echo INFRASTRUCTURE:
-    pg_isready -h localhost -p 5432 > nul 2>&1 && echo   - PostgreSQL: Running || echo   - PostgreSQL: Not Running
-    netstat -an | findstr :9092 | findstr LISTENING > nul 2>&1 && echo   - Kafka: Running || echo   - Kafka: Not Running
-    node --version > nul 2>&1 && echo   - Node.js: Installed || echo   - Node.js: Not Installed
+    pg_isready -h localhost -p 5432 > nul 2>&1
+    if !ERRORLEVEL! EQU 0 (echo   - PostgreSQL: Running) else (echo   - PostgreSQL: Not Running)
+    netstat -an | findstr :9092 | findstr LISTENING > nul 2>&1
+    if !ERRORLEVEL! EQU 0 (echo   - Kafka: Running) else (echo   - Kafka: Not Running)
+    node --version > nul 2>&1
+    if !ERRORLEVEL! EQU 0 (echo   - Node.js: Installed) else (echo   - Node.js: Not Installed)
     echo.
     echo AGENTS: %HEALTHY%/26 healthy
     echo.
     echo DASHBOARD:
-    netstat -an | findstr :5173 | findstr LISTENING > nul 2>&1 && echo   Status: Running || echo   Status: Not Running
-    netstat -an | findstr :5173 | findstr LISTENING > nul 2>&1 && echo   URL: http://localhost:5173
+    netstat -an | findstr :5173 | findstr LISTENING > nul 2>&1
+    if !ERRORLEVEL! EQU 0 (
+        echo   Status: Running
+        echo   URL: http://localhost:5173
+    ) else (
+        echo   Status: Not Running
+    )
     echo.
     echo LOG FILES:
     echo   - Master Log: %STARTUP_LOG%
@@ -643,9 +651,10 @@ echo.
 echo   [ERROR] Failed to recover agent %AGENT_NAME% after %MAX_RETRIES% attempts
 echo   [ERROR] Last 50 lines of log file:
 echo   ========================================
-type "%LOG_FILE%" | more +0 | findstr /N "^" | findstr /R "^[0-9]*:" > "%AGENT_LOG_DIR%\%AGENT_NAME%_error_context.txt"
-for /f "skip=0 tokens=*" %%a in ('type "%AGENT_LOG_DIR%\%AGENT_NAME%_error_context.txt"') do (
-    echo   %%a
+if exist "%LOG_FILE%" (
+    powershell -Command "Get-Content '%LOG_FILE%' -Tail 50 | ForEach-Object { Write-Host '  ' $_ }"
+) else (
+    echo   [ERROR] Log file not found: %LOG_FILE%
 )
 echo   ========================================
 echo.
