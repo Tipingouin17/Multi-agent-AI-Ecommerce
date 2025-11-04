@@ -37,6 +37,10 @@ import CampaignManagement from './pages/merchant/CampaignManagement'
 import PromotionManager from './pages/merchant/PromotionManager'
 import ReviewManagement from './pages/merchant/ReviewManagement'
 import MarketingAnalytics from './pages/merchant/MarketingAnalytics'
+import CustomerSegmentation from './pages/merchant/CustomerSegmentation'
+import LoyaltyProgram from './pages/merchant/LoyaltyProgram'
+import EmailCampaignBuilder from './pages/merchant/EmailCampaignBuilder'
+import MarketingAutomation from './pages/merchant/MarketingAutomation'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -339,6 +343,10 @@ function App() {
               <Route path="/marketing/promotions" element={<PromotionManager />} />
               <Route path="/marketing/reviews" element={<ReviewManagement />} />
               <Route path="/marketing/analytics" element={<MarketingAnalytics />} />
+              <Route path="/customers/segments" element={<CustomerSegmentation />} />
+              <Route path="/marketing/loyalty" element={<LoyaltyProgram />} />
+              <Route path="/marketing/campaigns/new" element={<EmailCampaignBuilder />} />
+              <Route path="/marketing/automation" element={<MarketingAutomation />} />
               <Route path="/inventory" element={<InventoryManagement />} />
               <Route path="/marketplaces" element={<MarketplaceIntegration />} />
               <Route path="/analytics" element={<MerchantAnalytics />} />
