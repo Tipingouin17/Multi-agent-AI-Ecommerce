@@ -264,38 +264,7 @@ set HEALTHY=0
 set UNHEALTHY=0
 set NOT_RUNNING=0
 
-for /L %%p in (8000,1,8025) do (
-    if "%VERBOSE%"=="1" (
-        echo [INFO] Checking port %%p...
-        echo   -^> Running: curl -s -f -m 5 http://localhost:%%p/health
-    )
-    
-    curl -s -f -m 5 http://localhost:%%p/health > "%AGENT_LOG_DIR%\port_%%p_health.log" 2>&1
-    if !ERRORLEVEL! EQU 0 (
-        echo [OK] Port %%p - HEALTHY
-        if "%VERBOSE%"=="1" (
-            echo   -^> Health response:
-            type "%AGENT_LOG_DIR%\port_%%p_health.log" | findstr /C:"status" /C:"healthy"
-        )
-        set /a HEALTHY+=1
-    ) else (
-        netstat -an | findstr :%%p | findstr LISTENING > nul 2>&1
-        if !ERRORLEVEL! EQU 0 (
-            echo [WARNING] Port %%p - UNHEALTHY (port open but /health failed)
-            echo   -^> Port is listening but health check failed
-            if "%VERBOSE%"=="1" (
-                echo   -^> Error output:
-                type "%AGENT_LOG_DIR%\port_%%p_health.log" 2>nul
-            )
-            set /a UNHEALTHY+=1
-        ) else (
-            echo [ERROR] Port %%p - NOT RUNNING
-            echo   -^> Port is not listening
-            echo   -^> Check agent log for details
-            set /a NOT_RUNNING+=1
-        )
-    )
-)
+for /L %%p in (8000,1,8025) do call :check_agent_health %%p
 
 echo.
 echo ================================================================================
@@ -473,5 +442,44 @@ REM Wait before starting next agent
 timeout /t 2 /nobreak > nul
 echo.
 
+goto :eof
+
+:check_agent_health
+set PORT=%1
+
+if "%VERBOSE%"=="1" (
+    echo [INFO] Checking port %PORT%...
+    echo   -^> Running: curl -s -f -m 5 http://localhost:%PORT%/health
+)
+
+curl -s -f -m 5 http://localhost:%PORT%/health > "%AGENT_LOG_DIR%\port_%PORT%_health.log" 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo [OK] Port %PORT% - HEALTHY
+    if "%VERBOSE%"=="1" (
+        echo   -^> Health response:
+        type "%AGENT_LOG_DIR%\port_%PORT%_health.log" | findstr /C:"status" /C:"healthy"
+    )
+    set /a HEALTHY+=1
+    goto :eof
+)
+
+REM Health check failed, check if port is listening
+netstat -an | findstr :%PORT% | findstr LISTENING > nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo [WARNING] Port %PORT% - UNHEALTHY (port open but /health failed)
+    echo   -^> Port is listening but health check failed
+    if "%VERBOSE%"=="1" (
+        echo   -^> Error output:
+        type "%AGENT_LOG_DIR%\port_%PORT%_health.log" 2>nul
+    )
+    set /a UNHEALTHY+=1
+    goto :eof
+)
+
+REM Port not listening
+echo [ERROR] Port %PORT% - NOT RUNNING
+echo   -^> Port is not listening
+echo   -^> Check agent log for details
+set /a NOT_RUNNING+=1
 goto :eof
 
