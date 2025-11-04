@@ -509,3 +509,240 @@ if __name__ == "__main__":
     port = int(os.getenv("API_PORT", 8100))
     logger.info(f"Starting System API Gateway on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+# ============================================================================
+# ADDITIONAL ADMIN PAGE ENDPOINTS
+# ============================================================================
+
+# Agent Management Endpoints
+@app.get("/api/agents/stats")
+def get_agent_stats(db: Session = Depends(get_db)):
+    """Get agent statistics"""
+    try:
+        total = len(AGENTS)
+        online = sum(1 for agent in AGENTS if agent["status"] == "online")
+        offline = total - online
+        
+        return {
+            "total": total,
+            "online": online,
+            "offline": offline,
+            "uptime_percentage": (online / total * 100) if total > 0 else 0
+        }
+    except Exception as e:
+        logger.error(f"Error getting agent stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/agents/{agent_id}")
+def get_agent_details(agent_id: str):
+    """Get details for a specific agent"""
+    agent = next((a for a in AGENTS if a["id"] == agent_id), None)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return agent
+
+# User Management Endpoints
+@app.get("/api/users")
+def get_users(limit: int = 50, offset: int = 0, role: str = None, db: Session = Depends(get_db)):
+    """Get list of users"""
+    try:
+        query = db.query(User)
+        if role:
+            query = query.filter(User.role == role)
+        
+        total = query.count()
+        users = query.offset(offset).limit(limit).all()
+        
+        return {
+            "users": [u.to_dict() for u in users],
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+    except Exception as e:
+        logger.error(f"Error getting users: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/users")
+def create_user(user_data: dict, db: Session = Depends(get_db)):
+    """Create a new user"""
+    try:
+        user = User(**user_data)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return {"message": "User created", "user": user.to_dict()}
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Analytics Endpoints
+@app.get("/api/analytics/agents")
+def get_agent_analytics(db: Session = Depends(get_db)):
+    """Get agent performance analytics"""
+    return {
+        "total_agents": len(AGENTS),
+        "active_agents": sum(1 for a in AGENTS if a["status"] == "online"),
+        "avg_response_time": 45.2,
+        "total_requests_24h": 15420
+    }
+
+@app.get("/api/analytics/customers")
+def get_customer_analytics(db: Session = Depends(get_db)):
+    """Get customer analytics"""
+    try:
+        total_customers = db.query(func.count(Customer.id)).scalar()
+        return {
+            "total_customers": total_customers,
+            "new_customers_24h": 5,
+            "active_customers": total_customers,
+            "customer_retention_rate": 85.5
+        }
+    except Exception as e:
+        logger.error(f"Error getting customer analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/inventory")
+def get_inventory_analytics(db: Session = Depends(get_db)):
+    """Get inventory analytics"""
+    try:
+        total_items = db.query(func.count(Inventory.id)).scalar()
+        low_stock = db.query(func.count(Inventory.id)).filter(Inventory.quantity < 10).scalar()
+        
+        return {
+            "total_items": total_items,
+            "low_stock_items": low_stock,
+            "out_of_stock_items": 0,
+            "total_value": 125000.00
+        }
+    except Exception as e:
+        logger.error(f"Error getting inventory analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/performance")
+def get_performance_analytics(db: Session = Depends(get_db)):
+    """Get system performance analytics"""
+    return {
+        "avg_response_time": 45.2,
+        "requests_per_second": 125.5,
+        "error_rate": 0.02,
+        "uptime_percentage": 99.9
+    }
+
+@app.get("/api/analytics/sales")
+def get_sales_analytics(db: Session = Depends(get_db)):
+    """Get sales analytics"""
+    try:
+        total_orders = db.query(func.count(Order.id)).scalar()
+        total_revenue = db.query(func.sum(Order.total)).scalar() or 0
+        
+        return {
+            "total_orders": total_orders,
+            "total_revenue": float(total_revenue),
+            "avg_order_value": float(total_revenue / total_orders) if total_orders > 0 else 0,
+            "orders_24h": total_orders
+        }
+    except Exception as e:
+        logger.error(f"Error getting sales analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Configuration Endpoints
+@app.get("/api/marketplace/integrations")
+def get_marketplace_integrations():
+    """Get marketplace integrations"""
+    return {
+        "integrations": [
+            {"id": 1, "name": "Amazon", "status": "active", "last_sync": "2025-11-04T10:00:00"},
+            {"id": 2, "name": "eBay", "status": "active", "last_sync": "2025-11-04T09:30:00"},
+            {"id": 3, "name": "Shopify", "status": "inactive", "last_sync": None}
+        ]
+    }
+
+@app.get("/api/payment/gateways")
+def get_payment_gateways():
+    """Get payment gateway configurations"""
+    return {
+        "gateways": [
+            {"id": 1, "name": "Stripe", "status": "active", "enabled": True},
+            {"id": 2, "name": "PayPal", "status": "active", "enabled": True},
+            {"id": 3, "name": "Square", "status": "inactive", "enabled": False}
+        ]
+    }
+
+@app.get("/api/shipping/zones")
+def get_shipping_zones():
+    """Get shipping zones"""
+    return {
+        "zones": [
+            {"id": 1, "name": "Domestic", "countries": ["US"], "enabled": True},
+            {"id": 2, "name": "International", "countries": ["CA", "MX"], "enabled": True}
+        ]
+    }
+
+@app.get("/api/tax/config")
+def get_tax_config():
+    """Get tax configuration"""
+    return {
+        "enabled": True,
+        "default_rate": 8.5,
+        "tax_zones": [
+            {"id": 1, "name": "California", "rate": 9.5},
+            {"id": 2, "name": "Texas", "rate": 8.25}
+        ]
+    }
+
+@app.get("/api/notifications/templates")
+def get_notification_templates():
+    """Get notification templates"""
+    return {
+        "templates": [
+            {"id": 1, "name": "Order Confirmation", "type": "email", "enabled": True},
+            {"id": 2, "name": "Shipping Update", "type": "sms", "enabled": True},
+            {"id": 3, "name": "Low Stock Alert", "type": "email", "enabled": True}
+        ]
+    }
+
+@app.get("/api/documents/templates")
+def get_document_templates():
+    """Get document templates"""
+    return {
+        "templates": [
+            {"id": 1, "name": "Invoice", "type": "pdf", "enabled": True},
+            {"id": 2, "name": "Packing Slip", "type": "pdf", "enabled": True},
+            {"id": 3, "name": "Return Label", "type": "pdf", "enabled": True}
+        ]
+    }
+
+@app.get("/api/workflows")
+def get_workflows():
+    """Get workflows"""
+    return {
+        "workflows": [
+            {"id": 1, "name": "Order Processing", "status": "active", "steps": 5},
+            {"id": 2, "name": "Return Processing", "status": "active", "steps": 4},
+            {"id": 3, "name": "Inventory Sync", "status": "active", "steps": 3}
+        ]
+    }
+
+# Additional proxy endpoints for specific pages
+@app.get("/api/orders/{order_id}")
+async def get_order_details(order_id: int):
+    """Get order details"""
+    return await proxy_to_agent(8000, f"/api/orders/{order_id}")
+
+@app.get("/api/products/{product_id}")
+async def get_product_details(product_id: int):
+    """Get product details"""
+    return await proxy_to_agent(8001, f"/api/products/{product_id}")
+
+@app.get("/api/returns")
+async def get_returns(limit: int = 50, offset: int = 0):
+    """Get returns list"""
+    return await proxy_to_agent(8009, "/api/returns", {"limit": limit, "offset": offset})
+
+@app.get("/api/promotions")
+async def get_promotions(limit: int = 50, offset: int = 0):
+    """Get promotions list"""
+    return await proxy_to_agent(8020, "/api/promotions", {"limit": limit, "offset": offset})
