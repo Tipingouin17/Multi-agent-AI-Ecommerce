@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 REM ============================================================================
 REM Start Dashboard - Windows Version
 REM ============================================================================
@@ -10,7 +11,7 @@ echo.
 
 REM Check if Node.js is installed
 where node >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
+if !ERRORLEVEL! NEQ 0 (
     echo [ERROR] Node.js is not installed
     echo Please install Node.js 18+ from https://nodejs.org/
     pause
@@ -24,16 +25,16 @@ echo.
 
 REM Check for package manager
 where pnpm >nul 2>nul
-if %ERRORLEVEL% EQU 0 (
+if !ERRORLEVEL! EQU 0 (
     set PACKAGE_MANAGER=pnpm
     for /f "tokens=*" %%i in ('pnpm --version') do set PM_VERSION=%%i
-    echo [OK] pnpm installed: %PM_VERSION%
+    echo [OK] pnpm installed: !PM_VERSION!
 ) else (
     where npm >nul 2>nul
-    if %ERRORLEVEL% EQU 0 (
+    if !ERRORLEVEL! EQU 0 (
         set PACKAGE_MANAGER=npm
         for /f "tokens=*" %%i in ('npm --version') do set PM_VERSION=%%i
-        echo [OK] npm installed: %PM_VERSION%
+        echo [OK] npm installed: !PM_VERSION!
     ) else (
         echo [ERROR] No package manager found (npm or pnpm)
         pause
@@ -41,7 +42,7 @@ if %ERRORLEVEL% EQU 0 (
     )
 )
 
-echo Using package manager: %PACKAGE_MANAGER%
+echo Using package manager: !PACKAGE_MANAGER!
 echo.
 
 REM Navigate to dashboard directory
@@ -52,13 +53,13 @@ if not exist node_modules (
     echo [WARNING] node_modules not found, installing dependencies...
     echo.
     
-    if "%PACKAGE_MANAGER%"=="pnpm" (
+    if "!PACKAGE_MANAGER!"=="pnpm" (
         pnpm install
     ) else (
         npm install --legacy-peer-deps
     )
     
-    if %ERRORLEVEL% NEQ 0 (
+    if !ERRORLEVEL! NEQ 0 (
         echo [ERROR] Dependency installation failed
         pause
         exit /b 1
@@ -99,7 +100,7 @@ echo Checking agent connectivity...
 echo.
 
 curl -s -f http://localhost:8000/health >nul 2>nul
-if %ERRORLEVEL% EQU 0 (
+if !ERRORLEVEL! EQU 0 (
     echo [OK] Primary API (order_agent) is running on port 8000
 ) else (
     echo [WARNING] Primary API (order_agent) is not responding on port 8000
@@ -108,7 +109,7 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 curl -s -f http://localhost:8015/health >nul 2>nul
-if %ERRORLEVEL% EQU 0 (
+if !ERRORLEVEL! EQU 0 (
     echo [OK] WebSocket API (transport_agent) is running on port 8015
 ) else (
     echo [WARNING] WebSocket API (transport_agent) is not responding on port 8015
@@ -126,7 +127,7 @@ echo.
 echo ================================================================================
 echo.
 
-if "%PACKAGE_MANAGER%"=="pnpm" (
+if "!PACKAGE_MANAGER!"=="pnpm" (
     pnpm run dev
 ) else (
     npm run dev
