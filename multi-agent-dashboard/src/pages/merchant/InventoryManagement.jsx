@@ -54,12 +54,15 @@ function InventoryManagement() {
     async function loadFilterOptions() {
       try {
         const categoriesData = await apiService.getProductCategories();
-        setCategories(categoriesData);
+        setCategories(categoriesData || []);
         
         const warehousesData = await apiService.getWarehouses();
-        setWarehouses(warehousesData);
+        setWarehouses(warehousesData || []);
       } catch (err) {
         console.error("Failed to load filter options:", err);
+        // Set empty arrays on error
+        setCategories([]);
+        setWarehouses([]);
       }
     }
     
@@ -82,17 +85,19 @@ function InventoryManagement() {
       
       const data = await apiService.getInventory(params);
       
-      setInventory(data.inventory);
+      setInventory(data.inventory || []);
       setPagination({
         ...pagination,
-        totalPages: data.totalPages,
-        totalItems: data.totalItems
+        totalPages: data.totalPages || 1,
+        totalItems: data.totalItems || 0
       });
       
       setError(null);
     } catch (err) {
       setError("Failed to load inventory: " + err.message);
       console.error(err);
+      // Set empty array on error to prevent undefined errors
+      setInventory([]);
     } finally {
       setLoading(false);
     }

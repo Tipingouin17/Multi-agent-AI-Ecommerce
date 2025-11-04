@@ -317,11 +317,11 @@ function App() {
             <Route path="/" element={<AdminLayout onReset={handleInterfaceReset} />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
-              <Route path="/agents" element={<AgentManagement />} />
-              <Route path="/monitoring" element={<SystemMonitoring />} />
-              <Route path="/alerts" element={<AlertsManagement />} />
-              <Route path="/analytics" element={<PerformanceAnalytics />} />
-              <Route path="/configuration" element={<SystemConfiguration />} />
+              <Route path="/agents" element={<ErrorBoundary><AgentManagement /></ErrorBoundary>} />
+              <Route path="/monitoring" element={<ErrorBoundary><SystemMonitoring /></ErrorBoundary>} />
+              <Route path="/alerts" element={<ErrorBoundary><AlertsManagement /></ErrorBoundary>} />
+              <Route path="/analytics" element={<ErrorBoundary><PerformanceAnalytics /></ErrorBoundary>} />
+              <Route path="/configuration" element={<ErrorBoundary><SystemConfiguration /></ErrorBoundary>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
@@ -331,47 +331,47 @@ function App() {
           <Routes>
             <Route path="/" element={<MerchantLayout onReset={handleInterfaceReset} />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<MerchantDashboard />} />
-              <Route path="/products" element={<ProductManagement />} />
-              <Route path="/products/new" element={<ProductForm />} />
-              <Route path="/products/:id/edit" element={<ProductForm />} />
-              <Route path="/products/bulk-upload" element={<BulkProductUpload />} />
-              <Route path="/products/analytics" element={<ProductAnalytics />} />
-              <Route path="/orders" element={<OrderManagement />} />
-              <Route path="/orders/:id" element={<OrderDetails />} />
-              <Route path="/orders/:id/fulfill" element={<OrderFulfillment />} />
-              <Route path="/returns" element={<ReturnsManagement />} />
-              <Route path="/shipping" element={<ShippingManagement />} />
-              <Route path="/inventory/alerts" element={<InventoryAlerts />} />
-              <Route path="/orders/analytics" element={<OrderAnalytics />} />
-              <Route path="/refunds" element={<RefundManagement />} />
-              <Route path="/customers" element={<CustomerList />} />
-              <Route path="/customers/:id" element={<CustomerProfile />} />
-              <Route path="/marketing/campaigns" element={<CampaignManagement />} />
-              <Route path="/marketing/promotions" element={<PromotionManager />} />
-              <Route path="/marketing/reviews" element={<ReviewManagement />} />
-              <Route path="/marketing/analytics" element={<MarketingAnalytics />} />
-              <Route path="/customers/segments" element={<CustomerSegmentation />} />
-              <Route path="/marketing/loyalty" element={<LoyaltyProgram />} />
-              <Route path="/marketing/campaigns/new" element={<EmailCampaignBuilder />} />
-              <Route path="/marketing/automation" element={<MarketingAutomation />} />
-              <Route path="/inventory" element={<InventoryManagement />} />
-              <Route path="/marketplaces" element={<MarketplaceIntegration />} />
-              <Route path="/analytics" element={<MerchantAnalytics />} />
-              <Route path="/settings/general" element={<StoreSettings />} />
-              <Route path="/settings/payments" element={<PaymentSettings />} />
-              <Route path="/settings/shipping" element={<ShippingSettings />} />
-              <Route path="/settings/taxes" element={<TaxSettings />} />
-              <Route path="/settings/emails" element={<EmailTemplates />} />
-              <Route path="/settings/notifications" element={<NotificationSettings />} />
-              <Route path="/settings/domain" element={<DomainSettings />} />
-              <Route path="/settings/api" element={<APISettings />} />
-              <Route path="/financial/dashboard" element={<FinancialDashboard />} />
-              <Route path="/financial/sales-reports" element={<SalesReports />} />
-              <Route path="/financial/profit-loss" element={<ProfitLossStatement />} />
-              <Route path="/financial/revenue-analytics" element={<RevenueAnalytics />} />
-              <Route path="/financial/expenses" element={<ExpenseTracking />} />
-              <Route path="/financial/tax-reports" element={<TaxReports />} />
+              <Route path="/dashboard" element={<ErrorBoundary><MerchantDashboard /></ErrorBoundary>} />
+              <Route path="/products" element={<ErrorBoundary><ProductManagement /></ErrorBoundary>} />
+              <Route path="/products/new" element={<ErrorBoundary><ProductForm /></ErrorBoundary>} />
+              <Route path="/products/:id/edit" element={<ErrorBoundary><ProductForm /></ErrorBoundary>} />
+              <Route path="/products/bulk-upload" element={<ErrorBoundary><BulkProductUpload /></ErrorBoundary>} />
+              <Route path="/products/analytics" element={<ErrorBoundary><ProductAnalytics /></ErrorBoundary>} />
+              <Route path="/orders" element={<ErrorBoundary><OrderManagement /></ErrorBoundary>} />
+              <Route path="/orders/:id" element={<ErrorBoundary><OrderDetails /></ErrorBoundary>} />
+              <Route path="/orders/:id/fulfill" element={<ErrorBoundary><OrderFulfillment /></ErrorBoundary>} />
+              <Route path="/returns" element={<ErrorBoundary><ReturnsManagement /></ErrorBoundary>} />
+              <Route path="/shipping" element={<ErrorBoundary><ShippingManagement /></ErrorBoundary>} />
+              <Route path="/inventory/alerts" element={<ErrorBoundary><InventoryAlerts /></ErrorBoundary>} />
+              <Route path="/orders/analytics" element={<ErrorBoundary><OrderAnalytics /></ErrorBoundary>} />
+              <Route path="/refunds" element={<ErrorBoundary><RefundManagement /></ErrorBoundary>} />
+              <Route path="/customers" element={<ErrorBoundary><CustomerList /></ErrorBoundary>} />
+              <Route path="/customers/:id" element={<ErrorBoundary><CustomerProfile /></ErrorBoundary>} />
+              <Route path="/marketing/campaigns" element={<ErrorBoundary><CampaignManagement /></ErrorBoundary>} />
+              <Route path="/marketing/promotions" element={<ErrorBoundary><PromotionManager /></ErrorBoundary>} />
+              <Route path="/marketing/reviews" element={<ErrorBoundary><ReviewManagement /></ErrorBoundary>} />
+              <Route path="/marketing/analytics" element={<ErrorBoundary><MarketingAnalytics /></ErrorBoundary>} />
+              <Route path="/customers/segments" element={<ErrorBoundary><CustomerSegmentation /></ErrorBoundary>} />
+              <Route path="/marketing/loyalty" element={<ErrorBoundary><LoyaltyProgram /></ErrorBoundary>} />
+              <Route path="/marketing/campaigns/new" element={<ErrorBoundary><EmailCampaignBuilder /></ErrorBoundary>} />
+              <Route path="/marketing/automation" element={<ErrorBoundary><MarketingAutomation /></ErrorBoundary>} />
+              <Route path="/inventory" element={<ErrorBoundary><InventoryManagement /></ErrorBoundary>} />
+              <Route path="/marketplaces" element={<ErrorBoundary><MarketplaceIntegration /></ErrorBoundary>} />
+              <Route path="/analytics" element={<ErrorBoundary><MerchantAnalytics /></ErrorBoundary>} />
+              <Route path="/settings/general" element={<ErrorBoundary><StoreSettings /></ErrorBoundary>} />
+              <Route path="/settings/payments" element={<ErrorBoundary><PaymentSettings /></ErrorBoundary>} />
+              <Route path="/settings/shipping" element={<ErrorBoundary><ShippingSettings /></ErrorBoundary>} />
+              <Route path="/settings/taxes" element={<ErrorBoundary><TaxSettings /></ErrorBoundary>} />
+              <Route path="/settings/emails" element={<ErrorBoundary><EmailTemplates /></ErrorBoundary>} />
+              <Route path="/settings/notifications" element={<ErrorBoundary><NotificationSettings /></ErrorBoundary>} />
+              <Route path="/settings/domain" element={<ErrorBoundary><DomainSettings /></ErrorBoundary>} />
+              <Route path="/settings/api" element={<ErrorBoundary><APISettings /></ErrorBoundary>} />
+              <Route path="/financial/dashboard" element={<ErrorBoundary><FinancialDashboard /></ErrorBoundary>} />
+              <Route path="/financial/sales-reports" element={<ErrorBoundary><SalesReports /></ErrorBoundary>} />
+              <Route path="/financial/profit-loss" element={<ErrorBoundary><ProfitLossStatement /></ErrorBoundary>} />
+              <Route path="/financial/revenue-analytics" element={<ErrorBoundary><RevenueAnalytics /></ErrorBoundary>} />
+              <Route path="/financial/expenses" element={<ErrorBoundary><ExpenseTracking /></ErrorBoundary>} />
+              <Route path="/financial/tax-reports" element={<ErrorBoundary><TaxReports /></ErrorBoundary>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
@@ -381,20 +381,20 @@ function App() {
           <Routes>
             <Route path="/" element={<CustomerLayout onReset={handleInterfaceReset} />}>
               <Route index element={<Home />} />
-              <Route path="/products" element={<ProductCatalog />} />
-              <Route path="/products/:productId" element={<ProductDetails />} />
-              <Route path="/cart" element={<ShoppingCart />} />
-              <Route path="/orders" element={<OrderTracking />} />
-              <Route path="/account" element={<Account />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
-              <Route path="/search" element={<SearchResults />} />
-              <Route path="/account/orders/:orderId" element={<OrderDetail />} />
-              <Route path="/account/settings" element={<AccountSettings />} />
-              <Route path="/account/addresses" element={<AddressBook />} />
-              <Route path="/account/wishlist" element={<Wishlist />} />
-              <Route path="/account/reviews" element={<CustomerReviews />} />
-              <Route path="/help" element={<Help />} />
+              <Route path="/products" element={<ErrorBoundary><ProductCatalog /></ErrorBoundary>} />
+              <Route path="/products/:productId" element={<ErrorBoundary><ProductDetails /></ErrorBoundary>} />
+              <Route path="/cart" element={<ErrorBoundary><ShoppingCart /></ErrorBoundary>} />
+              <Route path="/orders" element={<ErrorBoundary><OrderTracking /></ErrorBoundary>} />
+              <Route path="/account" element={<ErrorBoundary><Account /></ErrorBoundary>} />
+              <Route path="/checkout" element={<ErrorBoundary><Checkout /></ErrorBoundary>} />
+              <Route path="/order-confirmation/:orderId" element={<ErrorBoundary><OrderConfirmation /></ErrorBoundary>} />
+              <Route path="/search" element={<ErrorBoundary><SearchResults /></ErrorBoundary>} />
+              <Route path="/account/orders/:orderId" element={<ErrorBoundary><OrderDetail /></ErrorBoundary>} />
+              <Route path="/account/settings" element={<ErrorBoundary><AccountSettings /></ErrorBoundary>} />
+              <Route path="/account/addresses" element={<ErrorBoundary><AddressBook /></ErrorBoundary>} />
+              <Route path="/account/wishlist" element={<ErrorBoundary><Wishlist /></ErrorBoundary>} />
+              <Route path="/account/reviews" element={<ErrorBoundary><CustomerReviews /></ErrorBoundary>} />
+              <Route path="/help" element={<ErrorBoundary><Help /></ErrorBoundary>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
