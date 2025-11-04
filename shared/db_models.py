@@ -163,7 +163,7 @@ class Product(Base):
     view_count = Column(Integer, default=0)
     sales_count = Column(Integer, default=0)
     tags = Column(JSON)
-    metadata = Column(JSON)
+    extra_data = Column('metadata', JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -196,7 +196,7 @@ class Product(Base):
             "view_count": self.view_count,
             "sales_count": self.sales_count,
             "tags": self.tags or [],
-            "metadata": self.metadata,
+            "metadata": self.extra_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -223,7 +223,7 @@ class Warehouse(Base):
     capacity = Column(Integer)
     current_utilization = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    metadata = Column(JSON)
+    extra_data = Column('metadata', JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -246,7 +246,7 @@ class Warehouse(Base):
             "capacity": self.capacity,
             "current_utilization": self.current_utilization,
             "is_active": self.is_active,
-            "metadata": self.metadata,
+            "metadata": self.extra_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -308,7 +308,7 @@ class Customer(Base):
     last_order_date = Column(DateTime)
     notes = Column(Text)
     tags = Column(JSON)
-    metadata = Column(JSON)
+    extra_data = Column('metadata', JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -328,7 +328,7 @@ class Customer(Base):
             "last_order_date": self.last_order_date.isoformat() if self.last_order_date else None,
             "notes": self.notes,
             "tags": self.tags or [],
-            "metadata": self.metadata,
+            "metadata": self.extra_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -398,7 +398,7 @@ class Order(Base):
     billing_address_id = Column(Integer, ForeignKey("addresses.id"))
     notes = Column(Text)
     customer_notes = Column(Text)
-    metadata = Column(JSON)
+    extra_data = Column('metadata', JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     confirmed_at = Column(DateTime)
@@ -429,7 +429,7 @@ class Order(Base):
             "billing_address_id": self.billing_address_id,
             "notes": self.notes,
             "customer_notes": self.customer_notes,
-            "metadata": self.metadata,
+            "metadata": self.extra_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "confirmed_at": self.confirmed_at.isoformat() if self.confirmed_at else None,
@@ -453,7 +453,7 @@ class OrderItem(Base):
     total_price = Column(Numeric(10, 2), nullable=False)
     tax = Column(Numeric(10, 2), default=0.00)
     discount = Column(Numeric(10, 2), default=0.00)
-    metadata = Column(JSON)
+    extra_data = Column('metadata', JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -473,7 +473,7 @@ class OrderItem(Base):
             "total_price": float(self.total_price) if self.total_price else 0.0,
             "tax": float(self.tax) if self.tax else 0.0,
             "discount": float(self.discount) if self.discount else 0.0,
-            "metadata": self.metadata,
+            "metadata": self.extra_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -493,7 +493,7 @@ class Carrier(Base):
     api_key_encrypted = Column(Text)
     is_active = Column(Boolean, default=True)
     supported_services = Column(JSON)
-    metadata = Column(JSON)
+    extra_data = Column('metadata', JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -506,7 +506,7 @@ class Carrier(Base):
             "api_endpoint": self.api_endpoint,
             "is_active": self.is_active,
             "supported_services": self.supported_services or [],
-            "metadata": self.metadata,
+            "metadata": self.extra_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -531,7 +531,7 @@ class Alert(Base):
     resolved_by = Column(Integer, ForeignKey("users.id"))
     resolved_at = Column(DateTime)
     resolution_notes = Column(Text)
-    metadata = Column(JSON)
+    extra_data = Column('metadata', JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -549,7 +549,7 @@ class Alert(Base):
             "resolved_by": self.resolved_by,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
             "resolution_notes": self.resolution_notes,
-            "metadata": self.metadata,
+            "metadata": self.extra_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
