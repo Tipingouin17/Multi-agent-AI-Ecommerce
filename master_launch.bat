@@ -332,6 +332,38 @@ goto wait_dashboard_loop
 
 :after_dashboard
 
+REM ============================================================================
+REM OPTIONAL: RUN UI TESTS
+REM ============================================================================
+
+echo.
+echo ================================================================================
+echo UI TESTING (OPTIONAL)
+echo ================================================================================
+echo.
+echo Would you like to run comprehensive UI tests for the dashboard?
+echo This will test all 4 interfaces (Admin, Merchant, Customer, Database Test)
+echo.
+set /p RUN_TESTS="Run UI tests? (y/N): "
+
+if /i "!RUN_TESTS!"=="y" (
+    echo.
+    echo [INFO] Running UI tests...
+    if exist run_ui_tests.bat (
+        call run_ui_tests.bat
+        set UI_TEST_EXIT_CODE=!ERRORLEVEL!
+        if !UI_TEST_EXIT_CODE! EQU 0 (
+            echo [SUCCESS] All UI tests passed!
+        ) else (
+            echo [WARNING] Some UI tests failed (exit code: !UI_TEST_EXIT_CODE!)
+        )
+    ) else (
+        echo [WARNING] run_ui_tests.bat not found, skipping UI tests
+    )
+) else (
+    echo [INFO] Skipping UI tests
+)
+
 echo.
 
 REM ============================================================================

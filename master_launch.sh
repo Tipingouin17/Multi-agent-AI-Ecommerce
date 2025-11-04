@@ -584,6 +584,34 @@ main() {
     # Start dashboard
     start_dashboard
     
+    # Optional: Run UI tests
+    echo ""
+    log_section "UI TESTING (OPTIONAL)"
+    echo ""
+    echo "Would you like to run comprehensive UI tests for the dashboard?"
+    echo "This will test all 4 interfaces (Admin, Merchant, Customer, Database Test)"
+    echo ""
+    read -p "Run UI tests? (y/N): " run_tests
+    
+    if [[ "$run_tests" =~ ^[Yy]$ ]]; then
+        echo ""
+        log_info "Running UI tests..."
+        if [ -f "run_ui_tests.sh" ]; then
+            ./run_ui_tests.sh
+            ui_test_exit_code=$?
+            if [ $ui_test_exit_code -eq 0 ]; then
+                log_success "All UI tests passed!"
+            else
+                log_warning "Some UI tests failed (exit code: $ui_test_exit_code)"
+            fi
+        else
+            log_warning "run_ui_tests.sh not found, skipping UI tests"
+        fi
+    else
+        log_info "Skipping UI tests"
+    fi
+    echo ""
+    
     # Generate final report
     generate_status_report
     
