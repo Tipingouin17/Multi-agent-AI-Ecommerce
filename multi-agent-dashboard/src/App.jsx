@@ -41,6 +41,14 @@ import CustomerSegmentation from './pages/merchant/CustomerSegmentation'
 import LoyaltyProgram from './pages/merchant/LoyaltyProgram'
 import EmailCampaignBuilder from './pages/merchant/EmailCampaignBuilder'
 import MarketingAutomation from './pages/merchant/MarketingAutomation'
+import StoreSettings from './pages/merchant/StoreSettings'
+import PaymentSettings from './pages/merchant/PaymentSettings'
+import ShippingSettings from './pages/merchant/ShippingSettings'
+import TaxSettings from './pages/merchant/TaxSettings'
+import EmailTemplates from './pages/merchant/EmailTemplates'
+import NotificationSettings from './pages/merchant/NotificationSettings'
+import DomainSettings from './pages/merchant/DomainSettings'
+import APISettings from './pages/merchant/APISettings'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -350,6 +358,14 @@ function App() {
               <Route path="/inventory" element={<InventoryManagement />} />
               <Route path="/marketplaces" element={<MarketplaceIntegration />} />
               <Route path="/analytics" element={<MerchantAnalytics />} />
+              <Route path="/settings/general" element={<StoreSettings />} />
+              <Route path="/settings/payments" element={<PaymentSettings />} />
+              <Route path="/settings/shipping" element={<ShippingSettings />} />
+              <Route path="/settings/taxes" element={<TaxSettings />} />
+              <Route path="/settings/emails" element={<EmailTemplates />} />
+              <Route path="/settings/notifications" element={<NotificationSettings />} />
+              <Route path="/settings/domain" element={<DomainSettings />} />
+              <Route path="/settings/api" element={<APISettings />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
