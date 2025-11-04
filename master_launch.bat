@@ -283,6 +283,10 @@ echo.
 
 if %HEALTHY% EQU 26 (
     echo [SUCCESS] ALL AGENTS ARE HEALTHY!
+) else (
+    echo [WARNING] Some agents are unhealthy or not running
+    echo [INFO] Starting automatic recovery process...
+    call :retry_unhealthy_agents
 )
 
 REM ============================================================================
@@ -482,4 +486,170 @@ echo   -^> Port is not listening
 echo   -^> Check agent log for details
 set /a NOT_RUNNING+=1
 goto :eof
+
+
+:retry_unhealthy_agents
+echo.
+echo ================================================================================
+echo AUTOMATIC AGENT RECOVERY
+echo ================================================================================
+echo.
+
+REM Create list of unhealthy/not-running ports
+set UNHEALTHY_PORTS=
+
+REM Check each port and build list of unhealthy ones
+for /L %%p in (8000,1,8025) do (
+    curl -s -f -m 5 http://localhost:%%p/health > nul 2>&1
+    if !ERRORLEVEL! NEQ 0 (
+        if defined UNHEALTHY_PORTS (
+            set UNHEALTHY_PORTS=!UNHEALTHY_PORTS! %%p
+        ) else (
+            set UNHEALTHY_PORTS=%%p
+        )
+    )
+)
+
+if not defined UNHEALTHY_PORTS (
+    echo [INFO] No unhealthy agents found
+    goto :eof
+)
+
+echo [INFO] Unhealthy agents on ports: %UNHEALTHY_PORTS%
+echo.
+
+REM Retry each unhealthy agent
+for %%p in (%UNHEALTHY_PORTS%) do (
+    call :retry_single_agent %%p
+)
+
+echo.
+echo ================================================================================
+echo RECOVERY COMPLETE
+echo ================================================================================
+echo.
+
+REM Re-run health check to get updated counts
+set HEALTHY=0
+set UNHEALTHY=0
+set NOT_RUNNING=0
+
+for /L %%p in (8000,1,8025) do (
+    curl -s -f -m 5 http://localhost:%%p/health > nul 2>&1
+    if !ERRORLEVEL! EQU 0 (
+        set /a HEALTHY+=1
+    ) else (
+        netstat -an | findstr :%%p | findstr LISTENING > nul 2>&1
+        if !ERRORLEVEL! EQU 0 (
+            set /a UNHEALTHY+=1
+        ) else (
+            set /a NOT_RUNNING+=1
+        )
+    )
+)
+
+echo [INFO] Post-Recovery Status:
+echo   Healthy:     %HEALTHY%/26
+echo   Unhealthy:   %UNHEALTHY%/26
+echo   Not Running: %NOT_RUNNING%/26
+echo.
+
+goto :eof
+
+:retry_single_agent
+set RETRY_PORT=%1
+set MAX_RETRIES=3
+set RETRY_COUNT=0
+
+echo [INFO] Attempting to recover agent on port %RETRY_PORT%...
+
+:retry_loop
+set /a RETRY_COUNT+=1
+echo.
+echo [INFO] Retry attempt %RETRY_COUNT%/%MAX_RETRIES% for port %RETRY_PORT%...
+
+REM Find and stop the agent process
+echo   -^> Stopping agent on port %RETRY_PORT%...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :%RETRY_PORT% ^| findstr LISTENING') do (
+    taskkill /F /PID %%a > nul 2>&1
+    if !ERRORLEVEL! EQU 0 (
+        echo   -^> Stopped process PID %%a
+    )
+)
+
+REM Wait for port to be released
+timeout /t 5 /nobreak > nul
+
+REM Find the agent name and file for this port
+set AGENT_NAME=
+set AGENT_FILE=
+if %RETRY_PORT% EQU 8000 (set AGENT_NAME=order& set AGENT_FILE=order_agent_production_v2)
+if %RETRY_PORT% EQU 8001 (set AGENT_NAME=product& set AGENT_FILE=product_agent_production)
+if %RETRY_PORT% EQU 8002 (set AGENT_NAME=inventory& set AGENT_FILE=inventory_agent)
+if %RETRY_PORT% EQU 8003 (set AGENT_NAME=marketplace& set AGENT_FILE=marketplace_connector_agent)
+if %RETRY_PORT% EQU 8004 (set AGENT_NAME=payment& set AGENT_FILE=payment_agent_enhanced)
+if %RETRY_PORT% EQU 8005 (set AGENT_NAME=dynamic_pricing& set AGENT_FILE=dynamic_pricing_agent)
+if %RETRY_PORT% EQU 8006 (set AGENT_NAME=carrier_selection& set AGENT_FILE=carrier_selection_agent)
+if %RETRY_PORT% EQU 8007 (set AGENT_NAME=customer& set AGENT_FILE=customer_agent_enhanced)
+if %RETRY_PORT% EQU 8008 (set AGENT_NAME=customer_communication& set AGENT_FILE=customer_communication_agent)
+if %RETRY_PORT% EQU 8009 (set AGENT_NAME=returns& set AGENT_FILE=returns_agent)
+if %RETRY_PORT% EQU 8010 (set AGENT_NAME=fraud_detection& set AGENT_FILE=fraud_detection_agent)
+if %RETRY_PORT% EQU 8011 (set AGENT_NAME=recommendation& set AGENT_FILE=recommendation_agent)
+if %RETRY_PORT% EQU 8012 (set AGENT_NAME=promotion& set AGENT_FILE=promotion_agent)
+if %RETRY_PORT% EQU 8013 (set AGENT_NAME=risk_anomaly& set AGENT_FILE=risk_anomaly_detection_agent)
+if %RETRY_PORT% EQU 8014 (set AGENT_NAME=knowledge_management& set AGENT_FILE=knowledge_management_agent)
+if %RETRY_PORT% EQU 8015 (set AGENT_NAME=transport& set AGENT_FILE=transport_management_agent_enhanced)
+if %RETRY_PORT% EQU 8016 (set AGENT_NAME=warehouse& set AGENT_FILE=warehouse_agent)
+if %RETRY_PORT% EQU 8017 (set AGENT_NAME=document& set AGENT_FILE=document_generation_agent)
+if %RETRY_PORT% EQU 8018 (set AGENT_NAME=support& set AGENT_FILE=support_agent)
+if %RETRY_PORT% EQU 8019 (set AGENT_NAME=d2c_ecommerce& set AGENT_FILE=d2c_ecommerce_agent)
+if %RETRY_PORT% EQU 8020 (set AGENT_NAME=after_sales& set AGENT_FILE=after_sales_agent_production)
+if %RETRY_PORT% EQU 8021 (set AGENT_NAME=backoffice& set AGENT_FILE=backoffice_agent_production)
+if %RETRY_PORT% EQU 8022 (set AGENT_NAME=infrastructure& set AGENT_FILE=infrastructure_agents)
+if %RETRY_PORT% EQU 8023 (set AGENT_NAME=ai_monitoring& set AGENT_FILE=ai_monitoring_agent_self_healing)
+if %RETRY_PORT% EQU 8024 (set AGENT_NAME=monitoring& set AGENT_FILE=monitoring_agent)
+if %RETRY_PORT% EQU 8025 (set AGENT_NAME=quality_control& set AGENT_FILE=quality_control_agent_production)
+
+if not defined AGENT_NAME (
+    echo   [ERROR] Unknown port %RETRY_PORT%, cannot restart
+    goto :eof
+)
+
+REM Restart the agent
+echo   -^> Restarting %AGENT_NAME% agent...
+set API_PORT=%RETRY_PORT%
+set LOG_FILE=%AGENT_LOG_DIR%\%AGENT_NAME%.log
+start "%AGENT_NAME% Agent" /B python agents\%AGENT_FILE%.py > "%LOG_FILE%" 2>&1
+
+REM Wait for agent to initialize
+echo   -^> Waiting 15 seconds for initialization...
+timeout /t 15 /nobreak > nul
+
+REM Check health
+curl -s -f -m 5 http://localhost:%RETRY_PORT%/health > nul 2>&1
+if !ERRORLEVEL! EQU 0 (
+    echo   [SUCCESS] Agent %AGENT_NAME% recovered successfully!
+    goto :eof
+)
+
+REM Check if we should retry
+if %RETRY_COUNT% LSS %MAX_RETRIES% (
+    echo   [WARNING] Agent still unhealthy, retrying...
+    goto :retry_loop
+)
+
+REM Failed after all retries
+echo.
+echo   [ERROR] Failed to recover agent %AGENT_NAME% after %MAX_RETRIES% attempts
+echo   [ERROR] Last 50 lines of log file:
+echo   ========================================
+type "%LOG_FILE%" | more +0 | findstr /N "^" | findstr /R "^[0-9]*:" > "%AGENT_LOG_DIR%\%AGENT_NAME%_error_context.txt"
+for /f "skip=0 tokens=*" %%a in ('type "%AGENT_LOG_DIR%\%AGENT_NAME%_error_context.txt"') do (
+    echo   %%a
+)
+echo   ========================================
+echo.
+
+goto :eof
+
 
