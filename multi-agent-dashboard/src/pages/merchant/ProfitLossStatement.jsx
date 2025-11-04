@@ -16,7 +16,7 @@ const ProfitLossStatement = () => {
     queryFn: () => api.financial.getProfitLoss(period)
   })
 
-  const { data: comparison Data } = useQuery({
+  const { data: comparisonData } = useQuery({
     queryKey: ['profit-loss-comparison', period, comparison],
     queryFn: () => api.financial.getProfitLossComparison(period, comparison)
   })
