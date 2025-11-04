@@ -55,12 +55,15 @@ function ProductManagement() {
     async function loadFilterOptions() {
       try {
         const categoriesData = await apiService.getProductCategories();
-        setCategories(categoriesData);
+        setCategories(categoriesData || []);
         
         const marketplacesData = await apiService.getMarketplaces();
-        setMarketplaces(marketplacesData);
+        setMarketplaces(marketplacesData || []);
       } catch (err) {
         console.error("Failed to load filter options:", err);
+        // Set empty arrays on error
+        setCategories([]);
+        setMarketplaces([]);
       }
     }
     
@@ -83,17 +86,19 @@ function ProductManagement() {
       
       const data = await apiService.getProducts(params);
       
-      setProducts(data.products);
+      setProducts(data.products || []);
       setPagination({
         ...pagination,
-        totalPages: data.totalPages,
-        totalItems: data.totalItems
+        totalPages: data.totalPages || 1,
+        totalItems: data.totalItems || 0
       });
       
       setError(null);
     } catch (err) {
       setError("Failed to load products: " + err.message);
       console.error(err);
+      // Set empty array on error to prevent undefined errors
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -608,7 +613,7 @@ function ProductManagement() {
                           {formatCurrency(product.price)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {product.inventory.total} in stock
+                          {product.inventory?.total || 0} in stock
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -616,7 +621,7 @@ function ProductManagement() {
                             product.status === 'inactive' ? 'bg-red-100 text-red-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {product.status.charAt(0).toUpperCase() + product.status.slice(1)}
+                            {product.status ? product.status.charAt(0).toUpperCase() + product.status.slice(1) : 'Unknown'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -624,7 +629,7 @@ function ProductManagement() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex -space-x-1">
-                            {product.marketplaces.map(marketplace => (
+                            {(product.marketplaces || []).map(marketplace => (
                               <img
                                 key={marketplace.id}
                                 src={marketplace.icon}
@@ -633,7 +638,7 @@ function ProductManagement() {
                                 className="h-6 w-6 rounded-full border border-white"
                               />
                             ))}
-                            {product.marketplaces.length === 0 && (
+                            {(product.marketplaces || []).length === 0 && (
                               <span className="text-sm text-gray-500">Not listed</span>
                             )}
                           </div>
