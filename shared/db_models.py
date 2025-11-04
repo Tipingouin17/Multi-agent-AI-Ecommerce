@@ -553,3 +553,59 @@ class Alert(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+# ============================================================================
+# RETURN MODELS
+# ============================================================================
+
+class Return(Base):
+    """Return/RMA model"""
+    __tablename__ = "returns"
+    
+    id = Column(Integer, primary_key=True)
+    return_number = Column(String(50), unique=True, nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"))
+    order_item_id = Column(Integer, ForeignKey("order_items.id", ondelete="SET NULL"))
+    customer_id = Column(Integer)
+    reason = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    return_type = Column(String(50), default="refund")  # refund, exchange, replacement
+    status = Column(String(50), default="pending")  # pending, approved, rejected, received, completed, cancelled
+    refund_amount = Column(Numeric(10, 2))
+    resolution = Column(Text)
+    comments = Column(Text)
+    admin_notes = Column(Text)
+    extra_data = Column('metadata', JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    approved_at = Column(DateTime)
+    received_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    
+    # Relationships
+    order = relationship("Order", foreign_keys=[order_id])
+    order_item = relationship("OrderItem", foreign_keys=[order_item_id])
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "return_number": self.return_number,
+            "order_id": self.order_id,
+            "order_item_id": self.order_item_id,
+            "customer_id": self.customer_id,
+            "reason": self.reason,
+            "quantity": self.quantity,
+            "return_type": self.return_type,
+            "status": self.status,
+            "refund_amount": float(self.refund_amount) if self.refund_amount else None,
+            "resolution": self.resolution,
+            "comments": self.comments,
+            "admin_notes": self.admin_notes,
+            "metadata": self.extra_data,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "approved_at": self.approved_at.isoformat() if self.approved_at else None,
+            "received_at": self.received_at.isoformat() if self.received_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+        }

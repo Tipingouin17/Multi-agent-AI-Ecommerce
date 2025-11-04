@@ -338,6 +338,34 @@ CREATE INDEX IF NOT EXISTS idx_shipments_order_id ON shipments(order_id);
 CREATE INDEX IF NOT EXISTS idx_shipments_tracking_number ON shipments(tracking_number);
 CREATE INDEX IF NOT EXISTS idx_shipments_status ON shipments(status);
 
+-- Returns
+CREATE TABLE IF NOT EXISTS returns (
+    id SERIAL PRIMARY KEY,
+    return_number VARCHAR(50) UNIQUE NOT NULL,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    order_item_id INTEGER REFERENCES order_items(id) ON DELETE SET NULL,
+    customer_id INTEGER,
+    reason VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    return_type VARCHAR(50) DEFAULT 'refund' CHECK (return_type IN ('refund', 'exchange', 'replacement')),
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'received', 'completed', 'cancelled')),
+    refund_amount DECIMAL(10,2),
+    resolution TEXT,
+    comments TEXT,
+    admin_notes TEXT,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_at TIMESTAMP,
+    received_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_returns_return_number ON returns(return_number);
+CREATE INDEX IF NOT EXISTS idx_returns_order_id ON returns(order_id);
+CREATE INDEX IF NOT EXISTS idx_returns_status ON returns(status);
+CREATE INDEX IF NOT EXISTS idx_returns_created_at ON returns(created_at);
+
 -- ============================================================================
 -- PAYMENT TABLES
 -- ============================================================================
