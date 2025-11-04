@@ -38,6 +38,15 @@ logger = structlog.get_logger(__name__)
 
 # Create module-level FastAPI app
 app = FastAPI(title="Payment Agent API")
+# Add CORS middleware to allow dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # =====================================================
 # ENUMS

@@ -475,6 +475,15 @@ class MarketplaceService:
 
 # AGENT CLASS
 app = FastAPI()
+# Add CORS middleware to allow dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 
 class MarketplaceConnectorAgent(BaseAgentV2):

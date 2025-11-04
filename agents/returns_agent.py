@@ -508,6 +508,15 @@ class ReturnsAgent(BaseAgentV2):
 # FastAPI APP
 app = FastAPI(title="Returns Agent API", version="1.0.0",
               description="API for managing product returns and refunds in the e-commerce system.")
+# Add CORS middleware to allow dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.on_event("startup")
 async def startup_event():

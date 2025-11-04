@@ -1042,6 +1042,15 @@ class CarrierSelectionAgent(BaseAgentV2):
 
 # FastAPI app instance for running the agent as a service
 app = FastAPI(title="Carrier Selection Agent", version="1.0.0")
+# Add CORS middleware to allow dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Global agent instance
 carrier_selection_agent: Optional[CarrierSelectionAgent] = None

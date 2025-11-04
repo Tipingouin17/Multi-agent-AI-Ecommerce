@@ -459,6 +459,15 @@ app = FastAPI(
     version="1.0.0", 
     lifespan=lifespan
 )
+# Add CORS middleware to allow dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Setup routes from the agent instance
 agent_instance.app = app

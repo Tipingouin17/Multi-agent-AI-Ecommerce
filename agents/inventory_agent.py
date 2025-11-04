@@ -285,6 +285,16 @@ class InventoryAgent(BaseAgentV2):
             version="1.0.0",
             lifespan=self.lifespan_context
         )
+        
+        # Add CORS middleware to allow dashboard access
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # In production, specify exact origins
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        
         self.setup_routes()
 
     @asynccontextmanager

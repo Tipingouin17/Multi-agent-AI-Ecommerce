@@ -25,6 +25,15 @@ from starlette.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Order Agent API", version="1.0.0") # Initialized at module level for Uvicorn compatibility
 
+# Add CORS middleware to allow dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,

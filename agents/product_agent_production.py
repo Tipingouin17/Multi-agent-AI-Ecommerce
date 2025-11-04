@@ -158,6 +158,15 @@ async def app_lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=app_lifespan)
 
+# Add CORS middleware to allow dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 class ProductAgent(BaseAgentV2):
     """
@@ -227,9 +236,14 @@ class ProductAgent(BaseAgentV2):
         
         @app.get("/products")
         async def get_products(
-            skip: int = 0,
-            limit: int = 100,
-            category: Optional[str] = None,
+            page: int = Query(1, ge=1),
+            limit: int = Query(10, ge=1, le=100),
+            search: Optional[str] = Query(None),
+            sortBy: Optional[str] = Query("updatedAt"),
+            sortDirection: Optional[str] = Query("desc"),
+            category: Optional[str] = Query(None),
+            status: Optional[str] = Query(None),
+            marketplace: Optional[str] = Query(None),
             brand: Optional[str] = None,
             min_price: Optional[float] = None,
             max_price: Optional[float] = None
@@ -238,6 +252,15 @@ class ProductAgent(BaseAgentV2):
             try:
                 async with self.async_session() as session:
                     query = select(ProductDB)
+                    
+                    # Apply search filter
+                    if search:
+                        search_filter = or_(
+                            ProductDB.name.ilike(f"%{search}%"),
+                            ProductDB.sku.ilike(f"%{search}%"),
+                            ProductDB.description.ilike(f"%{search}%")
+                        )
+                        query = query.where(search_filter)
                     
                     # Apply filters
                     if category:
@@ -249,7 +272,23 @@ class ProductAgent(BaseAgentV2):
                     if max_price is not None:
                         query = query.where(ProductDB.price <= max_price)
                     
-                    # Pagination
+                    # Apply sorting
+                    if sortBy == "updatedAt":
+                        sort_column = ProductDB.updated_at
+                    elif sortBy == "name":
+                        sort_column = ProductDB.name
+                    elif sortBy == "price":
+                        sort_column = ProductDB.price
+                    else:
+                        sort_column = ProductDB.updated_at
+                    
+                    if sortDirection == "desc":
+                        query = query.order_by(sort_column.desc())
+                    else:
+                        query = query.order_by(sort_column.asc())
+                    
+                    # Pagination (page-based)
+                    skip = (page - 1) * limit
                     query = query.offset(skip).limit(limit)
                     
                     result = await session.execute(query)
@@ -265,11 +304,23 @@ class ProductAgent(BaseAgentV2):
                     count_result = await session.execute(count_query)
                     total = count_result.scalar()
                     
+                    # Add inventory field to each product for dashboard compatibility
+                    products_with_inventory = []
+                    for p in products:
+                        product_dict = p.to_dict()
+                        product_dict["inventory"] = {
+                            "total": p.stock_quantity,
+                            "available": p.stock_quantity,
+                            "reserved": 0
+                        }
+                        products_with_inventory.append(product_dict)
+                    
                     return {
-                        "products": [p.to_dict() for p in products],
+                        "products": products_with_inventory,
                         "total": total,
-                        "skip": skip,
-                        "limit": limit
+                        "page": page,
+                        "limit": limit,
+                        "totalPages": (total + limit - 1) // limit if total > 0 else 0
                     }
             except Exception as e:
                 logger.error(f"Error getting products: {e}")

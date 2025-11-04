@@ -602,7 +602,16 @@ class SupportService:
 # FastAPI app instance
 app = FastAPI(
     title="Support Agent API",
-    version=os.getenv("AGENT_VERSION", "1.0.0"),
+    version=os.getenv("AGENT_VERSION", "1.0.0")
+# Add CORS middleware to allow dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+,
     description="API for managing customer support tickets and SLAs."
 )
 
