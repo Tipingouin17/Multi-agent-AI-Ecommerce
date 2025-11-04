@@ -49,9 +49,8 @@ set MASTER_LOG_DIR=logs\master
 set AGENT_LOG_DIR=logs\agents
 set INFRASTRUCTURE_LOG_DIR=logs\infrastructure
 
-REM Create timestamp for log files
-for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
-set TIMESTAMP=%datetime:~0,8%_%datetime:~8,6%
+REM Create timestamp for log files (using PowerShell for reliability)
+for /f "tokens=*" %%a in ('powershell -Command "Get-Date -Format 'yyyyMMdd_HHmmss'"') do set TIMESTAMP=%%a
 set STARTUP_LOG=%MASTER_LOG_DIR%\startup_%TIMESTAMP%.log
 set PROCESS_TRACKING_FILE=%MASTER_LOG_DIR%\process_tracking.json
 
