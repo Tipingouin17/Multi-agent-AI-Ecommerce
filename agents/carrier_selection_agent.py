@@ -342,6 +342,52 @@ class CarrierSelectionAgent(BaseAgentV2):
             except Exception as e:
                 self.logger.error("Failed to list carriers", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e))
+        
+        @app.post("/api/carriers/rates", response_model=APIResponse)
+        async def get_carrier_rates(request: CarrierSelectionRequest):
+            """Get shipping rates from all available carriers."""
+            try:
+                result = await self._get_carrier_quotes(request.dict())
+                
+                return APIResponse(
+                    success=True,
+                    message="Carrier rates retrieved successfully",
+                    data=result
+                )
+            
+            except Exception as e:
+                self.logger.error("Failed to get carrier rates", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @app.post("/api/carriers/shipments", response_model=APIResponse)
+        async def create_shipment(request: CarrierSelectionRequest):
+            """Create a shipment with the selected carrier."""
+            try:
+                # First select the optimal carrier
+                selection_result = await self._select_optimal_carrier(request.dict())
+                
+                # Create shipment record
+                shipment_data = {
+                    "id": str(uuid4()),
+                    "order_id": request.order_id,
+                    "carrier_id": selection_result["carrier_id"],
+                    "carrier_name": selection_result["carrier_name"],
+                    "tracking_number": f"TRK-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+                    "estimated_cost": selection_result["cost"],
+                    "estimated_delivery_date": selection_result["estimated_delivery_date"],
+                    "status": "created",
+                    "created_at": datetime.utcnow().isoformat()
+                }
+                
+                return APIResponse(
+                    success=True,
+                    message="Shipment created successfully",
+                    data=shipment_data
+                )
+            
+            except Exception as e:
+                self.logger.error("Failed to create shipment", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
     
     async def _select_optimal_carrier(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Select the optimal carrier using AI analysis."""

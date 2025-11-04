@@ -619,6 +619,83 @@ class InventoryAgent(BaseAgentV2):
                 self.logger.error(f"Failed to update inventory item {product_id}/{warehouse_id}", error=str(e), request=request.dict())
                 raise HTTPException(status_code=500, detail=str(e))
 
+        @self.app.put("/api/inventory", response_model=APIResponse)
+        async def update_inventory_bulk(updates: List[InventoryUpdateRequest]):
+            """Bulk update inventory items.
+
+            Args:
+                updates (List[InventoryUpdateRequest]): List of inventory updates.
+
+            Returns:
+                APIResponse: A response containing the updated inventory items.
+            """
+            try:
+                updated_items = []
+                for update in updates:
+                    if hasattr(update, 'product_id') and hasattr(update, 'warehouse_id'):
+                        updated_item = await self._update_inventory_item(
+                            update.product_id, 
+                            update.warehouse_id, 
+                            update
+                        )
+                        if updated_item:
+                            updated_items.append(updated_item)
+                
+                return APIResponse(
+                    success=True,
+                    message=f"Updated {len(updated_items)} inventory items",
+                    data={"updated_items": updated_items}
+                )
+            except Exception as e:
+                self.logger.error("Failed to bulk update inventory", error=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.post("/api/inventory/adjust", response_model=APIResponse)
+        async def adjust_inventory(request: StockMovementRequest):
+            """Adjust inventory quantity (add or subtract stock).
+
+            Args:
+                request (StockMovementRequest): The request containing adjustment details.
+
+            Returns:
+                APIResponse: A response containing the movement ID and updated quantity.
+            """
+            try:
+                # Record the stock movement
+                movement_id = await self._record_stock_movement(request)
+                
+                # Get updated inventory
+                async with self.db_manager.get_session() as session:
+                    from sqlalchemy import select
+                    from shared.models import InventoryDB
+                    
+                    result = await session.execute(
+                        select(InventoryDB).where(
+                            InventoryDB.product_id == request.product_id,
+                            InventoryDB.warehouse_id == request.warehouse_id
+                        )
+                    )
+                    inventory = result.scalar_one_or_none()
+                    
+                    return APIResponse(
+                        success=True,
+                        message="Inventory adjusted successfully",
+                        data={
+                            "movement_id": movement_id,
+                            "product_id": request.product_id,
+                            "warehouse_id": request.warehouse_id,
+                            "new_quantity": inventory.quantity if inventory else 0,
+                            "movement_type": request.movement_type,
+                            "quantity_changed": request.quantity
+                        }
+                    )
+            except ValueError as e:
+                self.logger.warning("Inventory adjustment failed", error=str(e), request=request.dict())
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                self.logger.error("Failed to adjust inventory", error=str(e), request=request.dict())
+                raise HTTPException(status_code=500, detail=str(e))
+        
         @self.app.get("/health", response_model=Dict[str, str])
         async def health_check():
             """Health check endpoint.

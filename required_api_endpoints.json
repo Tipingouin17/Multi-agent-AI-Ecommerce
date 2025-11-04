@@ -1,0 +1,150 @@
+[
+  {
+    "method": "GET",
+    "endpoint": "/api/agents"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/alerts"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/alerts/stats"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/analytics/agents"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/analytics/customers"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/analytics/inventory"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/analytics/performance"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/analytics/sales"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/auth/change-password"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/auth/login"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/auth/logout"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/auth/me"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/auth/refresh"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/auth/register"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/carriers"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/carriers/rates"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/carriers/shipments"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/customers"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/customers"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/inventory"
+  },
+  {
+    "method": "PUT",
+    "endpoint": "/api/inventory"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/inventory/adjust"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/inventory/low-stock"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/orders"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/orders"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/orders/stats"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/products"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/products"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/api/products/bulk-import"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/products/search"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/products/stats"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/system/config"
+  },
+  {
+    "method": "PUT",
+    "endpoint": "/api/system/config"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/system/health"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/system/metrics"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/system/overview"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/api/warehouses"
+  }
+]

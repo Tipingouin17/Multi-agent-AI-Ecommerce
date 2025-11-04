@@ -916,6 +916,64 @@ async def root():
 async def health():
     return {"status": "healthy", "agent": "infrastructure"}
 
+@app.get("/api/system/config")
+async def get_system_config():
+    """Get current system configuration."""
+    try:
+        # Return current system configuration
+        config = {
+            "system_name": os.getenv("SYSTEM_NAME", "Multi-Agent E-commerce Platform"),
+            "environment": os.getenv("ENVIRONMENT", "production"),
+            "kafka_bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+            "database_url": os.getenv("DATABASE_URL", "postgresql://localhost:5432/ecommerce"),
+            "max_workers": int(os.getenv("MAX_WORKERS", "10")),
+            "log_level": os.getenv("LOG_LEVEL", "INFO"),
+            "enable_monitoring": os.getenv("ENABLE_MONITORING", "true").lower() == "true",
+            "enable_auto_scaling": os.getenv("ENABLE_AUTO_SCALING", "false").lower() == "true",
+            "api_rate_limit": int(os.getenv("API_RATE_LIMIT", "1000")),
+            "session_timeout_minutes": int(os.getenv("SESSION_TIMEOUT_MINUTES", "30")),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        return {"success": True, "data": config}
+    except Exception as e:
+        logger.error(f"Error getting system config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/system/config")
+async def update_system_config(config: Dict[str, Any] = Body(...)):
+    """Update system configuration.
+    
+    Note: This endpoint updates runtime configuration. For persistent changes,
+    update environment variables and restart the system.
+    """
+    try:
+        updated_fields = []
+        
+        # Update allowed configuration fields
+        allowed_fields = [
+            "log_level", "enable_monitoring", "enable_auto_scaling",
+            "api_rate_limit", "session_timeout_minutes", "max_workers"
+        ]
+        
+        for field in allowed_fields:
+            if field in config:
+                os.environ[field.upper()] = str(config[field])
+                updated_fields.append(field)
+        
+        logger.info(f"System configuration updated: {updated_fields}")
+        
+        return {
+            "success": True,
+            "message": f"Updated {len(updated_fields)} configuration fields",
+            "data": {
+                "updated_fields": updated_fields,
+                "updated_at": datetime.utcnow().isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error updating system config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import argparse
     
