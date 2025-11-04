@@ -647,7 +647,7 @@ if __name__ == "__main__":
     # The agent is initialized in the lifespan context, so we just run the app
     
     # Get port from environment variables
-    port = int(os.getenv("PORT", "8011"))
+    port = int(os.getenv("API_PORT", os.getenv("PORT", "8010")))
 
     logger.info("Starting Fraud Detection Agent FastAPI server", port=port)
 

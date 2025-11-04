@@ -1153,7 +1153,7 @@ if __name__ == '__main__':
     transport_agent = TransportManagementAgent()
     
     # Get port from environment variables
-    port = int(os.getenv("PORT", "8014"))
+    port = int(os.getenv("API_PORT", os.getenv("PORT", "8015")))
 
     logger.info("Starting Transport Management Agent FastAPI server", port=port)
 
