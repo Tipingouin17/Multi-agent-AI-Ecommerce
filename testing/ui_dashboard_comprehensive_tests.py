@@ -87,9 +87,9 @@ class DashboardUITests:
             service = Service(ChromeDriverManager().install())
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             self.driver.set_page_load_timeout(30)
-            logger.info("✅ Chrome WebDriver initialized")
+            logger.info("[OK] Chrome WebDriver initialized")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize WebDriver: {e}")
+            logger.error(f"[ERROR] Failed to initialize WebDriver: {e}")
             logger.error("   Make sure Chrome browser is installed")
             raise
     
@@ -97,7 +97,7 @@ class DashboardUITests:
         """Close WebDriver"""
         if self.driver:
             self.driver.quit()
-            logger.info("✅ WebDriver closed")
+            logger.info("[OK] WebDriver closed")
     
     def take_screenshot(self, test_name: str) -> str:
         """Take screenshot"""
@@ -113,7 +113,7 @@ class DashboardUITests:
     
     def run_test(self, test_id: str, test_name: str, interface: str, test_func, **kwargs) -> TestResult:
         """Run a single test"""
-        logger.info(f"\n🧪 [{test_id}] {test_name}")
+        logger.info(f"\n[TEST] [{test_id}] {test_name}")
         start_time = time.time()
         
         try:
@@ -127,7 +127,7 @@ class DashboardUITests:
                 status=TestStatus.PASSED,
                 duration_ms=duration_ms
             )
-            logger.info(f"   ✅ PASSED ({duration_ms:.0f}ms)")
+            logger.info(f"   [PASS] ({duration_ms:.0f}ms)")
             
         except AssertionError as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -142,7 +142,7 @@ class DashboardUITests:
                 error_message=str(e),
                 screenshot_path=screenshot_path
             )
-            logger.error(f"   ❌ FAILED: {e}")
+            logger.error(f"   [FAIL] {e}")
             
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -157,7 +157,7 @@ class DashboardUITests:
                 error_message=str(e),
                 screenshot_path=screenshot_path
             )
-            logger.error(f"   ❌ ERROR: {e}")
+            logger.error(f"   [ERROR] {e}")
         
         self.results.append(result)
         return result
@@ -315,7 +315,7 @@ class DashboardUITests:
     def run_all_tests(self, headless: bool = True) -> Dict[str, Any]:
         """Run all dashboard UI tests"""
         logger.info("=" * 80)
-        logger.info("🚀 DASHBOARD UI COMPREHENSIVE TESTS")
+        logger.info("DASHBOARD UI COMPREHENSIVE TESTS")
         logger.info("=" * 80)
         
         self.setup_driver(headless=headless)
@@ -323,7 +323,7 @@ class DashboardUITests:
         try:
             # Admin Interface Tests
             logger.info("\n" + "=" * 80)
-            logger.info("📊 ADMIN INTERFACE TESTS")
+            logger.info("ADMIN INTERFACE TESTS")
             logger.info("=" * 80)
             
             self.run_test("ADMIN-001", "Admin dashboard loads", "Admin", self.test_admin_dashboard_loads)
@@ -333,7 +333,7 @@ class DashboardUITests:
             
             # Merchant Interface Tests
             logger.info("\n" + "=" * 80)
-            logger.info("🏪 MERCHANT INTERFACE TESTS")
+            logger.info("MERCHANT INTERFACE TESTS")
             logger.info("=" * 80)
             
             self.run_test("MERCHANT-001", "Merchant dashboard loads", "Merchant", self.test_merchant_dashboard_loads)
@@ -343,7 +343,7 @@ class DashboardUITests:
             
             # Customer Interface Tests
             logger.info("\n" + "=" * 80)
-            logger.info("🛒 CUSTOMER INTERFACE TESTS")
+            logger.info("CUSTOMER INTERFACE TESTS")
             logger.info("=" * 80)
             
             self.run_test("CUSTOMER-001", "Customer dashboard loads", "Customer", self.test_customer_dashboard_loads)
@@ -353,7 +353,7 @@ class DashboardUITests:
             
             # Database Test Interface Tests
             logger.info("\n" + "=" * 80)
-            logger.info("🗄️  DATABASE TEST INTERFACE TESTS")
+            logger.info("DATABASE TEST INTERFACE TESTS")
             logger.info("=" * 80)
             
             self.run_test("DATABASE-001", "Database test interface loads", "Database Test", self.test_database_test_loads)
@@ -362,7 +362,7 @@ class DashboardUITests:
             
             # Navigation Tests
             logger.info("\n" + "=" * 80)
-            logger.info("🧭 NAVIGATION TESTS")
+            logger.info("NAVIGATION TESTS")
             logger.info("=" * 80)
             
             self.run_test("NAV-001", "Navigate admin to merchant", "Navigation", self.test_navigation_admin_to_merchant)
@@ -415,15 +415,15 @@ class DashboardUITests:
         
         # Print summary
         logger.info("\n" + "=" * 80)
-        logger.info("📊 TEST SUMMARY")
+        logger.info("TEST SUMMARY")
         logger.info("=" * 80)
         logger.info(f"Total Tests: {total}")
-        logger.info(f"✅ Passed: {passed}")
-        logger.info(f"❌ Failed: {failed}")
-        logger.info(f"⚠️  Errors: {errors}")
-        logger.info(f"📈 Pass Rate: {report['summary']['pass_rate']:.1f}%")
+        logger.info(f"[PASS] Passed: {passed}")
+        logger.info(f"[FAIL] Failed: {failed}")
+        logger.info(f"[ERROR] Errors: {errors}")
+        logger.info(f"Pass Rate: {report['summary']['pass_rate']:.1f}%")
         
-        logger.info("\n📋 BY INTERFACE:")
+        logger.info("\nBY INTERFACE:")
         for interface, stats in interface_stats.items():
             logger.info(f"  {interface}: {stats['passed']}/{stats['total']} ({stats['pass_rate']:.1f}%)")
         
@@ -431,7 +431,7 @@ class DashboardUITests:
         report_file = f"ui_dashboard_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(report_file, 'w') as f:
             json.dump(report, f, indent=2)
-        logger.info(f"\n💾 Report saved to: {report_file}")
+        logger.info(f"\n[SAVED] Report saved to: {report_file}")
         
         return report
 
