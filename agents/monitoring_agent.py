@@ -243,7 +243,7 @@ class MonitoringAgent(BaseAgentV2):
         """Create database tables if they don't exist"""
         try:
             logger.info("Creating monitoring agent tables if needed...")
-            async with self.db_manager.engine.begin() as conn:
+            async with self.db_manager.async_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("Tables created/verified successfully")
         except Exception as e:
