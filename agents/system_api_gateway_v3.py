@@ -316,7 +316,7 @@ def acknowledge_alert(alert_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/alerts/{alert_id}/resolve")
-def resolve_alert(alert_id: int, resolution: str, db: Session = Depends(get_db)):
+def resolve_alert(alert_id: int, resolution_notes: str = None, db: Session = Depends(get_db)):
     """Resolve an alert"""
     try:
         alert = db.query(Alert).filter(Alert.id == alert_id).first()
@@ -324,7 +324,7 @@ def resolve_alert(alert_id: int, resolution: str, db: Session = Depends(get_db))
             raise HTTPException(status_code=404, detail="Alert not found")
         
         alert.status = "resolved"
-        alert.resolution = resolution
+        alert.resolution_notes = resolution_notes or "Resolved"
         alert.resolved_at = datetime.utcnow()
         alert.updated_at = datetime.utcnow()
         db.commit()
@@ -401,6 +401,77 @@ def get_analytics_overview(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error getting analytics overview: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# PROXY ENDPOINTS - Forward requests to individual agents
+# ============================================================================
+
+async def proxy_to_agent(agent_port: int, path: str, params: dict = None):
+    """Proxy request to an agent"""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"http://localhost:{agent_port}{path}"
+            response = await client.get(url, params=params)
+            return response.json()
+    except Exception as e:
+        logger.error(f"Error proxying to agent on port {agent_port}: {e}")
+        raise HTTPException(status_code=503, detail=f"Agent unavailable: {str(e)}")
+
+# Orders
+@app.get("/api/orders")
+async def get_orders(limit: int = 50, offset: int = 0, status: str = None):
+    params = {"limit": limit, "offset": offset}
+    if status:
+        params["status"] = status
+    return await proxy_to_agent(8000, "/api/orders", params)
+
+@app.get("/api/orders/stats")
+async def get_order_stats():
+    return await proxy_to_agent(8000, "/api/orders/stats")
+
+@app.get("/api/orders/recent")
+async def get_recent_orders(limit: int = 10):
+    return await proxy_to_agent(8000, "/api/orders/recent", {"limit": limit})
+
+# Products
+@app.get("/api/products")
+async def get_products(limit: int = 50, offset: int = 0, category: str = None):
+    params = {"limit": limit, "offset": offset}
+    if category:
+        params["category"] = category
+    return await proxy_to_agent(8001, "/api/products", params)
+
+@app.get("/api/products/stats")
+async def get_product_stats():
+    return await proxy_to_agent(8001, "/api/products/stats")
+
+@app.get("/api/categories")
+async def get_categories():
+    return await proxy_to_agent(8001, "/api/categories")
+
+# Inventory
+@app.get("/api/inventory")
+async def get_inventory(limit: int = 50, offset: int = 0):
+    return await proxy_to_agent(8002, "/api/inventory", {"limit": limit, "offset": offset})
+
+@app.get("/api/inventory/low-stock")
+async def get_low_stock():
+    return await proxy_to_agent(8002, "/api/inventory/low-stock")
+
+# Customers
+@app.get("/api/customers")
+async def get_customers(limit: int = 50, offset: int = 0):
+    return await proxy_to_agent(8008, "/api/customers", {"limit": limit, "offset": offset})
+
+# Carriers
+@app.get("/api/carriers")
+async def get_carriers():
+    return await proxy_to_agent(8006, "/api/carriers")
+
+# Warehouses
+@app.get("/api/warehouses")
+async def get_warehouses():
+    return await proxy_to_agent(8016, "/api/warehouses")
 
 if __name__ == "__main__":
     import uvicorn
