@@ -226,6 +226,17 @@ class AuthAgent(BaseAgentV2):
             logger.error(f"Error initializing database: {e}")
             raise
     
+    async def cleanup(self):
+        """Cleanup agent resources"""
+        if self.engine:
+            await self.engine.dispose()
+        await super().cleanup()
+    
+    async def process_business_logic(self, message: AgentMessage) -> Optional[AgentMessage]:
+        """Process business logic messages (not used for auth agent)"""
+        logger.info(f"Received message: {message}")
+        return None
+    
     async def create_default_admin(self):
         """Create default admin user for initial setup"""
         try:
