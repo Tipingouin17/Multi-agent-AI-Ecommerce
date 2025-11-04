@@ -33,6 +33,8 @@ import OrderAnalytics from './pages/merchant/OrderAnalytics'
 import RefundManagement from './pages/merchant/RefundManagement'
 import CustomerList from './pages/merchant/CustomerList'
 import CustomerProfile from './pages/merchant/CustomerProfile'
+import CampaignManagement from './pages/merchant/CampaignManagement'
+import PromotionManager from './pages/merchant/PromotionManager'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -331,6 +333,8 @@ function App() {
               <Route path="/refunds" element={<RefundManagement />} />
               <Route path="/customers" element={<CustomerList />} />
               <Route path="/customers/:id" element={<CustomerProfile />} />
+              <Route path="/marketing/campaigns" element={<CampaignManagement />} />
+              <Route path="/marketing/promotions" element={<PromotionManager />} />
               <Route path="/inventory" element={<InventoryManagement />} />
               <Route path="/marketplaces" element={<MarketplaceIntegration />} />
               <Route path="/analytics" element={<MerchantAnalytics />} />
