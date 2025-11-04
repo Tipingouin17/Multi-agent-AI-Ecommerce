@@ -37,9 +37,9 @@ fi
 
 echo "[SUCCESS] Dashboard is running"
 
-# Install Selenium if not already installed
+# Install required Python packages
 echo ""
-echo "[INFO] Checking Selenium installation..."
+echo "[INFO] Checking Python dependencies..."
 if ! python3 -c "import selenium" 2>/dev/null; then
     echo "[INFO] Installing Selenium WebDriver..."
     pip3 install selenium
@@ -49,26 +49,17 @@ if ! python3 -c "import selenium" 2>/dev/null; then
     fi
 fi
 
-echo "[SUCCESS] Selenium is installed"
-
-# Check for ChromeDriver
-echo ""
-echo "[INFO] Checking ChromeDriver..."
-if ! command -v chromedriver &> /dev/null; then
-    echo "[WARNING] ChromeDriver not found in PATH"
-    echo ""
-    echo "Please install ChromeDriver:"
-    echo "  - Ubuntu/Debian: sudo apt-get install chromium-chromedriver"
-    echo "  - macOS: brew install chromedriver"
-    echo "  - Or download from: https://chromedriver.chromium.org/"
-    echo ""
-    echo "Alternatively, install via pip:"
-    echo "  pip3 install webdriver-manager"
-    echo ""
-    exit 1
+if ! python3 -c "import webdriver_manager" 2>/dev/null; then
+    echo "[INFO] Installing webdriver-manager for automatic ChromeDriver management..."
+    pip3 install webdriver-manager
+    if [ $? -ne 0 ]; then
+        echo "[ERROR] Failed to install webdriver-manager"
+        exit 1
+    fi
 fi
 
-echo "[SUCCESS] ChromeDriver found"
+echo "[SUCCESS] All Python dependencies installed"
+echo "[INFO] ChromeDriver will be automatically downloaded and managed by webdriver-manager"
 
 # Run the tests
 echo ""

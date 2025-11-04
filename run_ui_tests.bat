@@ -41,9 +41,9 @@ if errorlevel 1 (
 
 echo [SUCCESS] Dashboard is running
 
-REM Install Selenium if not already installed
+REM Install required Python packages
 echo.
-echo [INFO] Checking Selenium installation...
+echo [INFO] Checking Python dependencies...
 python -c "import selenium" 2>nul
 if errorlevel 1 (
     echo [INFO] Installing Selenium WebDriver...
@@ -55,27 +55,19 @@ if errorlevel 1 (
     )
 )
 
-echo [SUCCESS] Selenium is installed
-
-REM Check for ChromeDriver
-echo.
-echo [INFO] Checking ChromeDriver...
-where chromedriver >nul 2>&1
+python -c "import webdriver_manager" 2>nul
 if errorlevel 1 (
-    echo [WARNING] ChromeDriver not found in PATH
-    echo.
-    echo Please install ChromeDriver:
-    echo   1. Download from: https://chromedriver.chromium.org/
-    echo   2. Add to PATH or place in project directory
-    echo.
-    echo Alternatively, install via pip:
-    echo   pip install webdriver-manager
-    echo.
-    pause
-    exit /b 1
+    echo [INFO] Installing webdriver-manager for automatic ChromeDriver management...
+    pip install webdriver-manager
+    if errorlevel 1 (
+        echo [ERROR] Failed to install webdriver-manager
+        pause
+        exit /b 1
+    )
 )
 
-echo [SUCCESS] ChromeDriver found
+echo [SUCCESS] All Python dependencies installed
+echo [INFO] ChromeDriver will be automatically downloaded and managed by webdriver-manager
 
 REM Run the tests
 echo.

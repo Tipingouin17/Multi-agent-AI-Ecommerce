@@ -27,6 +27,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 # Setup logging
 logging.basicConfig(
@@ -81,11 +83,14 @@ class DashboardUITests:
         chrome_options.add_argument("--window-size=1920,1080")
         
         try:
-            self.driver = webdriver.Chrome(options=chrome_options)
+            # Use webdriver-manager to automatically download and manage ChromeDriver
+            service = Service(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(service=service, options=chrome_options)
             self.driver.set_page_load_timeout(30)
             logger.info("✅ Chrome WebDriver initialized")
         except Exception as e:
             logger.error(f"❌ Failed to initialize WebDriver: {e}")
+            logger.error("   Make sure Chrome browser is installed")
             raise
     
     def teardown_driver(self):

@@ -19,13 +19,8 @@ The tests are built using **Python** and **Selenium WebDriver**, and they cover 
 Before running the UI tests, ensure the following prerequisites are met:
 
 1.  **Python 3.8+**: The test scripts are written in Python. You can download it from [python.org](https://python.org).
-2.  **Google Chrome**: The tests run on the Chrome browser.
-3.  **ChromeDriver**: The Selenium WebDriver requires ChromeDriver to interact with the Chrome browser. It must be installed and available in your system's `PATH`.
-    - You can download ChromeDriver from the [official site](https://chromedriver.chromium.org/downloads).
-    - Alternatively, for easier management, you can install it using a package manager:
-        - **Windows (with Chocolatey)**: `choco install chromedriver`
-        - **macOS (with Homebrew)**: `brew install chromedriver`
-        - **Debian/Ubuntu**: `sudo apt-get install chromium-chromedriver`
+2.  **Google Chrome**: The tests run on the Chrome browser. Make sure Chrome is installed on your system.
+3.  **ChromeDriver (Automatic)**: The test scripts now use `webdriver-manager` to automatically download and manage ChromeDriver. You no longer need to manually install ChromeDriver! The test runner scripts will automatically install `webdriver-manager` if it's not already present.
 4.  **Running Dashboard**: The dashboard must be running and accessible at `http://localhost:5173`. You can start it using `start_dashboard.bat` (Windows) or `./start_dashboard.sh` (Linux/macOS).
 
 ## 3. How to Run Tests
@@ -48,7 +43,7 @@ The script will:
 1.  Verify that Python is installed.
 2.  Check if the dashboard is running.
 3.  Install the `selenium` package if it's missing.
-4.  Verify that `chromedriver` is in the system's PATH.
+4.  Install the `webdriver-manager` package if it's missing (this automatically manages ChromeDriver).
 5.  Execute the comprehensive test suite in **headless mode** (no browser window will appear).
 
 #### On Linux/macOS
