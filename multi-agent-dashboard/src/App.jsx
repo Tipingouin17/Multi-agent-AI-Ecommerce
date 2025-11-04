@@ -31,6 +31,8 @@ import ShippingManagement from './pages/merchant/ShippingManagement'
 import InventoryAlerts from './pages/merchant/InventoryAlerts'
 import OrderAnalytics from './pages/merchant/OrderAnalytics'
 import RefundManagement from './pages/merchant/RefundManagement'
+import CustomerList from './pages/merchant/CustomerList'
+import CustomerProfile from './pages/merchant/CustomerProfile'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -327,6 +329,8 @@ function App() {
               <Route path="/inventory/alerts" element={<InventoryAlerts />} />
               <Route path="/orders/analytics" element={<OrderAnalytics />} />
               <Route path="/refunds" element={<RefundManagement />} />
+              <Route path="/customers" element={<CustomerList />} />
+              <Route path="/customers/:id" element={<CustomerProfile />} />
               <Route path="/inventory" element={<InventoryManagement />} />
               <Route path="/marketplaces" element={<MarketplaceIntegration />} />
               <Route path="/analytics" element={<MerchantAnalytics />} />
