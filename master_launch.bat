@@ -300,34 +300,37 @@ echo.
 
 if exist start_dashboard.bat (
     echo [INFO] Launching dashboard in new window...
-    echo   -^> Command: start "Multi-Agent Dashboard" cmd /c start_dashboard.bat
+    echo   Command: start_dashboard.bat
     start "Multi-Agent Dashboard" cmd /c start_dashboard.bat
     echo [OK] Dashboard started in new window
     echo.
-    
-    echo [INFO] Waiting for dashboard to be ready (max 60 seconds)...
-    set /a WAITED=0
-    :wait_dashboard
-    if !WAITED! GEQ 60 goto dashboard_timeout
-    
-    netstat -an | findstr :5173 | findstr LISTENING > nul 2>&1
-    if !ERRORLEVEL! EQU 0 (
-        echo [OK] Dashboard is ready on http://localhost:5173
-        goto dashboard_ready
-    )
-    
-    timeout /t 2 /nobreak > nul
-    set /a WAITED+=2
-    goto wait_dashboard
-    
-    :dashboard_timeout
-    echo [WARNING] Dashboard did not start within 60 seconds
-    echo   -^> Check the dashboard window for errors
-    
-    :dashboard_ready
+    call :wait_for_dashboard
 ) else (
     echo [WARNING] start_dashboard.bat not found, skipping dashboard startup
 )
+goto after_dashboard
+
+:wait_for_dashboard
+echo [INFO] Waiting for dashboard to be ready (max 60 seconds)...
+set /a WAITED=0
+:wait_dashboard_loop
+if !WAITED! GEQ 60 (
+    echo [WARNING] Dashboard did not start within 60 seconds
+    echo   Check the dashboard window for errors
+    goto :eof
+)
+
+netstat -an | findstr :5173 | findstr LISTENING > nul 2>&1
+if !ERRORLEVEL! EQU 0 (
+    echo [OK] Dashboard is ready on http://localhost:5173
+    goto :eof
+)
+
+timeout /t 2 /nobreak > nul
+set /a WAITED+=2
+goto wait_dashboard_loop
+
+:after_dashboard
 
 echo.
 
