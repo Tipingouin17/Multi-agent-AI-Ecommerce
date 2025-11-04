@@ -21,6 +21,8 @@ import OrderManagement from './pages/merchant/OrderManagement'
 import InventoryManagement from './pages/merchant/InventoryManagement'
 import MarketplaceIntegration from './pages/merchant/MarketplaceIntegration'
 import MerchantAnalytics from './pages/merchant/Analytics'
+import ProductForm from './pages/merchant/ProductForm'
+import OrderDetails from './pages/merchant/OrderDetails'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -305,7 +307,10 @@ function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<MerchantDashboard />} />
               <Route path="/products" element={<ProductManagement />} />
+              <Route path="/products/new" element={<ProductForm />} />
+              <Route path="/products/:id/edit" element={<ProductForm />} />
               <Route path="/orders" element={<OrderManagement />} />
+              <Route path="/orders/:id" element={<OrderDetails />} />
               <Route path="/inventory" element={<InventoryManagement />} />
               <Route path="/marketplaces" element={<MarketplaceIntegration />} />
               <Route path="/analytics" element={<MerchantAnalytics />} />
