@@ -128,19 +128,19 @@ echo.
 
 curl -s -f http://localhost:8000/health >nul 2>nul
 if !ERRORLEVEL! EQU 0 (
-    echo [OK] Primary API (order_agent) is running on port 8000
+    echo [OK] Primary API ^(order_agent^) is running on port 8000
 ) else (
-    echo [WARNING] Primary API (order_agent) is not responding on port 8000
-    echo           The dashboard will start but may not function correctly.
-    echo           Please start agents first: start_all_26_agents.bat
+    echo [WARNING] Primary API ^(order_agent^) is not responding on port 8000
+    echo [WARNING] The dashboard will start but may not function correctly.
+    echo [WARNING] Please start agents first: start_all_26_agents.bat
 )
 
 curl -s -f http://localhost:8015/health >nul 2>nul
 if !ERRORLEVEL! EQU 0 (
-    echo [OK] WebSocket API (transport_agent) is running on port 8015
+    echo [OK] WebSocket API ^(transport_agent^) is running on port 8015
 ) else (
-    echo [WARNING] WebSocket API (transport_agent) is not responding on port 8015
-    echo           Real-time features may not work.
+    echo [WARNING] WebSocket API ^(transport_agent^) is not responding on port 8015
+    echo [WARNING] Real-time features may not work.
 )
 
 echo.
