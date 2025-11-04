@@ -16,7 +16,7 @@ This document tracks the progress of Phase 3: Merchant Pages Expansion, which ai
 
 **Goal:** Build the most critical merchant pages for product and order management.  
 **Target:** 10 pages  
-**Completed:** 6 pages (60%)
+**Completed:** 10 pages (100%)
 
 ### Completed Pages
 
@@ -149,7 +149,88 @@ This document tracks the progress of Phase 3: Merchant Pages Expansion, which ai
 - `GET /api/returns` - Fetch all returns
 - `POST /api/returns/{id}/process` - Process return (approve/reject/refund)
 
-### 7. Variant Management (Planned)
+#### 7. ShippingManagement.jsx ✅
+**Route:** `/shipping`  
+**Features:**
+- Shipments dashboard with status stats
+- Search by tracking/order number
+- Status filter (pending, in_transit, delivered, exception)
+- Bulk label printing
+- Track shipment functionality
+- Carrier management tab
+- Shipment selection with checkboxes
+- Export functionality
+- Real-time status updates
+- Connected to real API endpoints
+
+**API Endpoints Used:**
+- `GET /api/shipments` - Fetch all shipments
+- `GET /api/carriers` - Fetch carriers
+- `POST /api/shipments/print-labels` - Print labels
+- `PUT /api/shipments/{id}/tracking` - Update tracking
+
+#### 8. InventoryAlerts.jsx ✅
+**Route:** `/inventory/alerts`  
+**Features:**
+- Inventory alerts dashboard with severity indicators
+- Alert types (low stock, out of stock, overstock, slow moving)
+- Color-coded severity levels (critical, high, medium, low)
+- Quick reorder functionality with PO creation
+- Recommended reorder quantities
+- Dismiss alerts
+- Alert statistics
+- Search and filter capabilities
+- Connected to real API endpoints
+
+**API Endpoints Used:**
+- `GET /api/inventory/alerts` - Fetch inventory alerts
+- `POST /api/inventory/purchase-orders` - Create purchase order
+- `DELETE /api/inventory/alerts/{id}` - Dismiss alert
+
+#### 9. OrderAnalytics.jsx ✅
+**Route:** `/orders/analytics`  
+**Features:**
+- Comprehensive order analytics dashboard
+- Key metrics (total orders, revenue, AOV, fulfillment time)
+- Revenue trends with area chart
+- Order volume bar chart
+- AOV trend line chart
+- AOV by customer segment
+- Fulfillment time distribution
+- Order status breakdown
+- Top 5 selling products
+- Time range selector
+- Export to CSV
+- Responsive charts using Recharts
+
+**API Endpoints Used:**
+- `GET /api/analytics/orders` - Fetch order analytics
+
+#### 10. RefundManagement.jsx ✅
+**Route:** `/refunds`  
+**Features:**
+- Refunds dashboard with status stats
+- Search by order number
+- Status filter (pending, approved, processing, completed, failed)
+- Full/partial refund options
+- Refund reason input
+- Payment gateway integration
+- Refund history tracking
+- Total refunded amount calculation
+- Warning alerts for refund actions
+- Connected to real API endpoints
+
+**API Endpoints Used:**
+- `GET /api/refunds` - Fetch all refunds
+- `POST /api/refunds/{id}/process` - Process refund
+
+---
+
+## Sub-phase 3.1 Complete! ✅
+
+All 10 critical merchant pages have been successfully built and integrated with the backend API. The pages cover the complete workflow for product management, order processing, fulfillment, returns, refunds, shipping, inventory alerts, and analytics.
+
+### 7. Variant Management (Planned for Sub-phase 3.2)
 
 **Route:** `/products/:id/variants`  
 **Features:**
@@ -260,5 +341,5 @@ This document tracks the progress of Phase 3: Merchant Pages Expansion, which ai
 
 Phase 3 is off to a strong start with two comprehensive pages completed. The ProductForm and OrderDetails pages demonstrate the quality and functionality that will be maintained throughout the remaining pages.
 
-**Current Progress:** 6/10 pages (60%)  
+**Current Progress:** 10/10 pages (100% ✅)  
 **Next Milestone:** Complete product management pages (4/10)

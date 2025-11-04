@@ -27,6 +27,10 @@ import BulkProductUpload from './pages/merchant/BulkProductUpload'
 import OrderFulfillment from './pages/merchant/OrderFulfillment'
 import ProductAnalytics from './pages/merchant/ProductAnalytics'
 import ReturnsManagement from './pages/merchant/ReturnsManagement'
+import ShippingManagement from './pages/merchant/ShippingManagement'
+import InventoryAlerts from './pages/merchant/InventoryAlerts'
+import OrderAnalytics from './pages/merchant/OrderAnalytics'
+import RefundManagement from './pages/merchant/RefundManagement'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -319,6 +323,10 @@ function App() {
               <Route path="/orders/:id" element={<OrderDetails />} />
               <Route path="/orders/:id/fulfill" element={<OrderFulfillment />} />
               <Route path="/returns" element={<ReturnsManagement />} />
+              <Route path="/shipping" element={<ShippingManagement />} />
+              <Route path="/inventory/alerts" element={<InventoryAlerts />} />
+              <Route path="/orders/analytics" element={<OrderAnalytics />} />
+              <Route path="/refunds" element={<RefundManagement />} />
               <Route path="/inventory" element={<InventoryManagement />} />
               <Route path="/marketplaces" element={<MarketplaceIntegration />} />
               <Route path="/analytics" element={<MerchantAnalytics />} />
