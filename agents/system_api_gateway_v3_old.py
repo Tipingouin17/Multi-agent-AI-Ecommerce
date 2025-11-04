@@ -504,6 +504,13 @@ async def get_performance_metrics(time_range: str = "24h", db: Session = Depends
         logger.error(f"Error getting performance metrics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("API_PORT", 8100))
+    logger.info(f"Starting System API Gateway on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
 # ============================================================================
 # ADDITIONAL ADMIN PAGE ENDPOINTS
 # ============================================================================
@@ -739,8 +746,3 @@ async def get_returns(limit: int = 50, offset: int = 0):
 async def get_promotions(limit: int = 50, offset: int = 0):
     """Get promotions list"""
     return await proxy_to_agent(8020, "/api/promotions", {"limit": limit, "offset": offset})
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("API_PORT", 8100))
-    logger.info(f"Starting System API Gateway on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
