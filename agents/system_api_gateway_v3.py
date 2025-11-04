@@ -473,6 +473,37 @@ async def get_carriers():
 async def get_warehouses():
     return await proxy_to_agent(8016, "/api/warehouses")
 
+# Performance Metrics
+@app.get("/metrics/performance")
+async def get_performance_metrics(time_range: str = "24h", db: Session = Depends(get_db)):
+    """Get performance metrics for the specified time range"""
+    try:
+        # Calculate time window
+        hours = int(time_range.replace('h', ''))
+        since = datetime.utcnow() - timedelta(hours=hours)
+        
+        # Get order metrics
+        orders_count = db.query(func.count(Order.id)).filter(Order.created_at >= since).scalar()
+        
+        # Generate mock performance data (in production, this would come from a metrics store)
+        metrics = []
+        current_time = datetime.utcnow()
+        for i in range(24):
+            timestamp = current_time - timedelta(hours=i)
+            metrics.append({
+                "timestamp": timestamp.isoformat(),
+                "cpu_usage": 45 + (i % 10),
+                "memory_usage": 60 + (i % 15),
+                "throughput": 100 + (i * 5),
+                "response_time": 50 + (i % 20),
+                "active_requests": 10 + (i % 5)
+            })
+        
+        return {"metrics": metrics[::-1], "time_range": time_range}
+    except Exception as e:
+        logger.error(f"Error getting performance metrics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("API_PORT", 8100))
