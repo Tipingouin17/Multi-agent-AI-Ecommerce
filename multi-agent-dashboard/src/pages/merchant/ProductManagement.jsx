@@ -37,7 +37,13 @@ function ProductManagement() {
     price: '',
     cost: '',
     category: '',
-    images: []
+    images: [],
+    inventory: {
+      quantity: '',
+      warehouse: '',
+      reorderLevel: '',
+      lowStockAlert: true
+    }
   });
   const [syncStatus, setSyncStatus] = useState({
     inProgress: false,
@@ -204,6 +210,18 @@ function ProductManagement() {
     }));
   }
   
+  // Handle inventory field changes
+  function handleInventoryChange(e) {
+    const { name, value, type, checked } = e.target;
+    setNewProduct(prev => ({
+      ...prev,
+      inventory: {
+        ...prev.inventory,
+        [name]: type === 'checkbox' ? checked : value
+      }
+    }));
+  }
+  
   // Handle image upload
   function handleImageUpload(e) {
     const files = Array.from(e.target.files);
@@ -231,7 +249,13 @@ function ProductManagement() {
         price: '',
         cost: '',
         category: '',
-        images: []
+        images: [],
+        inventory: {
+          quantity: '',
+          warehouse: '',
+          reorderLevel: '',
+          lowStockAlert: true
+        }
       });
       loadProducts();
     } catch (err) {
@@ -872,6 +896,70 @@ function ProductManagement() {
                       rows="4"
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     ></textarea>
+                  </div>
+                  
+                  {/* Inventory Section */}
+                  <div className="border-t border-gray-200 pt-4 mt-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Inventory</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">Initial Quantity</label>
+                        <input
+                          type="number"
+                          id="quantity"
+                          name="quantity"
+                          value={newProduct.inventory.quantity}
+                          onChange={handleInventoryChange}
+                          min="0"
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="warehouse" className="block text-sm font-medium text-gray-700 mb-1">Warehouse Location</label>
+                        <input
+                          type="text"
+                          id="warehouse"
+                          name="warehouse"
+                          value={newProduct.inventory.warehouse}
+                          onChange={handleInventoryChange}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Main Warehouse"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label htmlFor="reorderLevel" className="block text-sm font-medium text-gray-700 mb-1">Reorder Level</label>
+                        <input
+                          type="number"
+                          id="reorderLevel"
+                          name="reorderLevel"
+                          value={newProduct.inventory.reorderLevel}
+                          onChange={handleInventoryChange}
+                          min="0"
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="10"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center pt-6">
+                        <input
+                          type="checkbox"
+                          id="lowStockAlert"
+                          name="lowStockAlert"
+                          checked={newProduct.inventory.lowStockAlert}
+                          onChange={handleInventoryChange}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="lowStockAlert" className="ml-2 block text-sm text-gray-700">
+                          Enable low stock alerts
+                        </label>
+                      </div>
+                    </div>
                   </div>
                   
                   <div>
