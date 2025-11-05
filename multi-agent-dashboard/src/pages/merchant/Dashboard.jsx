@@ -52,6 +52,11 @@ function Dashboard() {
     } catch (err) {
       setError("Failed to load dashboard data: " + err.message);
       console.error(err);
+    
+      // Set empty arrays on error to prevent undefined errors
+      setRecentOrders([]);
+      setInventoryAlerts([]);
+      setMarketplacePerformance([]);
     } finally {
       setLoading(false);
     }

@@ -79,6 +79,10 @@ function MarketplaceIntegration() {
       setAvailableMarketplaces(data);
     } catch (err) {
       console.error("Failed to load available marketplaces:", err);
+    
+      // Set empty arrays on error to prevent undefined errors
+      setMarketplaces([]);
+      setAvailableMarketplaces([]);
     }
   }
   
