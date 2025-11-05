@@ -314,7 +314,7 @@ function App() {
         
         {selectedInterface === 'admin' && (
           <Routes>
-            <Route path="/" element={<AdminLayout onReset={handleInterfaceReset} />}>
+            <Route path="/" element={<AdminLayout onInterfaceReset={handleInterfaceReset} />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
               <Route path="/agents" element={<ErrorBoundary><AgentManagement /></ErrorBoundary>} />
@@ -329,7 +329,7 @@ function App() {
         
         {selectedInterface === 'merchant' && (
           <Routes>
-            <Route path="/" element={<MerchantLayout onReset={handleInterfaceReset} />}>
+            <Route path="/" element={<MerchantLayout onInterfaceReset={handleInterfaceReset} />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<ErrorBoundary><MerchantDashboard /></ErrorBoundary>} />
               <Route path="/products" element={<ErrorBoundary><ProductManagement /></ErrorBoundary>} />
@@ -379,7 +379,7 @@ function App() {
         
         {selectedInterface === 'customer' && (
           <Routes>
-            <Route path="/" element={<CustomerLayout onReset={handleInterfaceReset} />}>
+            <Route path="/" element={<CustomerLayout onInterfaceReset={handleInterfaceReset} />}>
               <Route index element={<Home />} />
               <Route path="/products" element={<ErrorBoundary><ProductCatalog /></ErrorBoundary>} />
               <Route path="/products/:productId" element={<ErrorBoundary><ProductDetails /></ErrorBoundary>} />
