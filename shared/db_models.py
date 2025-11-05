@@ -609,3 +609,122 @@ class Return(Base):
             "received_at": self.received_at.isoformat() if self.received_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
         }
+
+
+# ============================================================================
+# PAYMENT MODELS
+# ============================================================================
+
+class Payment(Base):
+    """Payment/Transaction model (alias for transactions table)"""
+    __tablename__ = "transactions"
+    
+    id = Column(Integer, primary_key=True)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"))
+    payment_method_id = Column(Integer)
+    transaction_type = Column(String(50))  # charge, refund, authorization, capture
+    status = Column(String(50))  # pending, success, failed, cancelled
+    amount = Column(Numeric(10, 2), nullable=False)
+    currency = Column(String(10), default="USD")
+    gateway = Column(String(100))
+    gateway_transaction_id = Column(String(255))
+    error_message = Column(Text)
+    extra_data = Column('metadata', JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    order = relationship("Order", foreign_keys=[order_id])
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "payment_method_id": self.payment_method_id,
+            "transaction_type": self.transaction_type,
+            "status": self.status,
+            "amount": float(self.amount) if self.amount else None,
+            "currency": self.currency,
+            "gateway": self.gateway,
+            "gateway_transaction_id": self.gateway_transaction_id,
+            "error_message": self.error_message,
+            "metadata": self.extra_data,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class PaymentMethod(Base):
+    """Payment method configuration"""
+    __tablename__ = "payment_methods"
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    code = Column(String(50), unique=True, nullable=False)
+    type = Column(String(50))  # credit_card, debit_card, paypal, stripe, etc.
+    is_active = Column(Boolean, default=True)
+    config = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "code": self.code,
+            "type": self.type,
+            "is_active": self.is_active,
+            "config": self.config,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+# ============================================================================
+# SHIPPING MODELS
+# ============================================================================
+
+class Shipment(Base):
+    """Shipment model for order deliveries"""
+    __tablename__ = "shipments"
+    
+    id = Column(Integer, primary_key=True)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"))
+    carrier_id = Column(Integer, ForeignKey("carriers.id", ondelete="SET NULL"))
+    tracking_number = Column(String(255))
+    service_type = Column(String(100))
+    status = Column(String(50), default="pending")  # pending, in_transit, delivered, failed, returned
+    estimated_delivery_date = Column(DateTime)
+    actual_delivery_date = Column(DateTime)
+    shipping_cost = Column(Numeric(10, 2))
+    weight = Column(Numeric(10, 2))
+    dimensions = Column(JSON)
+    from_address = Column(JSON)
+    to_address = Column(JSON)
+    extra_data = Column('metadata', JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    order = relationship("Order", foreign_keys=[order_id])
+    carrier = relationship("Carrier", foreign_keys=[carrier_id])
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "carrier_id": self.carrier_id,
+            "tracking_number": self.tracking_number,
+            "service_type": self.service_type,
+            "status": self.status,
+            "estimated_delivery_date": self.estimated_delivery_date.isoformat() if self.estimated_delivery_date else None,
+            "actual_delivery_date": self.actual_delivery_date.isoformat() if self.actual_delivery_date else None,
+            "shipping_cost": float(self.shipping_cost) if self.shipping_cost else None,
+            "weight": float(self.weight) if self.weight else None,
+            "dimensions": self.dimensions,
+            "from_address": self.from_address,
+            "to_address": self.to_address,
+            "metadata": self.extra_data,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
