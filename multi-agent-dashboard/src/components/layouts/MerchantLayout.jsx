@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -17,10 +17,28 @@ import {
   Search,
   User
 } from 'lucide-react'
+import UserProfileDropdown from '../shared/UserProfileDropdown'
+import NotificationsDropdown from '../shared/NotificationsDropdown'
+import { useUser } from '../../contexts/UserContext'
 
 const MerchantLayout = ({ onInterfaceReset }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const { user } = useUser()
   const location = useLocation()
+  
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown-container')) {
+        setShowProfileMenu(false)
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -135,17 +153,42 @@ const MerchantLayout = ({ onInterfaceReset }) => {
                 </div>
 
                 {/* Notifications */}
-                <Button variant="ghost" size="sm" className="relative">
-                  <Bell className="w-5 h-5" />
-                  <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-green-500 text-white text-xs">
-                    5
-                  </Badge>
-                </Button>
+                <div className="relative dropdown-container">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="relative"
+                    onClick={() => {
+                      setShowNotifications(!showNotifications)
+                      setShowProfileMenu(false)
+                    }}
+                  >
+                    <Bell className="w-5 h-5" />
+                    <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-green-500 text-white text-xs">
+                      2
+                    </Badge>
+                  </Button>
+                  {showNotifications && (
+                    <NotificationsDropdown onClose={() => setShowNotifications(false)} />
+                  )}
+                </div>
 
                 {/* User Menu */}
-                <Button variant="ghost" size="sm">
-                  <User className="w-5 h-5" />
-                </Button>
+                <div className="relative dropdown-container">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setShowProfileMenu(!showProfileMenu)
+                      setShowNotifications(false)
+                    }}
+                  >
+                    <User className="w-5 h-5" />
+                  </Button>
+                  {showProfileMenu && (
+                    <UserProfileDropdown onClose={() => setShowProfileMenu(false)} />
+                  )}
+                </div>
               </div>
             </div>
           </div>
