@@ -335,6 +335,122 @@ def get_product_stats(db: Session = Depends(get_db)):
         logger.error(f"Error getting product stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/analytics")
+def get_product_analytics(
+    time_range: str = Query("30d", regex="^(7d|30d|90d|1y)$"),
+    category_id: Optional[int] = None,
+    merchant_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get product analytics including revenue, top products, and conversion funnel
+    """
+    try:
+        # Build base query
+        query = db.query(Product)
+        
+        if category_id:
+            query = query.filter(Product.category_id == category_id)
+        
+        if merchant_id:
+            query = query.filter(Product.merchant_id == merchant_id)
+        
+        products = query.all()
+        
+        # Calculate totals
+        total_revenue = sum(p.price * p.sales_count for p in products)
+        total_units = sum(p.sales_count for p in products)
+        avg_price = total_revenue / total_units if total_units > 0 else 0
+        
+        # Get top products by revenue
+        top_products = sorted(
+            products,
+            key=lambda p: p.price * p.sales_count,
+            reverse=True
+        )[:10]
+        
+        top_products_data = [
+            {
+                "id": p.id,
+                "name": p.name,
+                "revenue": float(p.price * p.sales_count),
+                "units": p.sales_count,
+                "avg_price": float(p.price)
+            }
+            for p in top_products
+        ]
+        
+        # Get revenue by category
+        category_revenue = {}
+        for p in products:
+            cat_name = p.category.name if p.category else "Uncategorized"
+            if cat_name not in category_revenue:
+                category_revenue[cat_name] = 0
+            category_revenue[cat_name] += p.price * p.sales_count
+        
+        revenue_by_category = [
+            {
+                "category": cat,
+                "revenue": float(rev),
+                "percentage": float((rev / total_revenue * 100) if total_revenue > 0 else 0)
+            }
+            for cat, rev in sorted(category_revenue.items(), key=lambda x: x[1], reverse=True)
+        ]
+        
+        # Mock conversion funnel (would need tracking data in production)
+        conversion_funnel = {
+            "views": total_units * 10,  # Estimate: 10 views per sale
+            "add_to_cart": int(total_units * 2),  # Estimate: 2 cart adds per sale
+            "checkout": int(total_units * 1.2),  # Estimate: 1.2 checkouts per sale
+            "purchase": total_units
+        }
+        
+        return {
+            "total_revenue": float(total_revenue),
+            "total_units": total_units,
+            "avg_price": float(avg_price),
+            "top_products": top_products_data,
+            "revenue_by_category": revenue_by_category,
+            "conversion_funnel": conversion_funnel
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting product analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/featured")
+def get_featured_products(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """
+    Get featured products (top selling or highest rated)
+    """
+    try:
+        # Get top selling products
+        products = db.query(Product).filter(
+            Product.status == 'active'
+        ).order_by(
+            Product.sales_count.desc()
+        ).limit(limit).all()
+        
+        featured_products = []
+        for product in products:
+            product_dict = product.to_dict()
+            
+            # Add mock rating and reviews (would come from reviews table in production)
+            product_dict['rating'] = 4.5
+            product_dict['reviews'] = product.sales_count // 10 or 1
+            product_dict['featured'] = True
+            
+            featured_products.append(product_dict)
+        
+        return featured_products
+    
+    except Exception as e:
+        logger.error(f"Error getting featured products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============================================================================
 # CATEGORY ENDPOINTS
 # ============================================================================

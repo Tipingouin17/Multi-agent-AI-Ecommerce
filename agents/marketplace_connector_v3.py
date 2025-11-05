@@ -79,6 +79,55 @@ def sync_marketplace(marketplace_id: str):
     """Sync products with marketplace"""
     return {"message": f"Sync initiated for {marketplace_id}", "status": "pending"}
 
+@app.get("/sync/status")
+def get_sync_status(db: Session = Depends(get_db)):
+    """
+    Get synchronization status for all connected marketplaces
+    """
+    try:
+        # Get product count from database
+        total_products = db.query(func.count(Product.id)).filter(
+            Product.status == 'active'
+        ).scalar() or 0
+        
+        # Get order count from database
+        pending_orders = db.query(func.count(Order.id)).filter(
+            Order.status.in_(['pending', 'processing'])
+        ).scalar() or 0
+        
+        # Mock marketplace sync status (would be real data in production)
+        connected_marketplaces = [
+            {
+                "id": "amazon-fr",
+                "name": "Amazon France",
+                "status": "synced",
+                "last_sync": datetime.utcnow().isoformat(),
+                "products_synced": total_products,
+                "pending_orders": pending_orders,
+                "sync_frequency": "hourly"
+            },
+            {
+                "id": "leboncoin",
+                "name": "Leboncoin",
+                "status": "synced",
+                "last_sync": datetime.utcnow().isoformat(),
+                "products_synced": total_products,
+                "pending_orders": 0,
+                "sync_frequency": "daily"
+            }
+        ]
+        
+        return {
+            "connected_marketplaces": connected_marketplaces,
+            "overall_status": "healthy",
+            "total_products_synced": total_products * len(connected_marketplaces),
+            "total_pending_orders": pending_orders
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting sync status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn
