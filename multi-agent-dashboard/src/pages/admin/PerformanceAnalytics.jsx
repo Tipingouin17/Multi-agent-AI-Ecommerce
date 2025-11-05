@@ -68,6 +68,7 @@ function PerformanceAnalytics() {
 
   // Format currency
   function formatCurrency(value) {
+    if (value === undefined || value === null || isNaN(value)) return '$0.00';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
@@ -76,11 +77,13 @@ function PerformanceAnalytics() {
 
   // Format percentage
   function formatPercentage(value) {
+    if (value === undefined || value === null || isNaN(value)) return '0.0%';
     return `${value.toFixed(1)}%`;
   }
 
   // Format number with commas
   function formatNumber(value) {
+    if (value === undefined || value === null || isNaN(value)) return '0';
     return new Intl.NumberFormat('en-US').format(value);
   }
 
@@ -179,19 +182,19 @@ function PerformanceAnalytics() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-blue-50 p-4 rounded">
                 <h3 className="text-sm font-medium text-blue-800">Total Revenue</h3>
-                <p className="text-2xl font-bold">{formatCurrency(salesData.total_revenue)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(salesData?.total_revenue)}</p>
               </div>
               <div className="bg-green-50 p-4 rounded">
                 <h3 className="text-sm font-medium text-green-800">Total Orders</h3>
-                <p className="text-2xl font-bold">{formatNumber(salesData.total_orders)}</p>
+                <p className="text-2xl font-bold">{formatNumber(salesData?.total_orders)}</p>
               </div>
               <div className="bg-purple-50 p-4 rounded">
                 <h3 className="text-sm font-medium text-purple-800">Avg. Order Value</h3>
-                <p className="text-2xl font-bold">{formatCurrency(salesData.avg_order_value)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(salesData?.avg_order_value)}</p>
               </div>
               <div className="bg-yellow-50 p-4 rounded">
                 <h3 className="text-sm font-medium text-yellow-800">Conversion Rate</h3>
-                <p className="text-2xl font-bold">{formatPercentage(salesData.conversion_rate)}</p>
+                <p className="text-2xl font-bold">{formatPercentage(salesData?.conversion_rate)}</p>
               </div>
             </div>
             
@@ -209,7 +212,7 @@ function PerformanceAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {salesData.top_products.map((product, index) => (
+                    {(salesData?.top_products || []).map((product, index) => (
                       <tr key={index} className="border-t hover:bg-gray-50">
                         <td className="py-2 px-4">{product.name}</td>
                         <td className="py-2 px-4 text-right">{formatCurrency(product.revenue)}</td>
