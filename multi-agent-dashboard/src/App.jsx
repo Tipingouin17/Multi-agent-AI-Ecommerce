@@ -54,6 +54,10 @@ import ProfitLossStatement from './pages/merchant/ProfitLossStatement'
 import RevenueAnalytics from './pages/merchant/RevenueAnalytics'
 import ExpenseTracking from './pages/merchant/ExpenseTracking'
 import TaxReports from './pages/merchant/TaxReports'
+import SalesRevenueDashboard from './pages/merchant/SalesRevenueDashboard'
+import OrderManagementDashboard from './pages/merchant/OrderManagementDashboard'
+import InventoryDashboard from './pages/merchant/InventoryDashboard'
+import FinancialOverviewDashboard from './pages/merchant/FinancialOverviewDashboard'
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -358,6 +362,10 @@ function App() {
               <Route path="/inventory" element={<ErrorBoundary><InventoryManagement /></ErrorBoundary>} />
               <Route path="/marketplaces" element={<ErrorBoundary><MarketplaceIntegration /></ErrorBoundary>} />
               <Route path="/analytics" element={<ErrorBoundary><MerchantAnalytics /></ErrorBoundary>} />
+              <Route path="/analytics/sales-revenue" element={<ErrorBoundary><SalesRevenueDashboard /></ErrorBoundary>} />
+              <Route path="/analytics/orders" element={<ErrorBoundary><OrderManagementDashboard /></ErrorBoundary>} />
+              <Route path="/analytics/inventory" element={<ErrorBoundary><InventoryDashboard /></ErrorBoundary>} />
+              <Route path="/analytics/financial" element={<ErrorBoundary><FinancialOverviewDashboard /></ErrorBoundary>} />
               <Route path="/settings/general" element={<ErrorBoundary><StoreSettings /></ErrorBoundary>} />
               <Route path="/settings/payments" element={<ErrorBoundary><PaymentSettings /></ErrorBoundary>} />
               <Route path="/settings/shipping" element={<ErrorBoundary><ShippingSettings /></ErrorBoundary>} />
