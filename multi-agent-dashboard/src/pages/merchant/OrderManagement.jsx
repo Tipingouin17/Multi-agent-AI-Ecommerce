@@ -46,9 +46,11 @@ function OrderManagement() {
     async function loadMarketplaces() {
       try {
         const marketplacesData = await apiService.getMarketplaces();
-        setMarketplaces(marketplacesData);
+        setMarketplaces(marketplacesData || []);
       } catch (err) {
         console.error("Failed to load marketplaces:", err);
+        // Set empty array on error
+        setMarketplaces([]);
       }
     }
     
@@ -77,17 +79,19 @@ function OrderManagement() {
       
       const data = await apiService.getOrders(params);
       
-      setOrders(data.orders);
+      setOrders(data.orders || []);
       setPagination({
         ...pagination,
-        totalPages: data.totalPages,
-        totalItems: data.totalItems
+        totalPages: data.totalPages || 1,
+        totalItems: data.totalItems || 0
       });
       
       setError(null);
     } catch (err) {
       setError("Failed to load orders: " + err.message);
       console.error(err);
+      // Set empty array on error to prevent undefined errors
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -564,8 +568,8 @@ function OrderManagement() {
                           {formatDate(order.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{order.customer.name}</div>
-                          <div className="text-sm text-gray-500">{order.customer.email}</div>
+                          <div className="text-sm font-medium text-gray-900">{order.customer?.name || 'Unknown'}</div>
+                          <div className="text-sm text-gray-500">{order.customer?.email || 'N/A'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatCurrency(order.total)}
@@ -577,14 +581,14 @@ function OrderManagement() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            {order.marketplace.icon && (
+                            {order.marketplace?.icon && (
                               <img
                                 src={order.marketplace.icon}
                                 alt={order.marketplace.name}
                                 className="h-5 w-5 mr-2"
                               />
                             )}
-                            <span className="text-sm text-gray-900">{order.marketplace.name}</span>
+                            <span className="text-sm text-gray-900">{order.marketplace?.name || 'Unknown'}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
