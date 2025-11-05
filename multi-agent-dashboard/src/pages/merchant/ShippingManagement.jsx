@@ -38,16 +38,34 @@ const ShippingManagement = () => {
   const [selectedShipments, setSelectedShipments] = useState([])
 
   // Fetch shipments
-  const { data: shipments, isLoading } = useQuery({
+  const { data: shipmentsData, isLoading } = useQuery({
     queryKey: ['shipments', statusFilter, searchTerm],
-    queryFn: () => api.shipping.getShipments({ status: statusFilter, search: searchTerm })
+    queryFn: async () => {
+      try {
+        const response = await api.shipping.getShipments({ status: statusFilter, search: searchTerm })
+        return response
+      } catch (error) {
+        console.error('Failed to load shipments:', error)
+        return []
+      }
+    }
   })
+  const shipments = Array.isArray(shipmentsData) ? shipmentsData : (shipmentsData?.data?.shipments || shipmentsData?.shipments || [])
 
   // Fetch carriers
-  const { data: carriers = [] } = useQuery({
+  const { data: carriersData } = useQuery({
     queryKey: ['carriers'],
-    queryFn: () => api.carrier.getCarriers()
+    queryFn: async () => {
+      try {
+        const response = await api.carrier.getCarriers()
+        return response
+      } catch (error) {
+        console.error('Failed to load carriers:', error)
+        return []
+      }
+    }
   })
+  const carriers = Array.isArray(carriersData) ? carriersData : (carriersData?.data?.carriers || carriersData?.carriers || [])
 
   // Print labels mutation
   const printLabelsMutation = useMutation({
