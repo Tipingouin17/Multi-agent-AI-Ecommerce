@@ -128,6 +128,67 @@ def get_payments(
         logger.error(f"Error getting payments: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/payments/stats")
+def get_payment_stats(db: Session = Depends(get_db)):
+    """Get payment statistics"""
+    try:
+        total_payments = db.query(func.count(Payment.id)).scalar()
+        
+        completed_payments = db.query(func.count(Payment.id)).filter(
+            Payment.status == "completed"
+        ).scalar()
+        
+        total_revenue = db.query(func.sum(Payment.amount)).filter(
+            Payment.status == "completed"
+        ).scalar() or 0
+        
+        total_refunded = db.query(func.sum(Payment.refunded_amount)).scalar() or 0
+        
+        # Payment method distribution
+        payment_methods = db.query(
+            Payment.payment_method,
+            func.count(Payment.id)
+        ).group_by(Payment.payment_method).all()
+        
+        method_distribution = {method: count for method, count in payment_methods}
+        
+        # Status distribution
+        status_stats = db.query(
+            Payment.status,
+            func.count(Payment.id)
+        ).group_by(Payment.status).all()
+        
+        status_distribution = {status: count for status, count in status_stats}
+        
+        return {
+            "total_payments": total_payments,
+            "completed_payments": completed_payments,
+            "total_revenue": float(total_revenue),
+            "total_refunded": float(total_refunded),
+            "net_revenue": float(total_revenue - total_refunded),
+            "success_rate": (completed_payments / total_payments * 100) if total_payments > 0 else 0,
+            "payment_method_distribution": method_distribution,
+            "status_distribution": status_distribution
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting payment stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/payments/methods")
+def get_payment_methods():
+    """Get available payment methods"""
+    return {
+        "payment_methods": [
+            {"id": "credit_card", "name": "Credit Card", "enabled": True},
+            {"id": "debit_card", "name": "Debit Card", "enabled": True},
+            {"id": "paypal", "name": "PayPal", "enabled": True},
+            {"id": "stripe", "name": "Stripe", "enabled": True},
+            {"id": "bank_transfer", "name": "Bank Transfer", "enabled": True},
+            {"id": "cash_on_delivery", "name": "Cash on Delivery", "enabled": False}
+        ]
+    }
+
 @app.get("/api/payments/{payment_id}")
 def get_payment(payment_id: int, db: Session = Depends(get_db)):
     """Get a single payment by ID"""
@@ -342,67 +403,6 @@ def cancel_payment(payment_id: int, db: Session = Depends(get_db)):
         logger.error(f"Error cancelling payment: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/payments/stats")
-def get_payment_stats(db: Session = Depends(get_db)):
-    """Get payment statistics"""
-    try:
-        total_payments = db.query(func.count(Payment.id)).scalar()
-        
-        completed_payments = db.query(func.count(Payment.id)).filter(
-            Payment.status == "completed"
-        ).scalar()
-        
-        total_revenue = db.query(func.sum(Payment.amount)).filter(
-            Payment.status == "completed"
-        ).scalar() or 0
-        
-        total_refunded = db.query(func.sum(Payment.refunded_amount)).scalar() or 0
-        
-        # Payment method distribution
-        payment_methods = db.query(
-            Payment.payment_method,
-            func.count(Payment.id)
-        ).group_by(Payment.payment_method).all()
-        
-        method_distribution = {method: count for method, count in payment_methods}
-        
-        # Status distribution
-        status_stats = db.query(
-            Payment.status,
-            func.count(Payment.id)
-        ).group_by(Payment.status).all()
-        
-        status_distribution = {status: count for status, count in status_stats}
-        
-        return {
-            "total_payments": total_payments,
-            "completed_payments": completed_payments,
-            "total_revenue": float(total_revenue),
-            "total_refunded": float(total_refunded),
-            "net_revenue": float(total_revenue - total_refunded),
-            "success_rate": (completed_payments / total_payments * 100) if total_payments > 0 else 0,
-            "payment_method_distribution": method_distribution,
-            "status_distribution": status_distribution
-        }
-    
-    except Exception as e:
-        logger.error(f"Error getting payment stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/payments/methods")
-def get_payment_methods():
-    """Get available payment methods"""
-    return {
-        "payment_methods": [
-            {"id": "credit_card", "name": "Credit Card", "enabled": True},
-            {"id": "debit_card", "name": "Debit Card", "enabled": True},
-            {"id": "paypal", "name": "PayPal", "enabled": True},
-            {"id": "stripe", "name": "Stripe", "enabled": True},
-            {"id": "bank_transfer", "name": "Bank Transfer", "enabled": True},
-            {"id": "cash_on_delivery", "name": "Cash on Delivery", "enabled": False}
-        ]
-    }
 
 if __name__ == "__main__":
     import uvicorn

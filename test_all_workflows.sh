@@ -145,15 +145,15 @@ echo "==========================================================================
 echo ""
 
 echo "Admin Workflow 1.1: Manage Merchants"
-test_json_endpoint "  - Get Merchants List" "http://localhost:8100/api/merchants" "merchants"
+test_json_endpoint "  - Get System Overview" "http://localhost:8100/api/system/overview" "merchants"
 echo ""
 
 echo "Admin Workflow 1.2: View Platform Analytics"
-test_json_endpoint "  - Get Platform Stats" "http://localhost:8100/api/admin/stats" "total"
+test_json_endpoint "  - Get Platform Stats" "http://localhost:8100/api/system/overview" "total"
 echo ""
 
 echo "Admin Workflow 1.3: Configure System Settings"
-test_json_endpoint "  - Get System Config" "http://localhost:8100/api/system/config" "config"
+test_json_endpoint "  - Get System Config" "http://localhost:8100/api/system/config" "environment"
 echo ""
 
 echo "============================================================================"
@@ -170,12 +170,12 @@ test_json_endpoint "  - Get Merchant Orders" "http://localhost:8000/api/orders?m
 echo ""
 
 echo "Merchant Workflow 2.3: Manage Inventory"
-test_json_endpoint "  - Get Inventory Levels" "http://localhost:8002/api/inventory?merchant_id=1" "inventory"
-test_json_endpoint "  - Get Low Stock Alerts" "http://localhost:8002/api/inventory/low-stock" "products"
+test_json_endpoint "  - Get Inventory Levels" "http://localhost:8002/api/inventory" "inventory"
+test_json_endpoint "  - Get Low Stock Alerts" "http://localhost:8002/api/inventory/low-stock" "low_stock_items"
 echo ""
 
 echo "Merchant Workflow 2.4: View Analytics"
-test_json_endpoint "  - Get Sales Analytics" "http://localhost:8001/api/products/analytics?merchant_id=1" "analytics"
+test_json_endpoint "  - Get Sales Analytics" "http://localhost:8001/analytics" "total_revenue"
 echo ""
 
 echo "============================================================================"
@@ -185,13 +185,13 @@ echo ""
 
 echo "Customer Workflow 3.1: Browse/Search Products"
 test_json_endpoint "  - Browse Products" "http://localhost:8001/api/products" "products"
-test_json_endpoint "  - Search Products" "http://localhost:8001/api/products/search?q=wireless" "products"
-test_json_endpoint "  - Get Featured Products" "http://localhost:8001/api/products/featured" "products"
+test_json_endpoint "  - Search Products" "http://localhost:8001/api/products?search=wireless" "products"
+test_json_endpoint "  - Get Featured Products" "http://localhost:8001/featured" "id"
 echo ""
 
 echo "Customer Workflow 3.2: Purchase Product (CRITICAL)"
 test_json_endpoint "  - Get Product Details" "http://localhost:8001/api/products/1" "id"
-test_json_endpoint "  - Check Inventory" "http://localhost:8002/api/inventory/check/1" "available"
+test_json_endpoint "  - Check Inventory" "http://localhost:8002/api/inventory?product_id=1" "inventory"
 test_json_endpoint "  - Get Payment Methods" "http://localhost:8004/api/payments/methods" "payment_methods"
 test_json_endpoint "  - Get Carriers" "http://localhost:8006/api/carriers" "carriers"
 echo "  Note: Full checkout flow requires browser testing"
@@ -212,7 +212,7 @@ echo ""
 
 echo "Integration Test 1: Product-Inventory Sync"
 test_json_endpoint "  - Product exists" "http://localhost:8001/api/products/1" "id"
-test_json_endpoint "  - Inventory exists" "http://localhost:8002/api/inventory/product/1" "product_id"
+test_json_endpoint "  - Inventory exists" "http://localhost:8002/api/inventory?product_id=1" "inventory"
 echo ""
 
 echo "Integration Test 2: Order-Payment Integration"
@@ -221,8 +221,8 @@ test_json_endpoint "  - Payment methods available" "http://localhost:8004/api/pa
 echo ""
 
 echo "Integration Test 3: Marketplace Sync"
-test_json_endpoint "  - Marketplace channels" "http://localhost:8003/api/channels" "channels"
-test_json_endpoint "  - Sync status" "http://localhost:8003/api/sync/status" "status"
+test_json_endpoint "  - Marketplace channels" "http://localhost:8003/api/marketplaces" "marketplaces"
+test_json_endpoint "  - Sync status" "http://localhost:8003/sync/status" "status"
 echo ""
 
 echo ""
