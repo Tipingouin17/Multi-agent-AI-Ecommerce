@@ -404,6 +404,27 @@ class ApiService {
     }
   }
 
+  // ==================== MARKETPLACE SYNC APIs ====================
+  
+  async getMarketplaceSyncStatus() {
+    const response = await clients.marketplace.get('/sync/status')
+    return response.data
+  }
+
+  // ==================== ANALYTICS APIs ====================
+  
+  async getProductAnalytics(params = {}) {
+    const response = await clients.product.get('/analytics', { params })
+    return response.data
+  }
+
+  // ==================== CUSTOMER PORTAL APIs ====================
+  
+  async getFeaturedProducts(limit = 10) {
+    const response = await clients.product.get('/featured', { params: { limit } })
+    return response.data
+  }
+
   // ==================== MOCK DATA METHODS ====================
   // These provide fallback data when agents are unavailable
 
@@ -918,6 +939,7 @@ class ApiService {
       }
     ]
   }
+
 }
 
 // Export singleton instance
