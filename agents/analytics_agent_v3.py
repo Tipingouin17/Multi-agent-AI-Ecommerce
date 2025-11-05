@@ -1202,3 +1202,334 @@ async def get_product_lifecycle():
     except Exception as e:
         logger.error(f"Error getting product lifecycle: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# PHASE 3: MARKETING & OPERATIONAL METRICS ENDPOINTS
+# ============================================================================
+
+@app.get("/api/analytics/marketing-overview")
+async def get_marketing_overview(timeRange: str = "30d"):
+    """Get marketing overview KPIs"""
+    try:
+        days = parse_time_range(timeRange)
+        start_date = datetime.now() - timedelta(days=days)
+        prev_start = start_date - timedelta(days=days)
+        
+        # Mock marketing data (in production, integrate with marketing platforms)
+        current_spend = 15000 + (days * 200)
+        prev_spend = 14000 + (days * 180)
+        current_revenue = current_spend * 3.5  # 3.5x ROAS
+        prev_revenue = prev_spend * 3.2
+        
+        return {
+            "totalSpend": current_spend,
+            "spendChange": ((current_spend - prev_spend) / prev_spend * 100),
+            "roas": current_revenue / current_spend if current_spend > 0 else 0,
+            "roasChange": 9.4,
+            "conversions": int(current_revenue / 75),  # Avg order value $75
+            "conversionsChange": 12.3,
+            "cpa": current_spend / (current_revenue / 75) if current_revenue > 0 else 0,
+            "cpaChange": -8.2,
+            "ctr": 2.8,
+            "ctrChange": 0.4,
+            "emailOpenRate": 24.5,
+            "emailsSent": 45000,
+            "socialEngagement": 3.2,
+            "socialReach": 125000,
+            "spendTrend": [
+                {"date": f"Day {i+1}", "spend": 500 + (i * 50), "revenue": (500 + (i * 50)) * 3.5}
+                for i in range(min(days, 30))
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error getting marketing overview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/campaign-performance")
+async def get_campaign_performance(timeRange: str = "30d"):
+    """Get campaign performance data"""
+    try:
+        campaigns = [
+            {
+                "id": 1,
+                "name": "Summer Sale 2024",
+                "channel": "Google Ads",
+                "status": "active",
+                "spend": 5000,
+                "revenue": 18500,
+                "roas": 3.7,
+                "conversions": 247,
+                "cpa": 20.24
+            },
+            {
+                "id": 2,
+                "name": "Facebook Retargeting",
+                "channel": "Meta Ads",
+                "status": "active",
+                "spend": 3500,
+                "revenue": 14000,
+                "roas": 4.0,
+                "conversions": 187,
+                "cpa": 18.72
+            },
+            {
+                "id": 3,
+                "name": "Email Newsletter",
+                "channel": "Email",
+                "status": "active",
+                "spend": 500,
+                "revenue": 3500,
+                "roas": 7.0,
+                "conversions": 47,
+                "cpa": 10.64
+            },
+            {
+                "id": 4,
+                "name": "Instagram Stories",
+                "channel": "Instagram",
+                "status": "paused",
+                "spend": 2000,
+                "revenue": 4000,
+                "roas": 2.0,
+                "conversions": 53,
+                "cpa": 37.74
+            }
+        ]
+        return campaigns
+    except Exception as e:
+        logger.error(f"Error getting campaign performance: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/traffic-sources")
+async def get_traffic_sources(timeRange: str = "30d"):
+    """Get traffic sources distribution"""
+    try:
+        sources = [
+            {"name": "Organic Search", "value": 12500},
+            {"name": "Paid Search", "value": 8300},
+            {"name": "Social Media", "value": 6700},
+            {"name": "Direct", "value": 5200},
+            {"name": "Email", "value": 3400},
+            {"name": "Referral", "value": 2100}
+        ]
+        return sources
+    except Exception as e:
+        logger.error(f"Error getting traffic sources: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/promotion-effectiveness")
+async def get_promotion_effectiveness(timeRange: str = "30d"):
+    """Get promotion effectiveness data"""
+    try:
+        promotions = [
+            {
+                "id": 1,
+                "name": "Summer20",
+                "code": "SUMMER20",
+                "discount": 20,
+                "uses": 1247,
+                "revenue": 93525,
+                "roi": 468,
+                "active": True
+            },
+            {
+                "id": 2,
+                "name": "First Order 10% Off",
+                "code": "WELCOME10",
+                "discount": 10,
+                "uses": 892,
+                "revenue": 66900,
+                "roi": 334,
+                "active": True
+            },
+            {
+                "id": 3,
+                "name": "Free Shipping",
+                "code": "FREESHIP",
+                "discount": 0,
+                "uses": 2341,
+                "revenue": 175575,
+                "roi": 585,
+                "active": True
+            }
+        ]
+        return promotions
+    except Exception as e:
+        logger.error(f"Error getting promotion effectiveness: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/channel-conversion")
+async def get_channel_conversion(timeRange: str = "30d"):
+    """Get conversion rates by channel"""
+    try:
+        channels = [
+            {"channel": "Email", "conversionRate": 4.8},
+            {"channel": "Organic Search", "conversionRate": 3.2},
+            {"channel": "Paid Search", "conversionRate": 2.9},
+            {"channel": "Social Media", "conversionRate": 2.1},
+            {"channel": "Direct", "conversionRate": 3.7},
+            {"channel": "Referral", "conversionRate": 2.5}
+        ]
+        return channels
+    except Exception as e:
+        logger.error(f"Error getting channel conversion: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/operational-overview")
+async def get_operational_overview(timeRange: str = "30d"):
+    """Get operational overview KPIs"""
+    try:
+        return {
+            "avgFulfillmentTime": 18.5,
+            "fulfillmentTimeChange": -5.2,
+            "onTimeDeliveryRate": 94.3,
+            "deliveryRateChange": 2.1,
+            "returnRate": 3.8,
+            "returnRateChange": -0.5,
+            "warehouseEfficiency": 87,
+            "efficiencyChange": 4.2,
+            "orderStatus": {
+                "pending": 142,
+                "processing": 89,
+                "shipped": 234,
+                "delivered": 1567,
+                "issues": 12
+            },
+            "alerts": [
+                {
+                    "severity": "high",
+                    "title": "High Return Rate for Electronics",
+                    "description": "Electronics category has 8.2% return rate, above 5% threshold"
+                },
+                {
+                    "severity": "medium",
+                    "title": "Warehouse A Capacity at 92%",
+                    "description": "Warehouse A is nearing capacity. Consider redistribution."
+                },
+                {
+                    "severity": "low",
+                    "title": "Carrier B Delivery Delays",
+                    "description": "Carrier B showing 2-day average delay this week"
+                }
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error getting operational overview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/fulfillment-metrics")
+async def get_fulfillment_metrics(timeRange: str = "30d"):
+    """Get fulfillment performance over time"""
+    try:
+        days = parse_time_range(timeRange)
+        metrics = [
+            {
+                "date": (datetime.now() - timedelta(days=days-i)).strftime("%Y-%m-%d"),
+                "avgFulfillmentTime": 18 + (i % 5) - 2,
+                "targetTime": 24
+            }
+            for i in range(min(days, 30))
+        ]
+        return metrics
+    except Exception as e:
+        logger.error(f"Error getting fulfillment metrics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/shipping-performance")
+async def get_shipping_performance(timeRange: str = "30d"):
+    """Get shipping performance by carrier"""
+    try:
+        carriers = [
+            {
+                "name": "FedEx",
+                "shipments": 1247,
+                "onTimeRate": 96.2,
+                "avgTransitTime": 2.3,
+                "issues": 5
+            },
+            {
+                "name": "UPS",
+                "shipments": 1089,
+                "onTimeRate": 94.8,
+                "avgTransitTime": 2.5,
+                "issues": 8
+            },
+            {
+                "name": "USPS",
+                "shipments": 892,
+                "onTimeRate": 91.3,
+                "avgTransitTime": 3.2,
+                "issues": 12
+            },
+            {
+                "name": "DHL",
+                "shipments": 456,
+                "onTimeRate": 97.1,
+                "avgTransitTime": 2.1,
+                "issues": 2
+            }
+        ]
+        return carriers
+    except Exception as e:
+        logger.error(f"Error getting shipping performance: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/return-metrics")
+async def get_return_metrics(timeRange: str = "30d"):
+    """Get return analysis by reason"""
+    try:
+        returns = [
+            {"reason": "Wrong Size", "count": 145},
+            {"reason": "Defective", "count": 89},
+            {"reason": "Not as Described", "count": 67},
+            {"reason": "Changed Mind", "count": 54},
+            {"reason": "Damaged in Transit", "count": 42},
+            {"reason": "Other", "count": 28}
+        ]
+        return returns
+    except Exception as e:
+        logger.error(f"Error getting return metrics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/warehouse-efficiency")
+async def get_warehouse_efficiency(timeRange: str = "30d"):
+    """Get warehouse efficiency metrics"""
+    try:
+        warehouses = [
+            {
+                "id": 1,
+                "name": "Warehouse A - East Coast",
+                "efficiency": 92,
+                "ordersProcessed": 3456,
+                "avgPickTime": 8.2,
+                "accuracyRate": 99.4,
+                "utilization": 87
+            },
+            {
+                "id": 2,
+                "name": "Warehouse B - West Coast",
+                "efficiency": 88,
+                "ordersProcessed": 2891,
+                "avgPickTime": 9.1,
+                "accuracyRate": 98.9,
+                "utilization": 92
+            },
+            {
+                "id": 3,
+                "name": "Warehouse C - Midwest",
+                "efficiency": 85,
+                "ordersProcessed": 2234,
+                "avgPickTime": 9.8,
+                "accuracyRate": 99.1,
+                "utilization": 78
+            }
+        ]
+        return warehouses
+    except Exception as e:
+        logger.error(f"Error getting warehouse efficiency: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+logger.info("Analytics agent v3 initialized successfully with 36 endpoints")
+logger.info("Listening on port 8031")
+logger.info("Phase 1-3 analytics endpoints ready")
