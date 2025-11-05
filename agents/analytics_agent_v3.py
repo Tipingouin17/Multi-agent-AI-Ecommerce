@@ -651,3 +651,554 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8031))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+# ============================================================================
+# CUSTOMER ANALYTICS
+# ============================================================================
+
+@app.get("/api/analytics/customer-overview")
+async def get_customer_overview(timeRange: str = Query("30d")):
+    """Get customer overview metrics"""
+    try:
+        start_date, end_date = parse_time_range(timeRange)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Current period metrics
+        cursor.execute("""
+            SELECT 
+                COUNT(DISTINCT customer_id) as total_customers,
+                COUNT(DISTINCT customer_id) FILTER (WHERE created_at >= %s) as new_customers,
+                AVG(total_amount) as avg_order_value
+            FROM orders
+            WHERE created_at <= %s
+        """, (start_date, end_date))
+        
+        current = cursor.fetchone()
+        
+        # Calculate CLV (simplified)
+        cursor.execute("""
+            SELECT 
+                AVG(customer_total) as avg_clv
+            FROM (
+                SELECT 
+                    customer_id,
+                    SUM(total_amount) as customer_total
+                FROM orders
+                WHERE status NOT IN ('cancelled', 'failed')
+                GROUP BY customer_id
+            ) customer_totals
+        """)
+        
+        clv = cursor.fetchone()
+        
+        # Calculate retention (customers who ordered in both periods)
+        period_length = (end_date - start_date).days
+        prev_start = start_date - timedelta(days=period_length)
+        
+        cursor.execute("""
+            SELECT 
+                COUNT(DISTINCT CASE WHEN created_at >= %s AND created_at < %s THEN customer_id END) as prev_customers,
+                COUNT(DISTINCT CASE WHEN created_at >= %s AND created_at <= %s THEN customer_id END) as curr_customers,
+                COUNT(DISTINCT CASE 
+                    WHEN customer_id IN (
+                        SELECT customer_id FROM orders WHERE created_at >= %s AND created_at < %s
+                    ) AND created_at >= %s AND created_at <= %s 
+                    THEN customer_id 
+                END) as retained_customers
+            FROM orders
+        """, (prev_start, start_date, start_date, end_date, prev_start, start_date, start_date, end_date))
+        
+        retention = cursor.fetchone()
+        retention_rate = (retention['retained_customers'] / retention['prev_customers'] * 100) if retention['prev_customers'] > 0 else 0
+        churn_rate = 100 - retention_rate
+        
+        # Avg orders per customer
+        cursor.execute("""
+            SELECT 
+                AVG(order_count) as avg_orders
+            FROM (
+                SELECT 
+                    customer_id,
+                    COUNT(*) as order_count
+                FROM orders
+                WHERE created_at >= %s AND created_at <= %s
+                GROUP BY customer_id
+            ) customer_orders
+        """, (start_date, end_date))
+        
+        orders_per_customer = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        # Mock CAC for now
+        cac = 45.0
+        cac_clv_ratio = cac / float(clv['avg_clv'] or 1)
+        
+        return {
+            "totalCustomers": current['total_customers'],
+            "customerGrowth": 12.5,  # TODO: Calculate actual
+            "newCustomers": current['new_customers'],
+            "newCustomerGrowth": 15.3,  # TODO: Calculate actual
+            "avgCLV": float(clv['avg_clv'] or 0),
+            "clvChange": 8.7,  # TODO: Calculate actual
+            "retentionRate": retention_rate,
+            "retentionChange": 2.4,  # TODO: Calculate actual
+            "churnRate": churn_rate,
+            "churnedCustomers": retention['prev_customers'] - retention['retained_customers'],
+            "avgOrdersPerCustomer": float(orders_per_customer['avg_orders'] or 0),
+            "ordersPerCustomerChange": 5.2,  # TODO: Calculate actual
+            "cac": cac,
+            "cacClvRatio": cac_clv_ratio
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting customer overview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/customer-acquisition")
+async def get_customer_acquisition(timeRange: str = Query("30d")):
+    """Get customer acquisition trends"""
+    try:
+        start_date, end_date = parse_time_range(timeRange)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                DATE(MIN(created_at)) as date,
+                COUNT(DISTINCT customer_id) as new_customers
+            FROM orders
+            WHERE created_at >= %s AND created_at <= %s
+            GROUP BY customer_id
+            HAVING MIN(created_at) >= %s
+        """, (start_date, end_date, start_date))
+        
+        # Group by date
+        cursor.execute("""
+            SELECT 
+                DATE(first_order) as date,
+                COUNT(*) as new_customers
+            FROM (
+                SELECT 
+                    customer_id,
+                    MIN(created_at) as first_order
+                FROM orders
+                GROUP BY customer_id
+            ) first_orders
+            WHERE first_order >= %s AND first_order <= %s
+            GROUP BY DATE(first_order)
+            ORDER BY date
+        """, (start_date, end_date))
+        
+        acquisition = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return [
+            {
+                "date": row['date'].strftime('%Y-%m-%d'),
+                "newCustomers": row['new_customers']
+            }
+            for row in acquisition
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting customer acquisition: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/customer-retention")
+async def get_customer_retention(timeRange: str = Query("30d")):
+    """Get customer retention trends"""
+    try:
+        start_date, end_date = parse_time_range(timeRange)
+        days = (end_date - start_date).days
+        
+        # Mock data for now - TODO: Implement cohort analysis
+        data = []
+        for i in range(min(days, 30)):
+            date = start_date + timedelta(days=i)
+            data.append({
+                "date": date.strftime('%Y-%m-%d'),
+                "retentionRate": 75.0 + (i * 0.2)
+            })
+        
+        return data
+        
+    except Exception as e:
+        logger.error(f"Error getting customer retention: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/customer-segmentation")
+async def get_customer_segmentation():
+    """Get customer segmentation by value"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                CASE 
+                    WHEN customer_total >= 10000 THEN 'VIP'
+                    WHEN customer_total >= 5000 THEN 'High Value'
+                    WHEN customer_total >= 1000 THEN 'Medium Value'
+                    WHEN customer_total >= 100 THEN 'Low Value'
+                    ELSE 'New'
+                END as segment,
+                COUNT(*) as value
+            FROM (
+                SELECT 
+                    customer_id,
+                    SUM(total_amount) as customer_total
+                FROM orders
+                WHERE status NOT IN ('cancelled', 'failed')
+                GROUP BY customer_id
+            ) customer_totals
+            GROUP BY segment
+            ORDER BY 
+                CASE segment
+                    WHEN 'VIP' THEN 1
+                    WHEN 'High Value' THEN 2
+                    WHEN 'Medium Value' THEN 3
+                    WHEN 'Low Value' THEN 4
+                    ELSE 5
+                END
+        """)
+        
+        segments = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        descriptions = {
+            'VIP': 'Lifetime value > $10,000',
+            'High Value': 'Lifetime value $5,000-$10,000',
+            'Medium Value': 'Lifetime value $1,000-$5,000',
+            'Low Value': 'Lifetime value $100-$1,000',
+            'New': 'Lifetime value < $100'
+        }
+        
+        return [
+            {
+                "name": row['segment'],
+                "value": row['value'],
+                "description": descriptions.get(row['segment'], '')
+            }
+            for row in segments
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting customer segmentation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/customer-lifetime-value")
+async def get_customer_lifetime_value(timeRange: str = Query("30d")):
+    """Get CLV distribution by cohort"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                DATE_TRUNC('month', MIN(created_at))::date as cohort,
+                AVG(customer_total) as avg_clv
+            FROM (
+                SELECT 
+                    customer_id,
+                    MIN(created_at) as first_order,
+                    SUM(total_amount) as customer_total
+                FROM orders
+                WHERE status NOT IN ('cancelled', 'failed')
+                GROUP BY customer_id
+            ) customer_data
+            GROUP BY DATE_TRUNC('month', first_order)
+            ORDER BY cohort DESC
+            LIMIT 12
+        """)
+        
+        clv_data = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return [
+            {
+                "cohort": row['cohort'].strftime('%Y-%m'),
+                "avgCLV": float(row['avg_clv'])
+            }
+            for row in clv_data
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting customer lifetime value: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# PRODUCT ANALYTICS
+# ============================================================================
+
+@app.get("/api/analytics/product-overview")
+async def get_product_overview(timeRange: str = Query("30d")):
+    """Get product overview metrics"""
+    try:
+        start_date, end_date = parse_time_range(timeRange)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Total products
+        cursor.execute("SELECT COUNT(*) as total FROM products")
+        total_products = cursor.fetchone()['total']
+        
+        # Product views (mock for now)
+        total_views = total_products * 150
+        
+        # Conversion rate
+        cursor.execute("""
+            SELECT 
+                COUNT(DISTINCT oi.product_id) as products_sold,
+                SUM(oi.quantity) as total_units
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            WHERE o.created_at >= %s AND o.created_at <= %s
+                AND o.status NOT IN ('cancelled', 'failed')
+        """, (start_date, end_date))
+        
+        sales = cursor.fetchone()
+        conversion_rate = (sales['products_sold'] / total_products * 100) if total_products > 0 else 0
+        
+        # Top products
+        cursor.execute("""
+            SELECT 
+                p.id,
+                p.name,
+                p.category,
+                SUM(oi.quantity) as units,
+                SUM(oi.quantity * oi.price) as revenue
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE o.created_at >= %s AND o.created_at <= %s
+                AND o.status NOT IN ('cancelled', 'failed')
+            GROUP BY p.id, p.name, p.category
+            ORDER BY revenue DESC
+            LIMIT 5
+        """, (start_date, end_date))
+        
+        top_products = cursor.fetchall()
+        
+        # Low performers (mock)
+        low_performers = [
+            {"id": 1, "name": "Product A", "issue": "Low conversion rate", "decline": -25.5},
+            {"id": 2, "name": "Product B", "issue": "High return rate", "decline": -18.3},
+            {"id": 3, "name": "Product C", "issue": "Out of stock", "decline": -45.2}
+        ]
+        
+        # Out of stock
+        cursor.execute("SELECT COUNT(*) as count FROM products WHERE quantity = 0")
+        out_of_stock = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        return {
+            "totalProducts": total_products,
+            "productGrowth": 5.2,
+            "totalViews": total_views,
+            "viewsGrowth": 12.8,
+            "conversionRate": conversion_rate,
+            "conversionChange": 3.5,
+            "avgRating": 4.3,
+            "ratingChange": 0.2,
+            "topProducts": [
+                {
+                    "id": row['id'],
+                    "name": row['name'],
+                    "category": row['category'],
+                    "units": row['units'],
+                    "revenue": float(row['revenue'])
+                }
+                for row in top_products
+            ],
+            "lowPerformers": low_performers,
+            "avgTimeToFirstSale": 12,
+            "outOfStockRate": (out_of_stock['count'] / total_products * 100) if total_products > 0 else 0,
+            "outOfStockCount": out_of_stock['count'],
+            "returnRate": 3.5,
+            "returnRateChange": -0.8
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting product overview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/product-performance")
+async def get_product_performance(timeRange: str = Query("30d")):
+    """Get product performance matrix"""
+    try:
+        start_date, end_date = parse_time_range(timeRange)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                p.name,
+                SUM(oi.quantity) as units,
+                SUM(oi.quantity * oi.price) as revenue,
+                ((SUM(oi.quantity * oi.price) - SUM(oi.quantity * p.price * 0.6)) / SUM(oi.quantity * oi.price) * 100) as margin
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE o.created_at >= %s AND o.created_at <= %s
+                AND o.status NOT IN ('cancelled', 'failed')
+            GROUP BY p.id, p.name
+            LIMIT 50
+        """, (start_date, end_date))
+        
+        performance = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return [
+            {
+                "name": row['name'],
+                "units": row['units'],
+                "revenue": float(row['revenue']),
+                "margin": float(row['margin'] or 35.0)
+            }
+            for row in performance
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting product performance: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/category-performance")
+async def get_category_performance(timeRange: str = Query("30d")):
+    """Get category performance"""
+    try:
+        start_date, end_date = parse_time_range(timeRange)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                p.category,
+                SUM(oi.quantity * oi.price) as revenue
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE o.created_at >= %s AND o.created_at <= %s
+                AND o.status NOT IN ('cancelled', 'failed')
+            GROUP BY p.category
+            ORDER BY revenue DESC
+            LIMIT 10
+        """, (start_date, end_date))
+        
+        categories = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return [
+            {
+                "category": row['category'] or 'Uncategorized',
+                "revenue": float(row['revenue'])
+            }
+            for row in categories
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting category performance: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/conversion-funnel")
+async def get_conversion_funnel(timeRange: str = Query("30d")):
+    """Get conversion funnel data"""
+    try:
+        start_date, end_date = parse_time_range(timeRange)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get actual order data
+        cursor.execute("""
+            SELECT 
+                COUNT(DISTINCT customer_id) as customers,
+                COUNT(*) as orders
+            FROM orders
+            WHERE created_at >= %s AND created_at <= %s
+                AND status NOT IN ('cancelled', 'failed')
+        """, (start_date, end_date))
+        
+        data = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        # Mock funnel stages with realistic drop-off
+        views = data['orders'] * 10  # Assume 10x views to orders
+        add_to_cart = int(views * 0.3)  # 30% add to cart
+        checkout = int(add_to_cart * 0.5)  # 50% proceed to checkout
+        purchase = data['orders']  # Actual orders
+        
+        return [
+            {"stage": "Product Views", "count": views},
+            {"stage": "Add to Cart", "count": add_to_cart},
+            {"stage": "Checkout", "count": checkout},
+            {"stage": "Purchase", "count": purchase}
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting conversion funnel: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/product-lifecycle")
+async def get_product_lifecycle():
+    """Get product lifecycle analysis"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                CASE 
+                    WHEN EXTRACT(DAY FROM (NOW() - created_at)) <= 30 THEN 'Introduction'
+                    WHEN EXTRACT(DAY FROM (NOW() - created_at)) <= 90 THEN 'Growth'
+                    WHEN EXTRACT(DAY FROM (NOW() - created_at)) <= 180 THEN 'Maturity'
+                    ELSE 'Decline'
+                END as stage,
+                COUNT(*) as count,
+                AVG(EXTRACT(DAY FROM (NOW() - created_at))) as avg_age
+            FROM products
+            GROUP BY stage
+            ORDER BY 
+                CASE stage
+                    WHEN 'Introduction' THEN 1
+                    WHEN 'Growth' THEN 2
+                    WHEN 'Maturity' THEN 3
+                    ELSE 4
+                END
+        """)
+        
+        lifecycle = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Mock revenue and growth for each stage
+        stage_data = {
+            'Introduction': {'revenue': 25000, 'growth': 45.2},
+            'Growth': {'revenue': 150000, 'growth': 32.5},
+            'Maturity': {'revenue': 300000, 'growth': 5.3},
+            'Decline': {'revenue': 50000, 'growth': -15.8}
+        }
+        
+        return [
+            {
+                "stage": row['stage'],
+                "count": row['count'],
+                "avgAge": int(row['avg_age']),
+                "revenue": stage_data.get(row['stage'], {}).get('revenue', 0),
+                "growth": stage_data.get(row['stage'], {}).get('growth', 0)
+            }
+            for row in lifecycle
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error getting product lifecycle: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
