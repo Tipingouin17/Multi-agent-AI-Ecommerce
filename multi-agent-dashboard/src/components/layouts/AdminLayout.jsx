@@ -49,7 +49,8 @@ const AdminLayout = ({ onInterfaceReset }) => {
     { name: 'Alerts & Issues', href: '/alerts', icon: AlertTriangle },
     { name: 'Performance Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Inbound Management', href: '/inbound', icon: Package },
-    { name: 'Fulfillment', href: '/fulfillment', icon: Truck },
+    { name: 'Fulfillment', href: '/fulfillment', icon: Package },
+    { name: 'Carriers', href: '/carriers', icon: Truck },
     { name: 'System Configuration', href: '/settings', icon: Settings },
   ]
 
