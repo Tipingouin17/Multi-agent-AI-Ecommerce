@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS inbound_shipments (
     id SERIAL PRIMARY KEY,
     shipment_number VARCHAR(50) UNIQUE NOT NULL,
-    po_id INTEGER REFERENCES purchase_orders(id),
+    po_id INTEGER,
     vendor_id INTEGER NOT NULL,
     expected_arrival_date TIMESTAMP,
     actual_arrival_date TIMESTAMP,
