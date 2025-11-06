@@ -15,7 +15,8 @@ import {
   LogOut,
   Bell,
   Search,
-  User
+  User,
+  Package
 } from 'lucide-react'
 import UserProfileDropdown from '../shared/UserProfileDropdown'
 import NotificationsDropdown from '../shared/NotificationsDropdown'
@@ -46,6 +47,7 @@ const AdminLayout = ({ onInterfaceReset }) => {
     { name: 'System Monitoring', href: '/monitoring', icon: Activity },
     { name: 'Alerts & Issues', href: '/alerts', icon: AlertTriangle },
     { name: 'Performance Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Inbound Management', href: '/inbound', icon: Package },
     { name: 'System Configuration', href: '/settings', icon: Settings },
   ]
 

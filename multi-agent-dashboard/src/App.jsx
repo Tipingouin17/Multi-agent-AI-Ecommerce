@@ -62,6 +62,7 @@ import CustomerAnalyticsDashboard from './pages/merchant/CustomerAnalyticsDashbo
 import ProductAnalyticsDashboard from './pages/merchant/ProductAnalyticsDashboard'
 import MarketingAnalyticsDashboard from './pages/merchant/MarketingAnalyticsDashboard'import OperationalMetricsDashboard from './pages/merchant/OperationalMetricsDashboard';
 import ReplenishmentDashboard from './pages/merchant/ReplenishmentDashboard';
+import InboundManagementDashboard from './pages/admin/InboundManagementDashboard';
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -330,6 +331,7 @@ function App() {
               <Route path="/alerts" element={<ErrorBoundary><AlertsManagement /></ErrorBoundary>} />
               <Route path="/analytics" element={<ErrorBoundary><PerformanceAnalytics /></ErrorBoundary>} />
               <Route path="/configuration" element={<ErrorBoundary><SystemConfiguration /></ErrorBoundary>} />
+              <Route path="/inbound" element={<ErrorBoundary><InboundManagementDashboard /></ErrorBoundary>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
