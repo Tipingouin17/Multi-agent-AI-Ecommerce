@@ -51,6 +51,7 @@ const AdminLayout = ({ onInterfaceReset }) => {
     { name: 'Inbound Management', href: '/inbound', icon: Package },
     { name: 'Fulfillment', href: '/fulfillment', icon: Package },
     { name: 'Carriers', href: '/carriers', icon: Truck },
+    { name: 'RMA Returns', href: '/rma', icon: AlertTriangle },
     { name: 'System Configuration', href: '/settings', icon: Settings },
   ]
 

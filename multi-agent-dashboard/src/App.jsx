@@ -65,6 +65,7 @@ import ReplenishmentDashboard from './pages/merchant/ReplenishmentDashboard';
 import InboundManagementDashboard from './pages/admin/InboundManagementDashboard';
 import FulfillmentDashboard from './pages/admin/FulfillmentDashboard';
 import CarrierDashboard from './pages/admin/CarrierDashboard';
+import RMADashboard from './pages/admin/RMADashboard';
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -336,6 +337,7 @@ function App() {
               <Route path="/inbound" element={<ErrorBoundary><InboundManagementDashboard /></ErrorBoundary>} />
               <Route path="/fulfillment" element={<ErrorBoundary><FulfillmentDashboard /></ErrorBoundary>} />
               <Route path="/carriers" element={<ErrorBoundary><CarrierDashboard /></ErrorBoundary>} />
+              <Route path="/rma" element={<ErrorBoundary><RMADashboard /></ErrorBoundary>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
