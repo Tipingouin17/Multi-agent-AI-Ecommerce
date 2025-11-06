@@ -728,3 +728,179 @@ class Shipment(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+# ============================================================================
+# REPLENISHMENT MODELS
+# ============================================================================
+
+class PurchaseOrder(Base):
+    """Purchase Order model for inventory replenishment"""
+    __tablename__ = 'purchase_orders'
+    
+    id = Column(Integer, primary_key=True)
+    po_number = Column(String(50), unique=True, nullable=False)
+    vendor_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    status = Column(String(20), nullable=False, default='draft')
+    order_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    expected_delivery_date = Column(DateTime)
+    actual_delivery_date = Column(DateTime)
+    total_amount = Column(Numeric(12, 2), nullable=False, default=0.00)
+    currency = Column(String(3), nullable=False, default='EUR')
+    shipping_cost = Column(Numeric(10, 2), default=0.00)
+    tax_amount = Column(Numeric(10, 2), default=0.00)
+    notes = Column(Text)
+    created_by = Column(Integer, ForeignKey('users.id'))
+    approved_by = Column(Integer, ForeignKey('users.id'))
+    approved_at = Column(DateTime)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "po_number": self.po_number,
+            "vendor_id": self.vendor_id,
+            "status": self.status,
+            "order_date": self.order_date.isoformat() if self.order_date else None,
+            "expected_delivery_date": self.expected_delivery_date.isoformat() if self.expected_delivery_date else None,
+            "actual_delivery_date": self.actual_delivery_date.isoformat() if self.actual_delivery_date else None,
+            "total_amount": float(self.total_amount) if self.total_amount else 0.0,
+            "currency": self.currency,
+            "shipping_cost": float(self.shipping_cost) if self.shipping_cost else 0.0,
+            "tax_amount": float(self.tax_amount) if self.tax_amount else 0.0,
+            "notes": self.notes,
+            "created_by": self.created_by,
+            "approved_by": self.approved_by,
+            "approved_at": self.approved_at.isoformat() if self.approved_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class PurchaseOrderItem(Base):
+    """Purchase Order Item model"""
+    __tablename__ = 'purchase_order_items'
+    
+    id = Column(Integer, primary_key=True)
+    po_id = Column(Integer, ForeignKey('purchase_orders.id', ondelete='CASCADE'), nullable=False)
+    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    unit_cost = Column(Numeric(10, 2), nullable=False)
+    total_cost = Column(Numeric(12, 2), nullable=False)
+    received_quantity = Column(Integer, nullable=False, default=0)
+    status = Column(String(20), nullable=False, default='pending')
+    notes = Column(Text)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "po_id": self.po_id,
+            "product_id": self.product_id,
+            "quantity": self.quantity,
+            "unit_cost": float(self.unit_cost) if self.unit_cost else 0.0,
+            "total_cost": float(self.total_cost) if self.total_cost else 0.0,
+            "received_quantity": self.received_quantity,
+            "status": self.status,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ReplenishmentSetting(Base):
+    """Replenishment Settings model"""
+    __tablename__ = 'replenishment_settings'
+    
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey('products.id'), unique=True, nullable=False)
+    enabled = Column(Boolean, nullable=False, default=True)
+    reorder_point = Column(Integer, nullable=False, default=0)
+    safety_stock = Column(Integer, nullable=False, default=0)
+    economic_order_quantity = Column(Integer, nullable=False, default=0)
+    lead_time_days = Column(Integer, nullable=False, default=7)
+    ordering_cost = Column(Numeric(10, 2), nullable=False, default=50.00)
+    holding_cost_per_unit = Column(Numeric(10, 2), nullable=False, default=2.00)
+    avg_daily_sales = Column(Numeric(10, 2), nullable=False, default=0.00)
+    max_daily_sales = Column(Numeric(10, 2), nullable=False, default=0.00)
+    last_calculated_at = Column(DateTime)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "product_id": self.product_id,
+            "enabled": self.enabled,
+            "reorder_point": self.reorder_point,
+            "safety_stock": self.safety_stock,
+            "economic_order_quantity": self.economic_order_quantity,
+            "lead_time_days": self.lead_time_days,
+            "ordering_cost": float(self.ordering_cost) if self.ordering_cost else 50.0,
+            "holding_cost_per_unit": float(self.holding_cost_per_unit) if self.holding_cost_per_unit else 2.0,
+            "avg_daily_sales": float(self.avg_daily_sales) if self.avg_daily_sales else 0.0,
+            "max_daily_sales": float(self.max_daily_sales) if self.max_daily_sales else 0.0,
+            "last_calculated_at": self.last_calculated_at.isoformat() if self.last_calculated_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ReplenishmentRecommendation(Base):
+    """Replenishment Recommendation model"""
+    __tablename__ = 'replenishment_recommendations'
+    
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
+    current_stock = Column(Integer, nullable=False)
+    reorder_point = Column(Integer, nullable=False)
+    recommended_quantity = Column(Integer, nullable=False)
+    reason = Column(String(100), nullable=False)
+    priority = Column(String(20), nullable=False, default='medium')
+    status = Column(String(20), nullable=False, default='pending')
+    po_id = Column(Integer, ForeignKey('purchase_orders.id'))
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    resolved_at = Column(DateTime)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "product_id": self.product_id,
+            "current_stock": self.current_stock,
+            "reorder_point": self.reorder_point,
+            "recommended_quantity": self.recommended_quantity,
+            "reason": self.reason,
+            "priority": self.priority,
+            "status": self.status,
+            "po_id": self.po_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
+        }
+
+
+class DemandForecast(Base):
+    """Demand Forecast model"""
+    __tablename__ = 'demand_forecasts'
+    
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
+    forecast_date = Column(DateTime, nullable=False)
+    forecast_quantity = Column(Numeric(10, 2), nullable=False)
+    confidence_level = Column(Numeric(5, 2), nullable=False, default=0.00)
+    model_version = Column(String(50), nullable=False, default='v1.0')
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "product_id": self.product_id,
+            "forecast_date": self.forecast_date.isoformat() if self.forecast_date else None,
+            "forecast_quantity": float(self.forecast_quantity) if self.forecast_quantity else 0.0,
+            "confidence_level": float(self.confidence_level) if self.confidence_level else 0.0,
+            "model_version": self.model_version,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
