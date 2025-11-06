@@ -16,7 +16,8 @@ import {
   Bell,
   Search,
   User,
-  Package
+  Package,
+  Truck
 } from 'lucide-react'
 import UserProfileDropdown from '../shared/UserProfileDropdown'
 import NotificationsDropdown from '../shared/NotificationsDropdown'
@@ -48,6 +49,7 @@ const AdminLayout = ({ onInterfaceReset }) => {
     { name: 'Alerts & Issues', href: '/alerts', icon: AlertTriangle },
     { name: 'Performance Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Inbound Management', href: '/inbound', icon: Package },
+    { name: 'Fulfillment', href: '/fulfillment', icon: Truck },
     { name: 'System Configuration', href: '/settings', icon: Settings },
   ]
 
