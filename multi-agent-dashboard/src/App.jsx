@@ -67,6 +67,7 @@ import FulfillmentDashboard from './pages/admin/FulfillmentDashboard';
 import CarrierDashboard from './pages/admin/CarrierDashboard';
 import RMADashboard from './pages/admin/RMADashboard';
 import AnalyticsDashboard from './pages/admin/AnalyticsDashboard';
+import ForecastingDashboard from './pages/admin/ForecastingDashboard';
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -340,6 +341,7 @@ function App() {
               <Route path="/carriers" element={<ErrorBoundary><CarrierDashboard /></ErrorBoundary>} />
               <Route path="/rma" element={<ErrorBoundary><RMADashboard /></ErrorBoundary>} />
               <Route path="/advanced-analytics" element={<ErrorBoundary><AnalyticsDashboard /></ErrorBoundary>} />
+              <Route path="/forecasting" element={<ErrorBoundary><ForecastingDashboard /></ErrorBoundary>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
