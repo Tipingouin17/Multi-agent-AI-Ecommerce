@@ -904,3 +904,255 @@ class DemandForecast(Base):
             "model_version": self.model_version,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+# ============================================================================
+# INBOUND MANAGEMENT MODELS
+# ============================================================================
+
+class InboundShipment(Base):
+    """Inbound shipment (ASN) model"""
+    __tablename__ = 'inbound_shipments'
+    
+    id = Column(Integer, primary_key=True)
+    shipment_number = Column(String(50), unique=True, nullable=False)
+    po_id = Column(Integer, ForeignKey('purchase_orders.id'))
+    vendor_id = Column(Integer, nullable=False)
+    expected_arrival_date = Column(DateTime)
+    actual_arrival_date = Column(DateTime)
+    status = Column(String(50), default='expected')
+    carrier = Column(String(100))
+    tracking_number = Column(String(100))
+    total_items = Column(Integer, default=0)
+    received_items = Column(Integer, default=0)
+    warehouse_id = Column(Integer)
+    dock_door = Column(String(20))
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "shipment_number": self.shipment_number,
+            "po_id": self.po_id,
+            "vendor_id": self.vendor_id,
+            "expected_arrival_date": self.expected_arrival_date.isoformat() if self.expected_arrival_date else None,
+            "actual_arrival_date": self.actual_arrival_date.isoformat() if self.actual_arrival_date else None,
+            "status": self.status,
+            "carrier": self.carrier,
+            "tracking_number": self.tracking_number,
+            "total_items": self.total_items,
+            "received_items": self.received_items,
+            "warehouse_id": self.warehouse_id,
+            "dock_door": self.dock_door,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+class InboundShipmentItem(Base):
+    """Inbound shipment item model"""
+    __tablename__ = 'inbound_shipment_items'
+    
+    id = Column(Integer, primary_key=True)
+    shipment_id = Column(Integer, ForeignKey('inbound_shipments.id', ondelete='CASCADE'))
+    product_id = Column(Integer, nullable=False)
+    sku = Column(String(100), nullable=False)
+    expected_quantity = Column(Integer, nullable=False)
+    received_quantity = Column(Integer, default=0)
+    accepted_quantity = Column(Integer, default=0)
+    rejected_quantity = Column(Integer, default=0)
+    unit_cost = Column(Numeric(10, 2))
+    status = Column(String(50), default='pending')
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "shipment_id": self.shipment_id,
+            "product_id": self.product_id,
+            "sku": self.sku,
+            "expected_quantity": self.expected_quantity,
+            "received_quantity": self.received_quantity,
+            "accepted_quantity": self.accepted_quantity,
+            "rejected_quantity": self.rejected_quantity,
+            "unit_cost": float(self.unit_cost) if self.unit_cost else 0.0,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+class ReceivingTask(Base):
+    """Receiving task model"""
+    __tablename__ = 'receiving_tasks'
+    
+    id = Column(Integer, primary_key=True)
+    shipment_id = Column(Integer, ForeignKey('inbound_shipments.id'))
+    task_number = Column(String(50), unique=True, nullable=False)
+    assigned_to = Column(String(100))
+    status = Column(String(50), default='pending')
+    priority = Column(String(20), default='medium')
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "shipment_id": self.shipment_id,
+            "task_number": self.task_number,
+            "assigned_to": self.assigned_to,
+            "status": self.status,
+            "priority": self.priority,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+class QualityInspection(Base):
+    """Quality inspection model"""
+    __tablename__ = 'quality_inspections'
+    
+    id = Column(Integer, primary_key=True)
+    shipment_item_id = Column(Integer, ForeignKey('inbound_shipment_items.id'))
+    inspection_number = Column(String(50), unique=True, nullable=False)
+    inspector_id = Column(String(100))
+    inspection_type = Column(String(50))
+    sample_size = Column(Integer)
+    passed_count = Column(Integer, default=0)
+    failed_count = Column(Integer, default=0)
+    status = Column(String(50), default='pending')
+    defect_types = Column(JSON)
+    photos = Column(JSON)
+    notes = Column(Text)
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "shipment_item_id": self.shipment_item_id,
+            "inspection_number": self.inspection_number,
+            "inspector_id": self.inspector_id,
+            "inspection_type": self.inspection_type,
+            "sample_size": self.sample_size,
+            "passed_count": self.passed_count,
+            "failed_count": self.failed_count,
+            "status": self.status,
+            "defect_types": self.defect_types,
+            "photos": self.photos,
+            "notes": self.notes,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+class QualityDefect(Base):
+    """Quality defect model"""
+    __tablename__ = 'quality_defects'
+    
+    id = Column(Integer, primary_key=True)
+    inspection_id = Column(Integer, ForeignKey('quality_inspections.id'))
+    defect_type = Column(String(100))
+    severity = Column(String(20))
+    quantity = Column(Integer)
+    description = Column(Text)
+    action_taken = Column(String(100))
+    photos = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "inspection_id": self.inspection_id,
+            "defect_type": self.defect_type,
+            "severity": self.severity,
+            "quantity": self.quantity,
+            "description": self.description,
+            "action_taken": self.action_taken,
+            "photos": self.photos,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+class PutawayTask(Base):
+    """Putaway task model"""
+    __tablename__ = 'putaway_tasks'
+    
+    id = Column(Integer, primary_key=True)
+    shipment_item_id = Column(Integer, ForeignKey('inbound_shipment_items.id'))
+    task_number = Column(String(50), unique=True, nullable=False)
+    product_id = Column(Integer, nullable=False)
+    sku = Column(String(100), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    from_location = Column(String(100))
+    to_location = Column(String(100))
+    assigned_to = Column(String(100))
+    status = Column(String(50), default='pending')
+    priority = Column(String(20), default='medium')
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "shipment_item_id": self.shipment_item_id,
+            "task_number": self.task_number,
+            "product_id": self.product_id,
+            "sku": self.sku,
+            "quantity": self.quantity,
+            "from_location": self.from_location,
+            "to_location": self.to_location,
+            "assigned_to": self.assigned_to,
+            "status": self.status,
+            "priority": self.priority,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+class ReceivingDiscrepancy(Base):
+    """Receiving discrepancy model"""
+    __tablename__ = 'receiving_discrepancies'
+    
+    id = Column(Integer, primary_key=True)
+    shipment_id = Column(Integer, ForeignKey('inbound_shipments.id'))
+    shipment_item_id = Column(Integer, ForeignKey('inbound_shipment_items.id'))
+    discrepancy_type = Column(String(50))
+    expected_quantity = Column(Integer)
+    actual_quantity = Column(Integer)
+    variance = Column(Integer)
+    resolution_status = Column(String(50), default='open')
+    resolution_notes = Column(Text)
+    reported_by = Column(String(100))
+    resolved_by = Column(String(100))
+    resolved_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "shipment_id": self.shipment_id,
+            "shipment_item_id": self.shipment_item_id,
+            "discrepancy_type": self.discrepancy_type,
+            "expected_quantity": self.expected_quantity,
+            "actual_quantity": self.actual_quantity,
+            "variance": self.variance,
+            "resolution_status": self.resolution_status,
+            "resolution_notes": self.resolution_notes,
+            "reported_by": self.reported_by,
+            "resolved_by": self.resolved_by,
+            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
