@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Start All V3 Agents Script
-# This script starts all 27 V3 agents in the background with correct port assignments
+# This script starts all 37 V3 agents in the background with correct port assignments
+# Updated to include all 8 feature agents + 29 core agents
 
 set -e
 
@@ -13,7 +14,7 @@ LOGS_DIR="$SCRIPT_DIR/logs/agents"
 mkdir -p "$LOGS_DIR"
 
 echo "=========================================="
-echo "Starting All 27 V3 Agents"
+echo "Starting All 37 V3 Agents"
 echo "=========================================="
 echo ""
 
@@ -68,6 +69,10 @@ start_agent "after_sales_agent_v3.py" 8021
 start_agent "backoffice_agent_v3.py" 8027
 start_agent "quality_control_agent_v3.py" 8028
 
+echo "Analytics & Reporting Agents (2):"
+start_agent "analytics_agent_v3.py" 8013
+start_agent "advanced_analytics_agent_v3.py" 8036
+
 echo "Infrastructure & Monitoring Agents (6):"
 start_agent "risk_anomaly_detection_v3.py" 8011
 start_agent "knowledge_management_agent_v3.py" 8012
@@ -77,7 +82,20 @@ start_agent "ai_monitoring_agent_v3.py" 8024
 start_agent "system_api_gateway_v3.py" 8100
 
 echo "=========================================="
-echo "All 27 agents started!"
+echo "Feature Agents - Priority 1 & 2 (8):"
+echo "=========================================="
+echo ""
+
+start_agent "replenishment_agent_v3.py" 8031
+start_agent "inbound_management_agent_v3.py" 8032
+start_agent "fulfillment_agent_v3.py" 8033
+start_agent "carrier_agent_ai_v3.py" 8034
+start_agent "rma_agent_v3.py" 8035
+start_agent "demand_forecasting_agent_v3.py" 8037
+start_agent "international_shipping_agent_v3.py" 8038
+
+echo "=========================================="
+echo "All 37 agents started!"
 echo "=========================================="
 echo ""
 echo "Logs available in: $LOGS_DIR"
@@ -92,6 +110,8 @@ echo "To stop all agents:"
 echo "  ./stop_all_agents.sh"
 echo ""
 echo "Agent Port Mapping:"
+echo ""
+echo "Core Business Agents:"
 echo "  8000 - order_agent"
 echo "  8001 - product_agent"
 echo "  8002 - inventory_agent"
@@ -105,6 +125,7 @@ echo "  8009 - returns_agent"
 echo "  8010 - fraud_detection"
 echo "  8011 - risk_anomaly_detection"
 echo "  8012 - knowledge_management"
+echo "  8013 - analytics_agent"
 echo "  8014 - recommendation_agent"
 echo "  8015 - transport_management"
 echo "  8016 - document_generation"
@@ -118,5 +139,17 @@ echo "  8024 - ai_monitoring"
 echo "  8026 - d2c_ecommerce"
 echo "  8027 - backoffice_agent"
 echo "  8028 - quality_control"
+echo ""
+echo "Feature Agents (Priority 1 & 2):"
+echo "  8031 - replenishment_agent (Inventory Replenishment)"
+echo "  8032 - inbound_management_agent (Inbound Workflow)"
+echo "  8033 - fulfillment_agent (Advanced Fulfillment)"
+echo "  8034 - carrier_agent_ai (Intelligent Carrier Selection with AI)"
+echo "  8035 - rma_agent (Complete RMA Workflow)"
+echo "  8036 - advanced_analytics_agent (Advanced Analytics & Reporting)"
+echo "  8037 - demand_forecasting_agent (ML-Based Demand Forecasting)"
+echo "  8038 - international_shipping_agent (International Shipping)"
+echo ""
+echo "Infrastructure:"
 echo "  8100 - system_api_gateway"
 echo ""

@@ -7,7 +7,7 @@
 # This script launches the ENTIRE platform in the correct order:
 # 1. Docker infrastructure (PostgreSQL, Redis, Kafka, monitoring)
 # 2. Database initialization
-# 3. All 27 backend agents
+# 3. All 37 backend agents (8 feature + 29 core)
 # 4. Frontend UI
 # 5. Verification and monitoring setup
 #
@@ -136,7 +136,7 @@ cat << "EOF"
 ║                                                                           ║
 ║   Multi-Agent E-commerce Platform - Complete System Launcher             ║
 ║                                                                           ║
-║   🚀 Starting: Docker Infrastructure + 27 Agents + Frontend UI            ║
+║   🚀 Starting: Docker Infrastructure + 37 Agents + Frontend UI            ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 EOF
@@ -225,10 +225,10 @@ else
 fi
 
 ################################################################################
-# STEP 4: Start All 27 Agents
+# STEP 4: Start All 37 Agents
 ################################################################################
 
-print_header "STEP 4: Starting All 27 Backend Agents"
+print_header "STEP 4: Starting All 37 Backend Agents (8 Feature + 29 Core)"
 
 if [ -f "$PROJECT_ROOT/start_all_agents.sh" ]; then
     print_info "Launching agents..."
@@ -332,7 +332,7 @@ echo ""
 
 # Count healthy agents
 HEALTHY_COUNT=0
-TOTAL_AGENTS=27
+TOTAL_AGENTS=37
 for port in {8000..8100}; do
     if nc -z localhost "$port" 2>/dev/null; then
         HEALTHY_COUNT=$((HEALTHY_COUNT + 1))
