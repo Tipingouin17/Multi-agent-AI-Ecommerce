@@ -60,8 +60,8 @@ import InventoryDashboard from './pages/merchant/InventoryDashboard'
 import FinancialOverviewDashboard from './pages/merchant/FinancialOverviewDashboard'
 import CustomerAnalyticsDashboard from './pages/merchant/CustomerAnalyticsDashboard'
 import ProductAnalyticsDashboard from './pages/merchant/ProductAnalyticsDashboard'
-import MarketingAnalyticsDashboard from './pages/merchant/MarketingAnalyticsDashboard'
-import OperationalMetricsDashboard from './pages/merchant/OperationalMetricsDashboard'
+import MarketingAnalyticsDashboard from './pages/merchant/MarketingAnalyticsDashboard'import OperationalMetricsDashboard from './pages/merchant/OperationalMetricsDashboard';
+import ReplenishmentDashboard from './pages/merchant/ReplenishmentDashboard';
 
 // Customer components
 import CustomerLayout from './components/layouts/CustomerLayout'
@@ -374,6 +374,7 @@ function App() {
               <Route path="/analytics/products" element={<ErrorBoundary><ProductAnalyticsDashboard /></ErrorBoundary>} />
               <Route path="/analytics/marketing" element={<ErrorBoundary><MarketingAnalyticsDashboard /></ErrorBoundary>} />
               <Route path="/analytics/operations" element={<ErrorBoundary><OperationalMetricsDashboard /></ErrorBoundary>} />
+              <Route path="/inventory/replenishment" element={<ErrorBoundary><ReplenishmentDashboard /></ErrorBoundary>} />
               <Route path="/settings/general" element={<ErrorBoundary><StoreSettings /></ErrorBoundary>} />
               <Route path="/settings/payments" element={<ErrorBoundary><PaymentSettings /></ErrorBoundary>} />
               <Route path="/settings/shipping" element={<ErrorBoundary><ShippingSettings /></ErrorBoundary>} />
