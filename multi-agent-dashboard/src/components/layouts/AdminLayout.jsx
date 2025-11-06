@@ -54,6 +54,7 @@ const AdminLayout = ({ onInterfaceReset }) => {
     { name: 'RMA Returns', href: '/rma', icon: AlertTriangle },
     { name: 'Advanced Analytics', href: '/advanced-analytics', icon: BarChart3 },
     { name: 'Demand Forecasting', href: '/forecasting', icon: TrendingUp },
+    { name: 'International Shipping', href: '/international', icon: Globe },
     { name: 'System Configuration', href: '/settings', icon: Settings },
   ]
 
