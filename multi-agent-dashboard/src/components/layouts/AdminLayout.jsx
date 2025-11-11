@@ -17,7 +17,9 @@ import {
   Search,
   User,
   Package,
-  Truck
+  Truck,
+  TrendingUp,
+  Globe
 } from 'lucide-react'
 import UserProfileDropdown from '../shared/UserProfileDropdown'
 import NotificationsDropdown from '../shared/NotificationsDropdown'
