@@ -257,7 +257,7 @@ class Inventory(Base):
     
     id = Column(Integer, primary_key=True)
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
-    variant_id = Column(Integer, ForeignKey("product_variants.id", ondelete="CASCADE"))
+    variant_id = Column(Integer, nullable=True)  # Removed FK constraint - product_variants table not implemented yet
     warehouse_id = Column(Integer, ForeignKey("warehouses.id", ondelete="CASCADE"))
     quantity = Column(Integer, default=0)
     reserved_quantity = Column(Integer, default=0)
