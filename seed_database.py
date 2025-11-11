@@ -91,21 +91,34 @@ def clear_database(session):
     print("🗑️  Clearing existing data...")
     
     # Delete in reverse order of dependencies
-    session.query(OrderItem).delete()
-    session.query(Order).delete()
-    session.query(Shipment).delete()
-    session.query(Payment).delete()
-    session.query(PaymentMethod).delete()
-    session.query(Alert).delete()
-    session.query(Inventory).delete()
-    session.query(Product).delete()
-    session.query(Category).delete()
-    session.query(Warehouse).delete()
-    session.query(Carrier).delete()
-    session.query(Address).delete()
-    session.query(Customer).delete()
-    session.query(Merchant).delete()
-    session.query(User).delete()
+    # Use try-except to handle tables that don't exist yet
+    tables_to_clear = [
+        (OrderItem, "order_items"),
+        (Order, "orders"),
+        (Shipment, "shipments"),
+        (Payment, "transactions"),
+        (PaymentMethod, "payment_methods"),
+        (Alert, "alerts"),
+        (Inventory, "inventory"),
+        (Product, "products"),
+        (Category, "categories"),
+        (Warehouse, "warehouses"),
+        (Carrier, "carriers"),
+        (Address, "addresses"),
+        (Customer, "customers"),
+        (Merchant, "merchants"),
+        (User, "users"),
+    ]
+    
+    for model, table_name in tables_to_clear:
+        try:
+            count = session.query(model).delete()
+            if count > 0:
+                print(f"   Cleared {count} records from {table_name}")
+        except Exception as e:
+            # Table doesn't exist or other error - skip it
+            print(f"   Skipped {table_name} (table may not exist)")
+            session.rollback()
     
     session.commit()
     print("✅ Database cleared")
