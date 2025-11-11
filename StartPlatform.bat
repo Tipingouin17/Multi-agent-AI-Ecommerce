@@ -63,34 +63,106 @@ echo ✓ All prerequisites checked!
 echo.
 
 REM ################################################################################
-REM STEP 2: Check PostgreSQL
+REM STEP 2: Start Docker Infrastructure
 REM ################################################################################
 
 echo.
 echo ===============================================================================
-echo STEP 2: Checking PostgreSQL
+echo STEP 2: Starting Docker Infrastructure
 echo ===============================================================================
 echo.
 
-echo Checking PostgreSQL connection...
-python -c "import psycopg2; conn = psycopg2.connect(host='localhost', port=5432, user='postgres', password='postgres', dbname='postgres'); conn.close(); print('✓ PostgreSQL is running!')" 2>nul
+REM Check if Docker is installed
+where docker >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Docker is not installed or not in PATH
     echo.
-    echo ⚠ WARNING: Cannot connect to PostgreSQL on localhost:5432
+    echo Please install Docker Desktop from: https://www.docker.com/products/docker-desktop
     echo.
-    echo PostgreSQL needs to be running for the platform to work.
-    echo.
-    echo To start PostgreSQL:
-    echo   1. Open Services (services.msc^)
-    echo   2. Find "postgresql-x64-16" service
-    echo   3. Click "Start"
-    echo.
-    echo Or use Docker:
-    echo   docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:16
-    echo.
-    echo Press any key to continue anyway (agents will fail without PostgreSQL^)...
-    pause >nul
+    pause
+    exit /b 1
 )
+
+echo ✓ Docker is installed
+echo.
+
+REM Check if Docker is running
+docker info >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Docker is not running
+    echo.
+    echo Please start Docker Desktop and try again.
+    echo.
+    pause
+    exit /b 1
+)
+
+echo ✓ Docker is running
+echo.
+
+REM Check if PostgreSQL container exists
+echo Checking PostgreSQL container...
+docker ps -a --filter "name=multi-agent-postgres" --format "{{.Names}}" | findstr /C:"multi-agent-postgres" >nul 2>nul
+
+if %ERRORLEVEL% EQU 0 (
+    echo PostgreSQL container exists, checking status...
+    
+    REM Check if container is running
+    docker ps --filter "name=multi-agent-postgres" --format "{{.Names}}" | findstr /C:"multi-agent-postgres" >nul 2>nul
+    
+    if %ERRORLEVEL% EQU 0 (
+        echo ✓ PostgreSQL container is already running
+    ) else (
+        echo PostgreSQL container is stopped, restarting...
+        docker start multi-agent-postgres
+        if %ERRORLEVEL% EQU 0 (
+            echo ✓ PostgreSQL container restarted successfully
+        ) else (
+            echo ERROR: Failed to restart PostgreSQL container
+            pause
+            exit /b 1
+        )
+    )
+) else (
+    echo PostgreSQL container does not exist, creating...
+    docker run -d --name multi-agent-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=multi_agent_ecommerce postgres:16
+    
+    if %ERRORLEVEL% EQU 0 (
+        echo ✓ PostgreSQL container created successfully
+    ) else (
+        echo ERROR: Failed to create PostgreSQL container
+        pause
+        exit /b 1
+    )
+)
+
+echo.
+echo Waiting for PostgreSQL to be ready...
+echo.
+
+REM Wait for PostgreSQL to be healthy (max 60 seconds)
+set /a counter=0
+:wait_postgres
+if %counter% GEQ 60 (
+    echo ERROR: PostgreSQL did not become ready within 60 seconds
+    pause
+    exit /b 1
+)
+
+python -c "import psycopg2; conn = psycopg2.connect(host='localhost', port=5432, user='postgres', password='postgres', dbname='postgres'); conn.close()" 2>nul
+if %ERRORLEVEL% EQU 0 (
+    echo ✓ PostgreSQL is ready and accepting connections!
+    goto postgres_ready
+)
+
+echo Waiting... (%counter%/60 seconds^)
+timeout /t 2 /nobreak >nul
+set /a counter=%counter%+2
+goto wait_postgres
+
+:postgres_ready
+echo.
+echo ✓ Docker infrastructure is ready!
 
 REM ################################################################################
 REM STEP 3: Start All 37 Agents
