@@ -440,8 +440,8 @@ def create_orders(session, customers, products, addresses, merchants):
         customer = random.choice(customers)
         merchant = random.choice(merchants)
         
-        # Get customer's addresses
-        customer_addresses = [a for a in addresses if a.customer_id == customer.id]
+        # Get customer's addresses (Address has user_id, not customer_id)
+        customer_addresses = [a for a in addresses if a.user_id == customer.user_id]
         if not customer_addresses:
             continue
         
