@@ -385,7 +385,6 @@ def create_addresses(session, users, customers):
             city_idx = random.randint(0, len(cities) - 1)
             address = Address(
                 user_id=user.id,
-                customer_id=customer.id,
                 address_type=random.choice(address_types),
                 first_name=user.first_name,
                 last_name=user.last_name,
