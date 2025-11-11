@@ -111,13 +111,17 @@ echo Checking PostgreSQL connection...
 python -c "import psycopg2; conn = psycopg2.connect(host='localhost', port=5432, user='postgres', password='postgres', dbname='postgres'); conn.close(); print('PostgreSQL is running!')" 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo WARNING: Cannot connect to PostgreSQL on localhost:5432
-    echo Please ensure PostgreSQL is running and accessible.
     echo.
+    echo PostgreSQL needs to be running for the platform to work.
     echo To start PostgreSQL:
-    echo   - Windows Service: Start "postgresql-x64-16" service
+    echo   - Windows Service: Start "postgresql-x64-16" service in Services
     echo   - Or use Docker: docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:16
     echo.
-    pause
+    echo Continuing anyway... Agents will fail if PostgreSQL is not available.
+    echo.
+    timeout /t 5 /nobreak >nul
+) else (
+    echo PostgreSQL is running!
 )
 
 REM ################################################################################
