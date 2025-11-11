@@ -336,8 +336,7 @@ def create_inventory(session, products, warehouses):
                 reserved_quantity=random.randint(0, min(10, quantity)),
                 reorder_point=20,
                 reorder_quantity=100,
-                last_restock_date=datetime.now() - timedelta(days=random.randint(1, 90)),
-                location=f"A{random.randint(1,10)}-B{random.randint(1,20)}-C{random.randint(1,30)}"
+                last_restock_date=datetime.now() - timedelta(days=random.randint(1, 90))
             )
             session.add(inventory)
             inventory_records.append(inventory)
