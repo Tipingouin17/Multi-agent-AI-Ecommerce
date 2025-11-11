@@ -415,12 +415,9 @@ def create_carriers(session):
         carrier = Carrier(
             name=carr_data["name"],
             code=carr_data["code"],
-            type=carr_data["type"],
-            contact_email=f"support@{carr_data['code'].lower()}.com",
-            contact_phone="+1-800-555-0000",
+            tracking_url_template=f"https://track.{carr_data['code'].lower()}.com/{{tracking_number}}",
             api_endpoint=f"https://api.{carr_data['code'].lower()}.com",
-            is_active=True,
-            rating=Decimal(str(round(random.uniform(3.5, 5.0), 2)))
+            is_active=True
         )
         session.add(carrier)
         carriers.append(carrier)
@@ -542,7 +539,7 @@ def create_alerts(session, inventory_records):
         if inv.quantity <= inv.reorder_point:
             severity = "critical" if inv.quantity <= inv.reorder_point * 0.5 else "high"
             alert = Alert(
-                type="low_stock",
+                alert_type="low_stock",
                 severity=severity,
                 title=f"Low stock alert for product {inv.product_id}",
                 message=f"Current stock: {inv.quantity}, Reorder point: {inv.reorder_point}",
