@@ -87,10 +87,7 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-where psql >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    echo WARNING: psql is not in PATH. Make sure PostgreSQL is installed.
-)
+REM psql check removed - we use Python psycopg2 for database operations
 
 python --version
 node --version
@@ -110,17 +107,15 @@ echo STEP 2: Checking PostgreSQL
 echo ===============================================================================
 echo.
 
-REM Check if PostgreSQL is running (attempt connection)
-psql -h localhost -U postgres -d postgres -c "SELECT 1" >nul 2>nul
-if %ERRORLEVEL% EQU 0 (
-    echo PostgreSQL is running!
-) else (
+echo Checking PostgreSQL connection...
+python -c "import psycopg2; conn = psycopg2.connect(host='localhost', port=5432, user='postgres', password='postgres', dbname='postgres'); conn.close(); print('PostgreSQL is running!')" 2>nul
+if %ERRORLEVEL% NEQ 0 (
     echo WARNING: Cannot connect to PostgreSQL on localhost:5432
     echo Please ensure PostgreSQL is running and accessible.
     echo.
     echo To start PostgreSQL:
-    echo   - Windows Service: Start "postgresql-x64-14" service
-    echo   - Or run: pg_ctl start -D "C:\Program Files\PostgreSQL\14\data"
+    echo   - Windows Service: Start "postgresql-x64-16" service
+    echo   - Or use Docker: docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:16
     echo.
     pause
 )
@@ -136,21 +131,8 @@ if %SKIP_DB_INIT% EQU 0 (
     echo ===============================================================================
     echo.
     
-    if exist "%DATABASE_DIR%\schema.sql" (
-        echo Importing database schema...
-        psql -h localhost -U postgres -d multi_agent_ecommerce -f "%DATABASE_DIR%\schema.sql" 2>nul
-        echo Database schema imported!
-    ) else (
-        echo WARNING: database\schema.sql not found, skipping schema import
-    )
-    
-    if exist "%DATABASE_DIR%\seed_data.sql" (
-        echo Importing seed data...
-        psql -h localhost -U postgres -d multi_agent_ecommerce -f "%DATABASE_DIR%\seed_data.sql" 2>nul
-        echo Seed data imported!
-    ) else (
-        echo No seed data file found, skipping
-    )
+    echo Database initialization will be handled by agents on first run.
+    echo If you need to manually import schemas, use the database initialization scripts in the database/ folder.
 ) else (
     echo.
     echo ===============================================================================
