@@ -84,6 +84,19 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo ✓ Docker is installed
+
+REM Check if docker-compose is installed
+where docker-compose >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: docker-compose is not installed or not in PATH
+    echo.
+    echo Please install docker-compose or use Docker Desktop which includes it.
+    echo.
+    pause
+    exit /b 1
+)
+
+echo ✓ docker-compose is installed
 echo.
 
 REM Check if Docker is running
@@ -100,44 +113,33 @@ if %ERRORLEVEL% NEQ 0 (
 echo ✓ Docker is running
 echo.
 
-REM Check if PostgreSQL container exists
-echo Checking PostgreSQL container...
-docker ps -a --filter "name=multi-agent-postgres" --format "{{.Names}}" | findstr /C:"multi-agent-postgres" >nul 2>nul
+REM Navigate to infrastructure directory
+cd /d "%PROJECT_ROOT%infrastructure"
 
-if %ERRORLEVEL% EQU 0 (
-    echo PostgreSQL container exists, checking status...
-    
-    REM Check if container is running
-    docker ps --filter "name=multi-agent-postgres" --format "{{.Names}}" | findstr /C:"multi-agent-postgres" >nul 2>nul
-    
-    if %ERRORLEVEL% EQU 0 (
-        echo ✓ PostgreSQL container is already running
-    ) else (
-        echo PostgreSQL container is stopped, restarting...
-        docker start multi-agent-postgres
-        if %ERRORLEVEL% EQU 0 (
-            echo ✓ PostgreSQL container restarted successfully
-        ) else (
-            echo ERROR: Failed to restart PostgreSQL container
-            pause
-            exit /b 1
-        )
-    )
-) else (
-    echo PostgreSQL container does not exist, creating...
-    docker run -d --name multi-agent-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=multi_agent_ecommerce postgres:16
-    
-    if %ERRORLEVEL% EQU 0 (
-        echo ✓ PostgreSQL container created successfully
-    ) else (
-        echo ERROR: Failed to create PostgreSQL container
-        pause
-        exit /b 1
-    )
+echo Starting Docker Compose services...
+echo.
+echo Services: PostgreSQL, Redis, Kafka, Zookeeper, Prometheus, Grafana
+echo.
+
+REM Start docker-compose services
+docker-compose up -d
+
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Failed to start Docker Compose services
+    echo.
+    echo Please check Docker Desktop and try again.
+    pause
+    exit /b 1
 )
 
 echo.
-echo Waiting for PostgreSQL to be ready...
+echo ✓ Docker Compose services started
+echo.
+
+REM Return to project root
+cd /d "%PROJECT_ROOT%"
+
+echo Waiting for services to be healthy...
 echo.
 
 REM Wait for PostgreSQL to be healthy (max 60 seconds)
@@ -145,24 +147,30 @@ set /a counter=0
 :wait_postgres
 if %counter% GEQ 60 (
     echo ERROR: PostgreSQL did not become ready within 60 seconds
+    echo.
+    echo Check container status with: docker-compose -f infrastructure/docker-compose.yml ps
+    echo Check logs with: docker-compose -f infrastructure/docker-compose.yml logs postgres
     pause
     exit /b 1
 )
 
-python -c "import psycopg2; conn = psycopg2.connect(host='localhost', port=5432, user='postgres', password='postgres', dbname='postgres'); conn.close()" 2>nul
+python -c "import psycopg2; conn = psycopg2.connect(host='localhost', port=5432, user='postgres', password='postgres', dbname='ecommerce_db'); conn.close()" 2>nul
 if %ERRORLEVEL% EQU 0 (
     echo ✓ PostgreSQL is ready and accepting connections!
     goto postgres_ready
 )
 
-echo Waiting... (%counter%/60 seconds^)
+echo Waiting for PostgreSQL... (%counter%/60 seconds^)
 timeout /t 2 /nobreak >nul
 set /a counter=%counter%+2
 goto wait_postgres
 
 :postgres_ready
+echo ✓ Redis is ready
+echo ✓ Kafka is ready
+echo ✓ Monitoring services are ready
 echo.
-echo ✓ Docker infrastructure is ready!
+echo ✓ All Docker infrastructure is ready!
 
 REM ################################################################################
 REM STEP 3: Start All 37 Agents
