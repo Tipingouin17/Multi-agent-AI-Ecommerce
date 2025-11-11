@@ -382,7 +382,7 @@ class Order(Base):
     __tablename__ = "orders"
     
     id = Column(Integer, primary_key=True)
-    order_number = Column(String(100), unique=True, nullable=False)
+    order_number = Column(String(100), unique=True, nullable=True)  # Made nullable to match existing database
     customer_id = Column(Integer, ForeignKey("customers.id", ondelete="SET NULL"))
     merchant_id = Column(Integer, ForeignKey("merchants.id", ondelete="SET NULL"))
     status = Column(String(50), default="pending")
