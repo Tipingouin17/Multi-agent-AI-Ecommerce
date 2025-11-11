@@ -20,7 +20,7 @@ from shared.db_models import (
     PaymentMethod, Shipment
 )
 from shared.db_connection import get_database_url
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 from werkzeug.security import generate_password_hash
 
@@ -594,11 +594,36 @@ def update_customer_totals(session, customers, orders):
     print("✅ Updated customer totals")
 
 
+def check_tables_exist(engine):
+    """Check if required tables exist"""
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
+    
+    required_tables = ['users', 'merchants', 'customers', 'products', 'orders', 'categories']
+    missing_tables = [t for t in required_tables if t not in existing_tables]
+    
+    if missing_tables:
+        print("\n⚠️  WARNING: Missing required tables!")
+        print("\nMissing tables:")
+        for table in missing_tables:
+            print(f"   ❌ {table}")
+        print("\n💡 Solution: Run InitDatabase.bat first to create tables")
+        print("\nSteps:")
+        print("   1. Run: InitDatabase.bat")
+        print("   2. Then run: SeedDatabase.bat")
+        return False
+    
+    return True
+
 def main():
     """Main seed function"""
     print("\n" + "="*60)
     print("🌱 DATABASE SEED SCRIPT")
     print("="*60 + "\n")
+    
+    # Check if tables exist
+    if not check_tables_exist(engine):
+        return
     
     session = SessionLocal()
     
