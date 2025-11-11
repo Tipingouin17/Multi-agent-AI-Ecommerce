@@ -13,7 +13,8 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
-from shared.db_connection import get_database_config
+from shared.db_connection import get_database_url
+import re
 
 def reset_database():
     """Drop and recreate the database"""
@@ -21,9 +22,16 @@ def reset_database():
     print("🔄 DATABASE RESET")
     print("="*60 + "\n")
     
-    # Get database configuration
-    config = get_database_config()
-    db_name = config.get('database', 'multi_agent_ecommerce')
+    # Get database URL and parse it
+    db_url = get_database_url()
+    
+    # Parse URL: postgresql://user:password@host:port/database
+    match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)', db_url)
+    if not match:
+        print("\u274c Error: Could not parse database URL")
+        return 1
+    
+    user, password, host, port, db_name = match.groups()
     
     print(f"⚠️  WARNING: This will DELETE database '{db_name}'!")
     print("\nPress Ctrl+C to cancel...")
@@ -34,10 +42,10 @@ def reset_database():
     try:
         print(f"🔗 Connecting to PostgreSQL server...")
         conn = psycopg2.connect(
-            host=config.get('host', 'localhost'),
-            port=config.get('port', 5432),
-            user=config.get('user', 'postgres'),
-            password=config.get('password', 'postgres'),
+            host=host,
+            port=int(port),
+            user=user,
+            password=password,
             database='postgres'  # Connect to default postgres database
         )
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
