@@ -22,24 +22,15 @@ echo STEP 1/3: Resetting Database
 echo ========================================
 echo.
 
-REM Drop and recreate database
-psql -U postgres -c "DROP DATABASE IF EXISTS multi_agent_ecommerce;" 2>nul
-psql -U postgres -c "CREATE DATABASE multi_agent_ecommerce;"
+python reset_database.py
 
 if errorlevel 1 (
     echo.
     echo ERROR: Failed to reset database!
-    echo.
-    echo Please check:
-    echo 1. PostgreSQL is running
-    echo 2. You have the correct credentials
-    echo 3. No active connections to the database
-    echo.
     pause
     exit /b 1
 )
 
-echo ✅ Database reset complete
 echo.
 
 echo ========================================

@@ -12,36 +12,15 @@ echo Press Ctrl+C to cancel, or
 pause
 
 echo.
-echo Connecting to PostgreSQL...
-echo.
+python reset_database.py
 
-REM Drop and recreate database
-psql -U postgres -c "DROP DATABASE IF EXISTS multi_agent_ecommerce;"
 if errorlevel 1 (
     echo.
-    echo ERROR: Failed to drop database!
-    echo.
-    echo Possible reasons:
-    echo 1. PostgreSQL not running
-    echo 2. Wrong credentials
-    echo 3. Database in use (close all connections)
-    echo.
+    echo ERROR: Database reset failed!
     pause
     exit /b 1
 )
 
-echo Database dropped successfully.
-echo.
-
-psql -U postgres -c "CREATE DATABASE multi_agent_ecommerce;"
-if errorlevel 1 (
-    echo.
-    echo ERROR: Failed to create database!
-    pause
-    exit /b 1
-)
-
-echo Database created successfully.
 echo.
 
 echo ========================================
