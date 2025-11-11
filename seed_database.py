@@ -307,7 +307,7 @@ def create_warehouses(session):
             manager_name="Warehouse Manager",
             capacity=10000,
             current_utilization=random.randint(3000, 8000),
-            status="active"
+            is_active=True
         )
         session.add(warehouse)
         warehouses.append(warehouse)
@@ -356,11 +356,7 @@ def create_customers(session, users):
     for user in customer_users:
         customer = Customer(
             user_id=user.id,
-            name=f"{user.first_name} {user.last_name}",
-            email=user.email,
-            phone=user.phone,
-            customer_type="individual",
-            status="active",
+            customer_group="individual",
             total_spent=Decimal("0.00"),
             total_orders=0,
             created_at=user.created_at
