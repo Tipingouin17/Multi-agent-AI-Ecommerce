@@ -51,7 +51,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Check npm
-npm --version 2>&1
+call npm --version 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: npm is not installed or not in PATH
     pause
