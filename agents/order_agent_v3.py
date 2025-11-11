@@ -448,6 +448,103 @@ def get_order_stats(
         logger.error(f"Error getting order stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/analytics/kpis")
+def get_merchant_kpis(
+    timeRange: str = Query("7d", regex="^(7d|30d|90d|1y)$"),
+    merchant_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Get merchant KPIs for dashboard"""
+    try:
+        from datetime import timedelta
+        
+        # Parse time range
+        days_map = {"7d": 7, "30d": 30, "90d": 90, "1y": 365}
+        days = days_map.get(timeRange, 7)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        # Build query
+        query = db.query(Order).filter(Order.created_at >= start_date)
+        if merchant_id:
+            query = query.filter(Order.merchant_id == merchant_id)
+        
+        # Calculate current period metrics
+        orders = query.all()
+        total_orders = len(orders)
+        
+        # Calculate revenue (excluding cancelled orders)
+        active_orders = [o for o in orders if o.status != "cancelled"]
+        total_sales = sum(float(o.total or 0) for o in active_orders)
+        
+        # Calculate average order value
+        average_order_value = total_sales / len(active_orders) if active_orders else 0
+        
+        # Calculate conversion rate (simplified - would need visit data for real calculation)
+        conversion_rate = 3.45  # Mock value - would need analytics integration
+        
+        # Calculate growth (compare to previous period)
+        prev_start_date = start_date - timedelta(days=days)
+        prev_query = db.query(Order).filter(
+            Order.created_at >= prev_start_date,
+            Order.created_at < start_date
+        )
+        if merchant_id:
+            prev_query = prev_query.filter(Order.merchant_id == merchant_id)
+        
+        prev_orders = prev_query.all()
+        prev_active_orders = [o for o in prev_orders if o.status != "cancelled"]
+        prev_total_sales = sum(float(o.total or 0) for o in prev_active_orders)
+        prev_total_orders = len(prev_orders)
+        
+        # Calculate growth percentages
+        sales_growth = ((total_sales - prev_total_sales) / prev_total_sales * 100) if prev_total_sales > 0 else 0
+        orders_growth = ((total_orders - prev_total_orders) / prev_total_orders * 100) if prev_total_orders > 0 else 0
+        
+        return {
+            "totalSales": round(total_sales, 2),
+            "totalOrders": total_orders,
+            "averageOrderValue": round(average_order_value, 2),
+            "conversionRate": conversion_rate,
+            "salesGrowth": round(sales_growth, 2),
+            "ordersGrowth": round(orders_growth, 2)
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting merchant KPIs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/orders/recent")
+def get_recent_orders_simple(
+    limit: int = Query(10, ge=1, le=50),
+    merchant_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Get recent orders (simple path for frontend compatibility)"""
+    try:
+        query = db.query(Order).order_by(desc(Order.created_at))
+        
+        if merchant_id:
+            query = query.filter(Order.merchant_id == merchant_id)
+        
+        orders = query.limit(limit).all()
+        
+        # Format for frontend
+        formatted_orders = []
+        for order in orders:
+            formatted_orders.append({
+                "id": f"ORD-{order.id}",
+                "customer": order.customer.name if order.customer else "Unknown",
+                "total": float(order.total or 0),
+                "status": order.status,
+                "created_at": order.created_at.isoformat() if order.created_at else None
+            })
+        
+        return formatted_orders
+    
+    except Exception as e:
+        logger.error(f"Error getting recent orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/orders/recent")
 def get_recent_orders(
     limit: int = Query(10, ge=1, le=50),

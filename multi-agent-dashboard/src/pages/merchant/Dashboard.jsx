@@ -182,7 +182,6 @@ function Dashboard() {
                     <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                     <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marketplace</th>
                     <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -190,9 +189,9 @@ function Dashboard() {
                   {recentOrders.map(order => (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="py-3 px-4 whitespace-nowrap">{order.id}</td>
-                      <td className="py-3 px-4 whitespace-nowrap">{formatDate(order.date)}</td>
+                      <td className="py-3 px-4 whitespace-nowrap">{formatDate(order.created_at)}</td>
                       <td className="py-3 px-4 whitespace-nowrap">{order.customer}</td>
-                      <td className="py-3 px-4 whitespace-nowrap">{formatCurrency(order.amount)}</td>
+                      <td className="py-3 px-4 whitespace-nowrap">{formatCurrency(order.total)}</td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           order.status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -203,7 +202,6 @@ function Dashboard() {
                           {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                         </span>
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap">{order.marketplace}</td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         <Link to={`/merchant/orders/${order.id}`} className="text-blue-500 hover:text-blue-700 mr-3">
                           View
@@ -264,14 +262,14 @@ function Dashboard() {
               </div>
               
               <div className="space-y-4">
-                {marketplacePerformance.map(marketplace => (
-                  <div key={marketplace.id} className="flex items-center justify-between">
+                {marketplacePerformance.map((marketplace, index) => (
+                  <div key={marketplace.marketplace || index} className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <img src={marketplace.icon} alt={marketplace.name} className="w-8 h-8 mr-3" />
-                      <span className="font-medium text-gray-900">{marketplace.name}</span>
+                      <span className="font-medium text-gray-900">{marketplace.marketplace}</span>
+                      <span className="ml-2 text-sm text-gray-500">({marketplace.orders} orders)</span>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span className="font-medium text-gray-900">{formatCurrency(marketplace.revenue)}</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(marketplace.sales)}</span>
                       <span className={`text-sm ${marketplace.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {marketplace.growth >= 0 ? '↑' : '↓'} {Math.abs(marketplace.growth)}%
                       </span>

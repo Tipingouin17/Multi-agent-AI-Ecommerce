@@ -8,24 +8,47 @@
 import axios from 'axios'
 
 // Base configuration for different agent services
-// Port assignments match actual agent startup configuration
+// Port assignments match actual agent startup configuration from StartAllAgents.bat
 const AGENT_PORTS = {
-  order: 8001,
-  inventory: 8002,
-  product: 8003,
-  payment: 8004,
-  warehouse: 8005,
-  transport: 8006,
-  marketplace: 8007,
-  customer: 8008,
-  aftersales: 8009,
-  quality: 8010,
-  backoffice: 8011,
-  fraud: 8012,
-  documents: 8013,
-  monitoring: 8015,
-  knowledge: 8020,
-  risk: 8021
+  // Core Business Agents
+  order: 8000,              // order_agent_v3.py
+  product: 8001,            // product_agent_v3.py
+  inventory: 8002,          // inventory_agent_v3.py
+  marketplace: 8003,        // marketplace_connector_v3.py
+  payment: 8004,            // payment_agent_v3.py
+  pricing: 8005,            // dynamic_pricing_v3.py
+  carrier: 8006,            // carrier_agent_v3.py
+  customer: 8007,           // customer_agent_v3.py
+  warehouse: 8008,          // warehouse_agent_v3.py
+  returns: 8009,            // returns_agent_v3.py
+  fraud: 8010,              // fraud_detection_agent_v3.py
+  risk: 8011,               // risk_anomaly_detection_v3.py
+  knowledge: 8012,          // knowledge_management_agent_v3.py
+  analytics: 8013,          // analytics_agent_v3.py
+  recommendation: 8014,     // recommendation_agent_v3.py
+  transport: 8015,          // transport_management_v3.py
+  documents: 8016,          // document_generation_agent_v3.py
+  support: 8018,            // support_agent_v3.py
+  communication: 8019,      // customer_communication_v3.py
+  promotion: 8020,          // promotion_agent_v3.py
+  aftersales: 8021,         // after_sales_agent_v3.py
+  infrastructure: 8022,     // infrastructure_v3.py
+  monitoring: 8023,         // monitoring_agent_v3.py
+  aimonitoring: 8024,       // ai_monitoring_agent_v3.py
+  d2c: 8026,                // d2c_ecommerce_agent_v3.py
+  backoffice: 8027,         // backoffice_agent_v3.py
+  quality: 8028,            // quality_control_agent_v3.py
+  // Feature Agents
+  replenishment: 8031,      // replenishment_agent_v3.py
+  inbound: 8032,            // inbound_management_agent_v3.py
+  fulfillment: 8033,        // fulfillment_agent_v3.py
+  carrierai: 8034,          // carrier_agent_ai_v3.py
+  rma: 8035,                // rma_agent_v3.py
+  advancedanalytics: 8036,  // advanced_analytics_agent_v3.py
+  forecasting: 8037,        // demand_forecasting_agent_v3.py
+  international: 8038,      // international_shipping_agent_v3.py
+  // System Gateway
+  gateway: 8100             // system_api_gateway_v3.py
 }
 
 const BASE_URL = 'http://localhost' || process.env.REACT_APP_API_BASE_URL 

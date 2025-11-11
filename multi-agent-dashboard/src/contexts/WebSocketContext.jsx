@@ -82,9 +82,9 @@ export const WebSocketProvider = ({ children }) => {
       }
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error)
+        console.warn('WebSocket error (real-time updates unavailable):', error)
         setConnectionStatus('error')
-        toast.error('WebSocket connection error')
+        // Don't show error toast - WebSocket is optional
       }
 
       ws.onclose = (event) => {
@@ -102,9 +102,10 @@ export const WebSocketProvider = ({ children }) => {
             connect()
           }, reconnectDelay * reconnectAttemptsRef.current)
           
-          toast.info(`Reconnecting... (${reconnectAttemptsRef.current}/${maxReconnectAttempts})`)
+          // Silent reconnection - don't spam user with notifications
         } else {
-          toast.error('Failed to connect to real-time updates')
+          console.log('WebSocket connection failed - continuing without real-time updates')
+          // Don't show error toast - WebSocket is optional
         }
       }
 

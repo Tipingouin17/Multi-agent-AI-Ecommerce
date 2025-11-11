@@ -303,6 +303,45 @@ def get_warehouses(db: Session = Depends(get_db)):
         logger.error(f"Error getting warehouses: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/alerts")
+def get_alerts_simple(limit: int = Query(50, ge=1, le=100), db: Session = Depends(get_db)):
+    """Get inventory alerts for merchant dashboard (simple path)"""
+    try:
+        # Get low stock items
+        low_stock_items = db.query(Inventory).filter(
+            Inventory.quantity <= Inventory.reorder_point
+        ).order_by(Inventory.quantity).limit(limit).all()
+        
+        # Format for frontend
+        alerts = []
+        for item in low_stock_items:
+            product = db.query(Product).filter(Product.id == item.product_id).first()
+            
+            # Determine severity
+            if item.quantity <= item.reorder_point * 0.5:
+                severity = "critical"
+            elif item.quantity <= item.reorder_point * 0.75:
+                severity = "high"
+            else:
+                severity = "medium"
+            
+            alerts.append({
+                "id": f"INV-{item.id}",
+                "product": product.name if product else "Unknown Product",
+                "sku": product.sku if product else f"SKU-{item.product_id}",
+                "current_stock": item.quantity,
+                "reorder_point": item.reorder_point,
+                "severity": severity,
+                "message": "Stock critically low" if severity == "critical" else "Stock below reorder point"
+            })
+        
+        return alerts
+    
+    except Exception as e:
+        logger.error(f"Error getting inventory alerts: {e}")
+        # Return empty array on error to prevent frontend crashes
+        return []
+
 @app.get("/api/alerts")
 def get_alerts(status: Optional[str] = None, limit: int = Query(50, ge=1, le=100), db: Session = Depends(get_db)):
     """Get inventory-related alerts"""
