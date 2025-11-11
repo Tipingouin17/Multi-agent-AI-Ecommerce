@@ -1,0 +1,195 @@
+# Multi-Agent AI E-commerce Platform - Python Dependencies
+# Python 3.11+ required
+
+# Core Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
+
+# HTTP Clients
+requests==2.31.0
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Data Processing
+pandas==2.1.4
+numpy==1.26.2
+openpyxl==3.1.2
+
+# ML/AI Libraries
+scikit-learn==1.3.2
+statsmodels==0.14.1
+prophet==1.1.5
+
+# OpenAI Integration
+openai==1.6.1
+
+# PDF Processing
+PyPDF2==3.0.1
+pdf2image==1.16.3
+reportlab==4.0.7
+fpdf2==2.7.6
+
+# Document Processing
+python-docx==1.1.0
+python-pptx==0.6.23
+markdown==3.5.1
+
+# Image Processing
+Pillow==10.1.0
+
+# Data Validation
+email-validator==2.1.0
+python-multipart==0.0.6
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+
+# CORS
+python-cors==1.0.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Date/Time
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Utilities
+python-slugify==8.0.1
+shortuuid==1.0.11
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+httpx==0.25.2
+
+# Code Quality
+black==23.12.1
+flake8==6.1.0
+mypy==1.7.1
+
+# Logging
+loguru==0.7.2
+
+# Monitoring
+prometheus-client==0.19.0
+
+# Task Queue (Optional)
+celery==5.3.4
+redis==5.0.1
+
+# Message Queue (Optional)
+kafka-python==2.0.2
+
+# Excel/CSV
+xlsxwriter==3.1.9
+csv-diff==1.1
+
+# JSON
+ujson==5.9.0
+
+# XML
+lxml==4.9.4
+
+# Templating
+jinja2==3.1.2
+
+# Scheduling
+apscheduler==3.10.4
+
+# Rate Limiting
+slowapi==0.1.9
+
+# Caching
+cachetools==5.3.2
+
+# Timezone
+tzdata==2023.3
+
+# Cryptography
+cryptography==41.0.7
+
+# UUID
+uuid==1.30
+
+# HTTP Status
+http-status==0.2.1
+
+# Beautiful Soup (for web scraping if needed)
+beautifulsoup4==4.12.2
+
+# Faker (for test data generation)
+faker==21.0.0
+
+# Arrow (better datetime)
+arrow==1.3.0
+
+# Phonenumbers
+phonenumbers==8.13.27
+
+# Country Data
+pycountry==23.12.11
+
+# Currency Conversion
+forex-python==1.8
+
+# Barcode Generation
+python-barcode[images]==0.15.1
+
+# QR Code
+qrcode[pil]==7.4.2
+
+# Color Logging
+colorlog==6.8.0
+
+# Progress Bars
+tqdm==4.66.1
+
+# Click (CLI)
+click==8.1.7
+
+# Rich (Terminal Formatting)
+rich==13.7.0
+
+# Tabulate
+tabulate==0.9.0
+
+# Humanize
+humanize==4.9.0
+
+# Validators
+validators==0.22.0
+
+# Retry
+tenacity==8.2.3
+
+# Async Support
+asyncio==3.4.3
+aiofiles==23.2.1
+
+# WebSockets
+websockets==12.0
+
+# GraphQL (if needed)
+graphene==3.3
+
+# JWT
+PyJWT==2.8.0
+
+# OAuth
+authlib==1.3.0
+
+# LDAP (if needed)
+python-ldap==3.4.4
+
+# S3/Cloud Storage
+boto3==1.34.7
