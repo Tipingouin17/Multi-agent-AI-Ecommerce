@@ -36,7 +36,13 @@ DB_CONFIG = {
 }
 
 # OpenAI client for AI rate extraction
-openai_client = OpenAI()
+# Initialize with API key from environment or use None for features that don't require it
+try:
+    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+except Exception as e:
+    print(f"Warning: OpenAI client initialization failed: {e}")
+    print("AI rate card extraction will not be available. Set OPENAI_API_KEY environment variable to enable.")
+    openai_client = None
 
 def get_db_connection():
     """Create database connection"""
@@ -160,6 +166,14 @@ def simulate_carrier_rate(carrier_code: str, service_type: str, weight: float, z
 
 async def extract_rates_with_ai(file_content: bytes, file_type: str, carrier_name: str) -> dict:
     """Use AI to extract rate information from uploaded documents"""
+    
+    # Check if OpenAI client is available
+    if openai_client is None:
+        return {
+            "success": False,
+            "error": "OpenAI API key not configured. Set OPENAI_API_KEY environment variable to enable AI rate extraction.",
+            "data": None
+        }
     
     prompt = f"""You are a shipping rate card extraction specialist. Extract structured rate information from this {carrier_name} rate card document.
 

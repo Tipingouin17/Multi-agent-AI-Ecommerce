@@ -27,8 +27,8 @@ set agent_name=%agent_file:~0,-3%
 
 echo Starting %agent_name% on port %port%...
 cd /d "%SCRIPT_DIR%"
-start /B "" python "%AGENTS_DIR%\%agent_file%" > "%LOGS_DIR%\%agent_name%.log" 2>&1
 set "API_PORT=%port%"
+start /B "" cmd /c "set API_PORT=%port% && python "%AGENTS_DIR%\%agent_file%" > "%LOGS_DIR%\%agent_name%.log" 2>&1"
 timeout /t 1 /nobreak > nul
 echo   Started successfully
 echo.

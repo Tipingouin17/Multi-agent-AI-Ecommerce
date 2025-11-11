@@ -15,7 +15,14 @@ import json
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.arima.model import ARIMA
-from prophet import Prophet
+try:
+    from prophet import Prophet
+    PROPHET_AVAILABLE = True
+except ImportError:
+    print("Warning: Prophet library not installed. Prophet forecasting will not be available.")
+    print("Install with: pip install prophet")
+    PROPHET_AVAILABLE = False
+    Prophet = None
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import warnings
 warnings.filterwarnings('ignore')
@@ -206,6 +213,12 @@ def forecast_arima(model, historical_data: pd.DataFrame, horizon_days: int = 30)
 
 def train_prophet_model(historical_data: pd.DataFrame):
     """Train Prophet model"""
+    if not PROPHET_AVAILABLE:
+        raise HTTPException(
+            status_code=503, 
+            detail="Prophet library not installed. Install with: pip install prophet"
+        )
+    
     try:
         # Prepare data for Prophet (requires 'ds' and 'y' columns)
         prophet_data = historical_data.rename(columns={

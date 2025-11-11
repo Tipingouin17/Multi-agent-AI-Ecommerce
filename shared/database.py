@@ -518,3 +518,60 @@ async def check_database_connection() -> bool:
     except Exception as e:
         logger.error("Database connection check failed", error=str(e))
         return False
+
+
+# Legacy compatibility function for old agents
+def get_db_connection():
+    """
+    Legacy function for backward compatibility with old agents.
+    Returns a raw psycopg2 connection.
+    
+    WARNING: This is deprecated. New code should use DatabaseManager instead.
+    """
+    import psycopg2
+    from .models import DatabaseConfig
+    
+    config = DatabaseConfig()
+    
+    # Parse the database URL to extract connection parameters
+    # Format: postgresql://user:password@host:port/database
+    url = config.url
+    if url.startswith('postgresql://'):
+        url = url[13:]  # Remove 'postgresql://'
+    
+    # Split user:password@host:port/database
+    if '@' in url:
+        auth, location = url.split('@')
+        if ':' in auth:
+            user, password = auth.split(':', 1)
+        else:
+            user = auth
+            password = ''
+    else:
+        user = 'postgres'
+        password = ''
+        location = url
+    
+    # Split host:port/database
+    if '/' in location:
+        host_port, database = location.split('/', 1)
+    else:
+        host_port = location
+        database = 'ecommerce_db'
+    
+    if ':' in host_port:
+        host, port = host_port.split(':')
+    else:
+        host = host_port
+        port = '5432'
+    
+    # Create connection
+    conn = psycopg2.connect(
+        host=host,
+        port=port,
+        database=database,
+        user=user,
+        password=password
+    )
+    
+    return conn
