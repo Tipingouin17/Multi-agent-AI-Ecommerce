@@ -507,12 +507,11 @@ def create_orders(session, customers, products, addresses, merchants):
             order_item = OrderItem(
                 order=order,
                 product_id=product.id,
-                product_name=product.name,
-                product_sku=product.sku,
+                sku=product.sku,
+                name=product.name,
                 quantity=quantity,
                 unit_price=unit_price,
-                total_price=item_total,
-                currency="USD"
+                total_price=item_total
             )
             order_items.append(order_item)
         
