@@ -15,11 +15,13 @@ echo.
 set /a HEALTHY=0
 set /a TOTAL=37
 
-echo Core Business Agents (Ports 8000-8028):
+echo Core Business Agents:
 echo.
 
-REM Check core agents (8000-8028)
-for /L %%p in (8000,1,8028) do (
+REM Define actual core agent ports (excluding gaps at 8017, 8025)
+set "CORE_PORTS=8000 8001 8002 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8013 8014 8015 8016 8018 8019 8020 8021 8022 8023 8024 8026 8027 8028"
+
+for %%p in (%CORE_PORTS%) do (
     netstat -an | findstr ":%%p " | findstr "LISTENING" >nul 2>nul
     if !ERRORLEVEL! EQU 0 (
         echo [OK] Port %%p - Agent running
@@ -30,7 +32,7 @@ for /L %%p in (8000,1,8028) do (
 )
 
 echo.
-echo Feature Agents (Ports 8031-8038):
+echo Feature Agents (Priority 1 ^& 2):
 echo.
 
 REM Check feature agents (8031-8038)
@@ -56,7 +58,9 @@ if !HEALTHY! EQU %TOTAL% (
     set /a MISSING=%TOTAL%-!HEALTHY!
     echo ⚠ Warning: !MISSING! agents are not running
     echo.
-    echo To start all agents, run: StartAllAgents.bat
+    echo To view agent logs: dir logs\agents
+    echo To restart all agents: StartAllAgents.bat
+    echo To stop all agents: StopAllAgents.bat
 )
 
 echo.
