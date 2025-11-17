@@ -584,14 +584,159 @@ def sync_all_products(
 @app.get("/products/{product_id}/reviews")
 def get_product_reviews(
     product_id: int,
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    sort_by: str = Query('recent', regex='^(recent|helpful|rating_high|rating_low)$'),
     db: Session = Depends(get_db)
 ):
     """Get reviews for a product"""
     try:
-        # TODO: Implement reviews table and logic
-        return {"reviews": [], "average_rating": 0, "total_reviews": 0}
+        from shared.db_models import Review
+        
+        # Verify product exists
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Build query
+        query = db.query(Review).filter(Review.product_id == product_id)
+        
+        # Apply sorting
+        if sort_by == 'recent':
+            query = query.order_by(Review.created_at.desc())
+        elif sort_by == 'helpful':
+            query = query.order_by(Review.helpful_count.desc())
+        elif sort_by == 'rating_high':
+            query = query.order_by(Review.rating.desc())
+        elif sort_by == 'rating_low':
+            query = query.order_by(Review.rating.asc())
+        
+        # Get total count
+        total_reviews = query.count()
+        
+        # Get paginated reviews
+        reviews = query.offset(offset).limit(limit).all()
+        
+        # Calculate average rating
+        avg_rating = db.query(func.avg(Review.rating)).filter(
+            Review.product_id == product_id
+        ).scalar() or 0
+        
+        # Calculate rating distribution
+        rating_dist = {}
+        for i in range(1, 6):
+            count = db.query(func.count(Review.id)).filter(
+                Review.product_id == product_id,
+                Review.rating == i
+            ).scalar()
+            rating_dist[str(i)] = count
+        
+        return {
+            "reviews": [review.to_dict() for review in reviews],
+            "average_rating": round(float(avg_rating), 2),
+            "total_reviews": total_reviews,
+            "rating_distribution": rating_dist,
+            "pagination": {
+                "limit": limit,
+                "offset": offset,
+                "total": total_reviews
+            }
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting product reviews: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/products/{product_id}/reviews")
+def create_product_review(
+    product_id: int,
+    rating: int = Query(..., ge=1, le=5),
+    title: Optional[str] = None,
+    comment: Optional[str] = None,
+    customer_id: int = Query(...),
+    verified_purchase: bool = False,
+    db: Session = Depends(get_db)
+):
+    """Create a review for a product"""
+    try:
+        from shared.db_models import Review, Customer
+        
+        # Verify product exists
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Verify customer exists
+        customer = db.query(Customer).filter(Customer.id == customer_id).first()
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        
+        # Check if customer already reviewed this product
+        existing_review = db.query(Review).filter(
+            Review.product_id == product_id,
+            Review.customer_id == customer_id
+        ).first()
+        
+        if existing_review:
+            raise HTTPException(status_code=400, detail="You have already reviewed this product")
+        
+        # Create review
+        review = Review(
+            product_id=product_id,
+            customer_id=customer_id,
+            rating=rating,
+            title=title,
+            comment=comment,
+            verified_purchase=verified_purchase
+        )
+        
+        db.add(review)
+        
+        # Update product rating
+        avg_rating = db.query(func.avg(Review.rating)).filter(
+            Review.product_id == product_id
+        ).scalar() or 0
+        review_count = db.query(func.count(Review.id)).filter(
+            Review.product_id == product_id
+        ).scalar()
+        
+        product.rating = round(float(avg_rating), 2)
+        product.review_count = review_count + 1
+        
+        db.commit()
+        db.refresh(review)
+        
+        return {"success": True, "review": review.to_dict()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating review: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/reviews/{review_id}/helpful")
+def mark_review_helpful(
+    review_id: int,
+    db: Session = Depends(get_db)
+):
+    """Mark a review as helpful"""
+    try:
+        from shared.db_models import Review
+        
+        review = db.query(Review).filter(Review.id == review_id).first()
+        if not review:
+            raise HTTPException(status_code=404, detail="Review not found")
+        
+        review.helpful_count += 1
+        db.commit()
+        
+        return {"success": True, "helpful_count": review.helpful_count}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error marking review helpful: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/categories")

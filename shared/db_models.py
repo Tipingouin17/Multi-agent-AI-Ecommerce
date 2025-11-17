@@ -1156,3 +1156,181 @@ class ReceivingDiscrepancy(Base):
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+# ============================================================================
+# SHOPPING CART MODELS
+# ============================================================================
+
+class Cart(Base):
+    """Shopping cart for customers"""
+    __tablename__ = "carts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    session_id = Column(String(255), nullable=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "customer_id": self.customer_id,
+            "session_id": self.session_id,
+            "items": [item.to_dict() for item in self.items] if self.items else [],
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class CartItem(Base):
+    """Items in shopping cart"""
+    __tablename__ = "cart_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    cart_id = Column(Integer, ForeignKey("carts.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    price = Column(DECIMAL(10, 2), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    cart = relationship("Cart", back_populates="items")
+    product = relationship("Product")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "cart_id": self.cart_id,
+            "product_id": self.product_id,
+            "product": self.product.to_dict() if self.product else None,
+            "quantity": self.quantity,
+            "price": float(self.price) if self.price else 0,
+            "subtotal": float(self.price * self.quantity) if self.price else 0,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+# ============================================================================
+# REVIEWS MODEL
+# ============================================================================
+
+class Review(Base):
+    """Product reviews"""
+    __tablename__ = "reviews"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
+    rating = Column(Integer, nullable=False)  # 1-5
+    title = Column(String(255), nullable=True)
+    comment = Column(Text, nullable=True)
+    verified_purchase = Column(Boolean, default=False)
+    helpful_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    product = relationship("Product")
+    customer = relationship("Customer")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "product_id": self.product_id,
+            "customer_id": self.customer_id,
+            "rating": self.rating,
+            "title": self.title,
+            "comment": self.comment,
+            "verified_purchase": self.verified_purchase,
+            "helpful_count": self.helpful_count,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+# ============================================================================
+# PROMOTIONS MODEL
+# ============================================================================
+
+class Promotion(Base):
+    """Promotional campaigns"""
+    __tablename__ = "promotions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    code = Column(String(50), unique=True, nullable=False, index=True)
+    discount_type = Column(String(20), nullable=False)  # percentage, fixed
+    discount_value = Column(DECIMAL(10, 2), nullable=False)
+    min_order_value = Column(DECIMAL(10, 2), nullable=True)
+    valid_from = Column(DateTime, nullable=False)
+    valid_until = Column(DateTime, nullable=False)
+    max_uses = Column(Integer, nullable=True)
+    uses_count = Column(Integer, default=0)
+    status = Column(String(20), default='active')  # active, inactive, expired
+    banner_url = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "code": self.code,
+            "discount_type": self.discount_type,
+            "discount_value": float(self.discount_value) if self.discount_value else 0,
+            "min_order_value": float(self.min_order_value) if self.min_order_value else None,
+            "valid_from": self.valid_from.isoformat() if self.valid_from else None,
+            "valid_until": self.valid_until.isoformat() if self.valid_until else None,
+            "max_uses": self.max_uses,
+            "uses_count": self.uses_count,
+            "status": self.status,
+            "banner_url": self.banner_url,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+# ============================================================================
+# PAYMENT METHODS MODEL
+# ============================================================================
+
+class PaymentMethod(Base):
+    """Saved payment methods"""
+    __tablename__ = "payment_methods"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
+    type = Column(String(50), nullable=False)  # card, paypal, etc
+    provider = Column(String(50), nullable=True)  # visa, mastercard, etc
+    last_four = Column(String(4), nullable=True)
+    expiry_month = Column(Integer, nullable=True)
+    expiry_year = Column(Integer, nullable=True)
+    cardholder_name = Column(String(255), nullable=True)
+    is_default = Column(Boolean, default=False)
+    token = Column(String(255), nullable=True)  # Payment gateway token
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    customer = relationship("Customer")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "customer_id": self.customer_id,
+            "type": self.type,
+            "provider": self.provider,
+            "last_four": self.last_four,
+            "expiry_month": self.expiry_month,
+            "expiry_year": self.expiry_year,
+            "cardholder_name": self.cardholder_name,
+            "is_default": self.is_default,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

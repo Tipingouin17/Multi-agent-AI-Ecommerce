@@ -573,18 +573,43 @@ def get_recent_orders(
 @app.get("/cart")
 def get_cart(
     customer_id: Optional[int] = Query(None),
+    session_id: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """Get customer's shopping cart"""
     try:
-        # For now, return empty cart structure
-        # TODO: Implement cart table in database
+        from shared.db_models import Cart, CartItem
+        
+        # Find or create cart
+        cart = None
+        if customer_id:
+            cart = db.query(Cart).filter(Cart.customer_id == customer_id).first()
+        elif session_id:
+            cart = db.query(Cart).filter(Cart.session_id == session_id).first()
+        
+        if not cart:
+            # Return empty cart
+            return {
+                "items": [],
+                "subtotal": 0,
+                "tax": 0,
+                "shipping": 10.00,
+                "total": 10.00
+            }
+        
+        # Calculate totals
+        subtotal = sum(float(item.price) * item.quantity for item in cart.items)
+        tax = subtotal * 0.10  # 10% tax
+        shipping = 10.00 if subtotal > 0 else 0
+        total = subtotal + tax + shipping
+        
         return {
-            "items": [],
-            "total": 0,
-            "subtotal": 0,
-            "tax": 0,
-            "shipping": 0
+            "id": cart.id,
+            "items": [item.to_dict() for item in cart.items],
+            "subtotal": round(subtotal, 2),
+            "tax": round(tax, 2),
+            "shipping": shipping,
+            "total": round(total, 2)
         }
     except Exception as e:
         logger.error(f"Error getting cart: {e}")
@@ -595,13 +620,60 @@ def add_to_cart(
     product_id: int,
     quantity: int = 1,
     customer_id: Optional[int] = None,
+    session_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Add item to shopping cart"""
     try:
-        # TODO: Implement cart functionality
-        return {"success": True, "message": "Item added to cart"}
+        from shared.db_models import Cart, CartItem
+        
+        # Verify product exists
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Find or create cart
+        cart = None
+        if customer_id:
+            cart = db.query(Cart).filter(Cart.customer_id == customer_id).first()
+            if not cart:
+                cart = Cart(customer_id=customer_id)
+                db.add(cart)
+                db.flush()
+        elif session_id:
+            cart = db.query(Cart).filter(Cart.session_id == session_id).first()
+            if not cart:
+                cart = Cart(session_id=session_id)
+                db.add(cart)
+                db.flush()
+        else:
+            raise HTTPException(status_code=400, detail="customer_id or session_id required")
+        
+        # Check if item already in cart
+        existing_item = db.query(CartItem).filter(
+            CartItem.cart_id == cart.id,
+            CartItem.product_id == product_id
+        ).first()
+        
+        if existing_item:
+            # Update quantity
+            existing_item.quantity += quantity
+        else:
+            # Add new item
+            cart_item = CartItem(
+                cart_id=cart.id,
+                product_id=product_id,
+                quantity=quantity,
+                price=product.price
+            )
+            db.add(cart_item)
+        
+        db.commit()
+        return {"success": True, "message": "Item added to cart", "cart_id": cart.id}
+    except HTTPException:
+        raise
     except Exception as e:
+        db.rollback()
         logger.error(f"Error adding to cart: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -613,9 +685,24 @@ def update_cart_item(
 ):
     """Update cart item quantity"""
     try:
-        # TODO: Implement cart functionality
+        from shared.db_models import CartItem
+        
+        cart_item = db.query(CartItem).filter(CartItem.id == item_id).first()
+        if not cart_item:
+            raise HTTPException(status_code=404, detail="Cart item not found")
+        
+        if quantity <= 0:
+            # Remove item if quantity is 0 or negative
+            db.delete(cart_item)
+        else:
+            cart_item.quantity = quantity
+        
+        db.commit()
         return {"success": True, "message": "Cart item updated"}
+    except HTTPException:
+        raise
     except Exception as e:
+        db.rollback()
         logger.error(f"Error updating cart item: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -626,21 +713,66 @@ def remove_cart_item(
 ):
     """Remove item from cart"""
     try:
-        # TODO: Implement cart functionality
+        from shared.db_models import CartItem
+        
+        cart_item = db.query(CartItem).filter(CartItem.id == item_id).first()
+        if not cart_item:
+            raise HTTPException(status_code=404, detail="Cart item not found")
+        
+        db.delete(cart_item)
+        db.commit()
         return {"success": True, "message": "Item removed from cart"}
+    except HTTPException:
+        raise
     except Exception as e:
+        db.rollback()
         logger.error(f"Error removing cart item: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/cart/apply-coupon")
 def apply_coupon(
     couponCode: str,
+    cart_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """Apply coupon code to cart"""
     try:
-        # TODO: Implement coupon functionality
-        return {"success": True, "message": "Coupon applied", "discount": 0}
+        from shared.db_models import Promotion
+        
+        # Find promotion by code
+        promotion = db.query(Promotion).filter(
+            Promotion.code == couponCode,
+            Promotion.status == 'active'
+        ).first()
+        
+        if not promotion:
+            raise HTTPException(status_code=404, detail="Invalid coupon code")
+        
+        # Check if promotion is valid
+        now = datetime.utcnow()
+        if now < promotion.valid_from or now > promotion.valid_until:
+            raise HTTPException(status_code=400, detail="Coupon has expired")
+        
+        if promotion.max_uses and promotion.uses_count >= promotion.max_uses:
+            raise HTTPException(status_code=400, detail="Coupon usage limit reached")
+        
+        # Calculate discount
+        discount = 0
+        if promotion.discount_type == 'percentage':
+            # Discount will be calculated on frontend based on cart total
+            discount = float(promotion.discount_value)
+        else:  # fixed
+            discount = float(promotion.discount_value)
+        
+        return {
+            "success": True,
+            "message": "Coupon applied successfully",
+            "discount": discount,
+            "discount_type": promotion.discount_type,
+            "promotion": promotion.to_dict()
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error applying coupon: {e}")
         raise HTTPException(status_code=500, detail=str(e))
