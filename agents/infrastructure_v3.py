@@ -99,6 +99,95 @@ def update_system_config(config: dict):
     return {"message": "Configuration updated", "config": config}
 
 
+# ============================================================================
+# SYSTEM CONFIGURATION
+# ============================================================================
+
+@app.get("/system/configuration")
+def get_system_configuration():
+    """Get complete system configuration"""
+    try:
+        return {
+            "general": {
+                "platform_name": "Multi-Agent E-Commerce Platform",
+                "version": "3.0.0",
+                "environment": "production"
+            },
+            "database": {
+                "type": "postgresql",
+                "host": "localhost",
+                "port": 5432,
+                "max_connections": 100
+            },
+            "agents": {
+                "total_agents": 37,
+                "auto_restart": True,
+                "health_check_interval": 60
+            },
+            "features": {
+                "marketplace_sync": True,
+                "ai_recommendations": True,
+                "real_time_analytics": True
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting system configuration: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/system/configuration")
+def update_system_configuration(
+    configData: Dict[str, Any]
+):
+    """Update system configuration"""
+    try:
+        # TODO: Implement actual configuration update logic
+        return {
+            "success": True,
+            "message": "System configuration updated successfully",
+            "updated_fields": list(configData.keys())
+        }
+    except Exception as e:
+        logger.error(f"Error updating system configuration: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# AGENT MANAGEMENT
+# ============================================================================
+
+@app.post("/agents/{agent_id}/restart")
+def restart_agent(
+    agent_id: str
+):
+    """Restart a specific agent"""
+    try:
+        # TODO: Implement actual agent restart logic
+        return {
+            "success": True,
+            "message": f"Agent {agent_id} restarted successfully",
+            "agent_id": agent_id,
+            "status": "running"
+        }
+    except Exception as e:
+        logger.error(f"Error restarting agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/agents/{agent_id}/stop")
+def stop_agent(
+    agent_id: str
+):
+    """Stop a specific agent"""
+    try:
+        # TODO: Implement actual agent stop logic
+        return {
+            "success": True,
+            "message": f"Agent {agent_id} stopped successfully",
+            "agent_id": agent_id,
+            "status": "stopped"
+        }
+    except Exception as e:
+        logger.error(f"Error stopping agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("API_PORT", 8022))

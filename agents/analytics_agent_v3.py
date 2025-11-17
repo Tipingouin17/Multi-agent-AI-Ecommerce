@@ -1533,3 +1533,127 @@ async def get_warehouse_efficiency(timeRange: str = "30d"):
 logger.info("Analytics agent v3 initialized successfully with 36 endpoints")
 logger.info("Listening on port 8031")
 logger.info("Phase 1-3 analytics endpoints ready")
+
+# ============================================================================
+# ADDITIONAL ANALYTICS ENDPOINTS
+# ============================================================================
+
+@app.get("/customer-analytics")
+async def get_customer_analytics(
+    params: Optional[str] = Query(None),
+    timeRange: str = "30d"
+):
+    """Get customer analytics and insights"""
+    try:
+        # TODO: Implement real customer analytics from database
+        return {
+            "totalCustomers": 15234,
+            "newCustomers": 342,
+            "activeCustomers": 8912,
+            "churnRate": 2.3,
+            "avgLifetimeValue": 1250.50,
+            "avgOrderValue": 85.25,
+            "repeatCustomerRate": 42.5,
+            "customerSatisfaction": 4.6,
+            "topCustomers": [
+                {"id": 1, "name": "Customer A", "totalSpent": 15420, "orders": 45},
+                {"id": 2, "name": "Customer B", "totalSpent": 12350, "orders": 38},
+                {"id": 3, "name": "Customer C", "totalSpent": 10890, "orders": 32}
+            ],
+            "segmentation": {
+                "vip": 234,
+                "regular": 8456,
+                "new": 342,
+                "inactive": 6202
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting customer analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/inventory-analytics")
+async def get_inventory_analytics(
+    params: Optional[str] = Query(None),
+    timeRange: str = "30d"
+):
+    """Get inventory analytics and insights"""
+    try:
+        # TODO: Implement real inventory analytics from database
+        return {
+            "totalProducts": 1245,
+            "totalValue": 458920.50,
+            "lowStockItems": 23,
+            "outOfStockItems": 5,
+            "turnoverRate": 6.2,
+            "avgStockDays": 45,
+            "deadStock": 12,
+            "fastMovingItems": [
+                {"id": 1, "name": "Product A", "sold": 456, "turnover": 12.3},
+                {"id": 2, "name": "Product B", "sold": 389, "turnover": 10.8},
+                {"id": 3, "name": "Product C", "sold": 342, "turnover": 9.5}
+            ],
+            "slowMovingItems": [
+                {"id": 100, "name": "Product X", "sold": 3, "turnover": 0.2},
+                {"id": 101, "name": "Product Y", "sold": 5, "turnover": 0.4}
+            ],
+            "warehouseUtilization": {
+                "warehouse1": 87,
+                "warehouse2": 92,
+                "warehouse3": 78
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting inventory analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/marketplace-analytics")
+async def get_marketplace_analytics(
+    params: Optional[str] = Query(None),
+    timeRange: str = "30d"
+):
+    """Get marketplace performance analytics"""
+    try:
+        # TODO: Implement real marketplace analytics from database
+        return {
+            "totalMarketplaces": 5,
+            "activeListings": 1245,
+            "totalRevenue": 125430.50,
+            "avgConversionRate": 3.2,
+            "marketplaces": [
+                {
+                    "name": "Amazon",
+                    "revenue": 65420,
+                    "orders": 1234,
+                    "conversionRate": 4.5,
+                    "avgOrderValue": 53.02,
+                    "fees": 9813
+                },
+                {
+                    "name": "eBay",
+                    "revenue": 38920,
+                    "orders": 892,
+                    "conversionRate": 3.2,
+                    "avgOrderValue": 43.63,
+                    "fees": 5838
+                },
+                {
+                    "name": "Direct",
+                    "revenue": 21090,
+                    "orders": 456,
+                    "conversionRate": 2.1,
+                    "avgOrderValue": 46.25,
+                    "fees": 0
+                }
+            ],
+            "topProducts": [
+                {"id": 1, "name": "Product A", "marketplace": "Amazon", "sold": 234},
+                {"id": 2, "name": "Product B", "marketplace": "eBay", "sold": 189},
+                {"id": 3, "name": "Product C", "marketplace": "Amazon", "sold": 156}
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error getting marketplace analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+logger.info("Additional analytics endpoints added: customer, inventory, marketplace")
+logger.info("Total analytics endpoints: 39")

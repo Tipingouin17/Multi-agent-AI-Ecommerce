@@ -85,6 +85,53 @@ def get_trending_products(limit: int = 10, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/products/{product_id}/related")
+def get_related_products(
+    product_id: int,
+    limit: int = Query(6, ge=1, le=20),
+    db: Session = Depends(get_db)
+):
+    """Get related products for a specific product"""
+    try:
+        # Get the product
+        product = db.query(Product).filter(Product.id == product_id).first()
+        
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Get related products from same category
+        related = db.query(Product).filter(
+            Product.category_id == product.category_id,
+            Product.id != product_id,
+            Product.status == 'active'
+        ).limit(limit).all()
+        
+        return {"related_products": [p.to_dict() for p in related]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting related products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/recommendations")
+def get_general_recommendations(
+    customer_id: Optional[int] = Query(None),
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """Get personalized recommendations for customer or general recommendations"""
+    try:
+        # If customer_id provided, get personalized recommendations
+        # For now, return popular/featured products
+        products = db.query(Product).filter(
+            Product.status == 'active'
+        ).order_by(Product.rating.desc()).limit(limit).all()
+        
+        return {"recommendations": [p.to_dict() for p in products]}
+    except Exception as e:
+        logger.error(f"Error getting recommendations: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("API_PORT", 8014))

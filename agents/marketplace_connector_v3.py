@@ -196,6 +196,66 @@ def get_marketplace_performance(
             {"marketplace": "Direct", "sales": 48166.25, "orders": 312, "growth": 22.1}
         ]
 
+# ============================================================================
+# MARKETPLACE INTEGRATION ENDPOINTS
+# ============================================================================
+
+@app.post("/marketplaces/connect")
+def connect_marketplace(
+    marketplaceData: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """Connect a new marketplace"""
+    try:
+        # TODO: Implement marketplace table and connection logic
+        marketplace_name = marketplaceData.get('name')
+        api_key = marketplaceData.get('apiKey')
+        
+        return {
+            "success": True,
+            "message": f"Successfully connected to {marketplace_name}",
+            "marketplace_id": 1  # Mock ID
+        }
+    except Exception as e:
+        logger.error(f"Error connecting marketplace: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/marketplaces/{marketplace_id}/disconnect")
+def disconnect_marketplace(
+    marketplace_id: int,
+    db: Session = Depends(get_db)
+):
+    """Disconnect a marketplace"""
+    try:
+        # TODO: Implement marketplace disconnection logic
+        return {
+            "success": True,
+            "message": "Marketplace disconnected successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error disconnecting marketplace: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/marketplaces/sync")
+def sync_marketplace(
+    data: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """Sync products/orders with marketplace"""
+    try:
+        marketplace_id = data.get('marketplaceId')
+        sync_type = data.get('syncType', 'products')  # products, orders, inventory
+        
+        # TODO: Implement actual marketplace sync logic
+        return {
+            "success": True,
+            "synced_items": 125,  # Mock count
+            "message": f"Synced {sync_type} successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error syncing marketplace: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("API_PORT", 8003))

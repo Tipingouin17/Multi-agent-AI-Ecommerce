@@ -418,7 +418,120 @@ def get_customer_addresses(customer_id: int, db: Session = Depends(get_db)):
         logger.error(f"Error getting customer addresses: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================================================
+# CUSTOMER PROFILE ENDPOINTS
+# ============================================================================
+
+@app.get("/profile")
+def get_customer_profile(
+    customer_id: Optional[int] = Query(None),
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get customer profile"""
+    try:
+        if customer_id:
+            customer = db.query(Customer).filter(Customer.id == customer_id).first()
+        elif user_id:
+            customer = db.query(Customer).filter(Customer.user_id == user_id).first()
+        else:
+            raise HTTPException(status_code=400, detail="customer_id or user_id required")
+        
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        
+        return customer.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting customer profile: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/profile")
+def update_customer_profile(
+    profileData: Dict[str, Any],
+    customer_id: Optional[int] = Query(None),
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Update customer profile"""
+    try:
+        if customer_id:
+            customer = db.query(Customer).filter(Customer.id == customer_id).first()
+        elif user_id:
+            customer = db.query(Customer).filter(Customer.user_id == user_id).first()
+        else:
+            raise HTTPException(status_code=400, detail="customer_id or user_id required")
+        
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        
+        # Update allowed fields
+        allowed_fields = ['phone', 'preferences']
+        for field in allowed_fields:
+            if field in profileData:
+                setattr(customer, field, profileData[field])
+        
+        customer.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(customer)
+        
+        return customer.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating customer profile: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/addresses")
+def get_addresses(
+    customer_id: Optional[int] = Query(None),
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get customer addresses"""
+    try:
+        if user_id:
+            addresses = db.query(Address).filter(Address.user_id == user_id).all()
+        elif customer_id:
+            # Get user_id from customer
+            customer = db.query(Customer).filter(Customer.id == customer_id).first()
+            if not customer:
+                return {"addresses": []}
+            addresses = db.query(Address).filter(Address.user_id == customer.user_id).all()
+        else:
+            return {"addresses": []}
+        
+        return {"addresses": [addr.to_dict() for addr in addresses]}
+    except Exception as e:
+        logger.error(f"Error getting addresses: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/addresses/{address_id}")
+def delete_address(
+    address_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete customer address"""
+    try:
+        address = db.query(Address).filter(Address.id == address_id).first()
+        
+        if not address:
+            raise HTTPException(status_code=404, detail="Address not found")
+        
+        db.delete(address)
+        db.commit()
+        
+        return {"success": True, "message": "Address deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting address: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("API_PORT", 8008))
+    port = int(os.getenv("API_PORT", 8007))
     uvicorn.run(app, host="0.0.0.0", port=port)

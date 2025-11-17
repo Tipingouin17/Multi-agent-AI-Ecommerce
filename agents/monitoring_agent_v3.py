@@ -85,6 +85,53 @@ def get_metrics():
     }
 
 
+@app.get("/agents/{agent_id}/logs")
+def get_agent_logs(
+    agent_id: str,
+    limit: int = Query(100, ge=1, le=1000),
+    level: Optional[str] = Query(None),
+    params: Optional[str] = Query(None)
+):
+    """Get logs for a specific agent"""
+    try:
+        # TODO: Implement actual log retrieval from log files or database
+        # For now, return mock logs
+        mock_logs = [
+            {
+                "timestamp": "2025-11-17T10:30:45Z",
+                "level": "INFO",
+                "message": f"Agent {agent_id} started successfully"
+            },
+            {
+                "timestamp": "2025-11-17T10:31:12Z",
+                "level": "INFO",
+                "message": "Processing request"
+            },
+            {
+                "timestamp": "2025-11-17T10:31:15Z",
+                "level": "DEBUG",
+                "message": "Database connection established"
+            },
+            {
+                "timestamp": "2025-11-17T10:31:18Z",
+                "level": "INFO",
+                "message": "Request completed successfully"
+            }
+        ]
+        
+        # Filter by level if provided
+        if level:
+            mock_logs = [log for log in mock_logs if log['level'] == level.upper()]
+        
+        return {
+            "agent_id": agent_id,
+            "logs": mock_logs[:limit],
+            "total": len(mock_logs)
+        }
+    except Exception as e:
+        logger.error(f"Error getting agent logs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("API_PORT", 8023))

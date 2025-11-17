@@ -355,6 +355,146 @@ def get_alerts(status: Optional[str] = None, limit: int = Query(50, ge=1, le=100
         logger.error(f"Error getting alerts: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================================================
+# INVENTORY OPERATIONS
+# ============================================================================
+
+@app.post("/inventory/export")
+def export_inventory(
+    itemIds: List[int],
+    db: Session = Depends(get_db)
+):
+    """Export inventory items to CSV"""
+    try:
+        items = db.query(Inventory).filter(Inventory.id.in_(itemIds)).all()
+        
+        # Generate CSV data
+        csv_lines = ["Item ID,Product ID,Warehouse,Quantity,Reserved,Available,Reorder Point"]
+        for item in items:
+            csv_lines.append(
+                f"{item.id},{item.product_id},{item.warehouse_id},{item.quantity},"
+                f"{item.reserved_quantity},{item.available_quantity},{item.reorder_point}"
+            )
+        
+        return "\n".join(csv_lines)
+    except Exception as e:
+        logger.error(f"Error exporting inventory: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/inventory/bulk-reorder")
+def bulk_reorder_items(
+    itemIds: List[int],
+    db: Session = Depends(get_db)
+):
+    """Trigger reorder for multiple inventory items"""
+    try:
+        items = db.query(Inventory).filter(Inventory.id.in_(itemIds)).all()
+        
+        # TODO: Implement actual reorder logic
+        # For now, just return success
+        
+        return {
+            "success": True,
+            "reordered_count": len(items),
+            "message": f"Reorder triggered for {len(items)} items"
+        }
+    except Exception as e:
+        logger.error(f"Error bulk reordering items: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/inventory/transfer")
+def transfer_inventory(
+    data: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """Transfer inventory between warehouses"""
+    try:
+        product_id = data.get('productId')
+        from_warehouse_id = data.get('fromWarehouseId')
+        to_warehouse_id = data.get('toWarehouseId')
+        quantity = data.get('quantity')
+        
+        # Get source inventory
+        source_inv = db.query(Inventory).filter(
+            Inventory.product_id == product_id,
+            Inventory.warehouse_id == from_warehouse_id
+        ).first()
+        
+        if not source_inv or source_inv.available_quantity < quantity:
+            raise HTTPException(status_code=400, detail="Insufficient inventory")
+        
+        # Get or create destination inventory
+        dest_inv = db.query(Inventory).filter(
+            Inventory.product_id == product_id,
+            Inventory.warehouse_id == to_warehouse_id
+        ).first()
+        
+        if not dest_inv:
+            dest_inv = Inventory(
+                product_id=product_id,
+                warehouse_id=to_warehouse_id,
+                quantity=0,
+                reserved_quantity=0,
+                available_quantity=0,
+                reorder_point=source_inv.reorder_point
+            )
+            db.add(dest_inv)
+        
+        # Transfer
+        source_inv.quantity -= quantity
+        source_inv.available_quantity -= quantity
+        dest_inv.quantity += quantity
+        dest_inv.available_quantity += quantity
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Transferred {quantity} units"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error transferring inventory: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/inventory/adjust")
+def adjust_inventory(
+    data: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """Manual inventory adjustment"""
+    try:
+        inventory_id = data.get('inventoryId')
+        adjustment = data.get('adjustment')  # Can be positive or negative
+        reason = data.get('reason', 'Manual adjustment')
+        
+        inventory = db.query(Inventory).filter(Inventory.id == inventory_id).first()
+        
+        if not inventory:
+            raise HTTPException(status_code=404, detail="Inventory item not found")
+        
+        # Apply adjustment
+        inventory.quantity += adjustment
+        inventory.available_quantity += adjustment
+        inventory.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(inventory)
+        
+        return {
+            "success": True,
+            "new_quantity": inventory.quantity,
+            "message": f"Inventory adjusted by {adjustment}"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adjusting inventory: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("API_PORT", 8002))

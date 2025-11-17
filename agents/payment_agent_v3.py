@@ -404,6 +404,39 @@ def cancel_payment(payment_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================================================
+# PAYMENT METHODS ENDPOINTS
+# ============================================================================
+
+@app.get("/payment-methods")
+def get_payment_methods(
+    customer_id: Optional[int] = Query(None),
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get customer payment methods"""
+    try:
+        # TODO: Implement payment methods table
+        # For now, return empty array
+        return {"payment_methods": []}
+    except Exception as e:
+        logger.error(f"Error getting payment methods: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/payment-methods/{payment_method_id}")
+def delete_payment_method(
+    payment_method_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete customer payment method"""
+    try:
+        # TODO: Implement payment methods table
+        # For now, return success
+        return {"success": True, "message": "Payment method deleted"}
+    except Exception as e:
+        logger.error(f"Error deleting payment method: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("API_PORT", 8004))

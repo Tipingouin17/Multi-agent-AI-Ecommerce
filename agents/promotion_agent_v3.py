@@ -89,6 +89,41 @@ def get_promotion_stats():
     }
 
 
+@app.get("/active-promotions")
+def get_active_promotions(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """Get currently active promotions for customer portal"""
+    try:
+        # TODO: Implement promotions table
+        # For now, return mock active promotions
+        return {
+            "promotions": [
+                {
+                    "id": 1,
+                    "title": "Summer Sale",
+                    "description": "Get 20% off on all summer items",
+                    "discount_percent": 20,
+                    "code": "SUMMER20",
+                    "valid_until": "2025-08-31T23:59:59Z",
+                    "banner_url": "https://via.placeholder.com/800x200?text=Summer+Sale"
+                },
+                {
+                    "id": 2,
+                    "title": "Free Shipping",
+                    "description": "Free shipping on orders over $50",
+                    "discount_percent": 0,
+                    "code": "FREESHIP",
+                    "valid_until": "2025-12-31T23:59:59Z",
+                    "banner_url": "https://via.placeholder.com/800x200?text=Free+Shipping"
+                }
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error getting active promotions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("API_PORT", 8020))
