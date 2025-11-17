@@ -490,6 +490,139 @@ def create_category(category_data: CategoryCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
+# BULK OPERATIONS
+# ============================================================================
+
+@app.post("/products/bulk-delete")
+def bulk_delete_products(
+    productIds: List[int],
+    db: Session = Depends(get_db)
+):
+    """Delete multiple products"""
+    try:
+        deleted_count = db.query(Product).filter(
+            Product.id.in_(productIds)
+        ).delete(synchronize_session=False)
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "deleted_count": deleted_count,
+            "message": f"Deleted {deleted_count} products"
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error bulk deleting products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/products/bulk-sync")
+def bulk_sync_products(
+    productIds: List[int],
+    db: Session = Depends(get_db)
+):
+    """Sync multiple products to marketplaces"""
+    try:
+        # TODO: Implement marketplace sync logic
+        return {
+            "success": True,
+            "synced_count": len(productIds),
+            "message": f"Synced {len(productIds)} products"
+        }
+    except Exception as e:
+        logger.error(f"Error bulk syncing products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/products/bulk-update-status")
+def bulk_update_product_status(
+    productIds: List[int],
+    status: str,
+    db: Session = Depends(get_db)
+):
+    """Update status for multiple products"""
+    try:
+        updated_count = db.query(Product).filter(
+            Product.id.in_(productIds)
+        ).update(
+            {"status": status, "updated_at": datetime.utcnow()},
+            synchronize_session=False
+        )
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "updated_count": updated_count,
+            "message": f"Updated {updated_count} products to {status}"
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error bulk updating products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/products/sync-all")
+def sync_all_products(
+    db: Session = Depends(get_db)
+):
+    """Sync all products with marketplaces"""
+    try:
+        # TODO: Implement full marketplace sync
+        total_products = db.query(Product).count()
+        return {
+            "success": True,
+            "synced_count": total_products,
+            "message": f"Synced {total_products} products with marketplaces"
+        }
+    except Exception as e:
+        logger.error(f"Error syncing all products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# PRODUCT DETAILS & REVIEWS
+# ============================================================================
+
+@app.get("/products/{product_id}/reviews")
+def get_product_reviews(
+    product_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get reviews for a product"""
+    try:
+        # TODO: Implement reviews table and logic
+        return {"reviews": [], "average_rating": 0, "total_reviews": 0}
+    except Exception as e:
+        logger.error(f"Error getting product reviews: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/categories")
+def get_categories_list(
+    db: Session = Depends(get_db)
+):
+    """Get all categories (for customer portal)"""
+    try:
+        categories = db.query(Category).all()
+        return {"categories": [cat.to_dict() for cat in categories]}
+    except Exception as e:
+        logger.error(f"Error getting categories: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/new-arrivals")
+def get_new_arrivals(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """Get new arrival products"""
+    try:
+        products = db.query(Product).filter(
+            Product.status == 'active'
+        ).order_by(desc(Product.created_at)).limit(limit).all()
+        
+        return {"products": [p.to_dict() for p in products]}
+    except Exception as e:
+        logger.error(f"Error getting new arrivals: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 

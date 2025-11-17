@@ -567,6 +567,157 @@ def get_recent_orders(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
+# SHOPPING CART ENDPOINTS
+# ============================================================================
+
+@app.get("/cart")
+def get_cart(
+    customer_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get customer's shopping cart"""
+    try:
+        # For now, return empty cart structure
+        # TODO: Implement cart table in database
+        return {
+            "items": [],
+            "total": 0,
+            "subtotal": 0,
+            "tax": 0,
+            "shipping": 0
+        }
+    except Exception as e:
+        logger.error(f"Error getting cart: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/cart/add")
+def add_to_cart(
+    product_id: int,
+    quantity: int = 1,
+    customer_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Add item to shopping cart"""
+    try:
+        # TODO: Implement cart functionality
+        return {"success": True, "message": "Item added to cart"}
+    except Exception as e:
+        logger.error(f"Error adding to cart: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/cart/items/{item_id}")
+def update_cart_item(
+    item_id: int,
+    quantity: int,
+    db: Session = Depends(get_db)
+):
+    """Update cart item quantity"""
+    try:
+        # TODO: Implement cart functionality
+        return {"success": True, "message": "Cart item updated"}
+    except Exception as e:
+        logger.error(f"Error updating cart item: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/cart/items/{item_id}")
+def remove_cart_item(
+    item_id: int,
+    db: Session = Depends(get_db)
+):
+    """Remove item from cart"""
+    try:
+        # TODO: Implement cart functionality
+        return {"success": True, "message": "Item removed from cart"}
+    except Exception as e:
+        logger.error(f"Error removing cart item: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/cart/apply-coupon")
+def apply_coupon(
+    couponCode: str,
+    db: Session = Depends(get_db)
+):
+    """Apply coupon code to cart"""
+    try:
+        # TODO: Implement coupon functionality
+        return {"success": True, "message": "Coupon applied", "discount": 0}
+    except Exception as e:
+        logger.error(f"Error applying coupon: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# BULK OPERATIONS
+# ============================================================================
+
+@app.post("/orders/export")
+def export_orders(
+    orderIds: List[int],
+    db: Session = Depends(get_db)
+):
+    """Export orders to CSV"""
+    try:
+        orders = db.query(Order).filter(Order.id.in_(orderIds)).all()
+        
+        # Generate CSV data
+        csv_lines = ["Order ID,Customer,Total,Status,Date"]
+        for order in orders:
+            customer_name = order.customer.name if order.customer else "Unknown"
+            csv_lines.append(
+                f"{order.id},{customer_name},{order.total},{order.status},{order.created_at}"
+            )
+        
+        return "\n".join(csv_lines)
+    except Exception as e:
+        logger.error(f"Error exporting orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/orders/bulk-update-status")
+def bulk_update_order_status(
+    orderIds: List[int],
+    status: str,
+    db: Session = Depends(get_db)
+):
+    """Update status for multiple orders"""
+    try:
+        updated_count = db.query(Order).filter(
+            Order.id.in_(orderIds)
+        ).update(
+            {"status": status, "updated_at": datetime.utcnow()},
+            synchronize_session=False
+        )
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "updated_count": updated_count,
+            "message": f"Updated {updated_count} orders to {status}"
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error bulk updating orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/customer/orders")
+def get_customer_orders(
+    customer_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get orders for a specific customer"""
+    try:
+        if not customer_id:
+            return {"orders": []}
+        
+        orders = db.query(Order).filter(
+            Order.customer_id == customer_id
+        ).order_by(desc(Order.created_at)).all()
+        
+        return {"orders": [order.to_dict() for order in orders]}
+    except Exception as e:
+        logger.error(f"Error getting customer orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 

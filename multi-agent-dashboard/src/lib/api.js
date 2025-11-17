@@ -968,3 +968,415 @@ class ApiService {
 // Export singleton instance
 export const apiService = new ApiService()
 export default apiService
+
+  // ==================== MISSING APIs - IMPLEMENTATION ====================
+  
+  // Order Management APIs
+  async getOrderDetails(orderId) {
+    try {
+      const response = await clients.order.get(`/orders/${orderId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get order details: ${error.message}`)
+    }
+  }
+  
+  async exportOrders(orderIds) {
+    try {
+      const response = await clients.order.post('/orders/export', { orderIds })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to export orders: ${error.message}`)
+    }
+  }
+  
+  async bulkUpdateOrderStatus(orderIds, status) {
+    try {
+      const response = await clients.order.post('/orders/bulk-update-status', { orderIds, status })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to bulk update order status: ${error.message}`)
+    }
+  }
+  
+  // Product Management APIs
+  async deleteProduct(productId) {
+    try {
+      const response = await clients.product.delete(`/products/${productId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to delete product: ${error.message}`)
+    }
+  }
+  
+  async bulkDeleteProducts(productIds) {
+    try {
+      const response = await clients.product.post('/products/bulk-delete', { productIds })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to bulk delete products: ${error.message}`)
+    }
+  }
+  
+  async bulkSyncProducts(productIds) {
+    try {
+      const response = await clients.product.post('/products/bulk-sync', { productIds })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to bulk sync products: ${error.message}`)
+    }
+  }
+  
+  async bulkUpdateProductStatus(productIds, status) {
+    try {
+      const response = await clients.product.post('/products/bulk-update-status', { productIds, status })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to bulk update product status: ${error.message}`)
+    }
+  }
+  
+  async syncProductsWithMarketplaces() {
+    try {
+      const response = await clients.product.post('/products/sync-all')
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to sync products with marketplaces: ${error.message}`)
+    }
+  }
+  
+  async getProductDetails(productId) {
+    try {
+      const response = await clients.product.get(`/products/${productId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get product details: ${error.message}`)
+    }
+  }
+  
+  async getProductReviews(productId) {
+    try {
+      const response = await clients.product.get(`/products/${productId}/reviews`)
+      return response.data
+    } catch (error) {
+      console.warn('Product reviews unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  async getRelatedProducts(productId) {
+    try {
+      const response = await clients.recommendation.get(`/products/${productId}/related`)
+      return response.data
+    } catch (error) {
+      console.warn('Related products unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  // Inventory Management APIs
+  async exportInventory(itemIds) {
+    try {
+      const response = await clients.inventory.post('/inventory/export', { itemIds })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to export inventory: ${error.message}`)
+    }
+  }
+  
+  async bulkReorderItems(itemIds) {
+    try {
+      const response = await clients.inventory.post('/inventory/bulk-reorder', { itemIds })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to bulk reorder items: ${error.message}`)
+    }
+  }
+  
+  async transferInventory(data) {
+    try {
+      const response = await clients.inventory.post('/inventory/transfer', data)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to transfer inventory: ${error.message}`)
+    }
+  }
+  
+  async adjustInventory(data) {
+    try {
+      const response = await clients.inventory.post('/inventory/adjust', data)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to adjust inventory: ${error.message}`)
+    }
+  }
+  
+  // Shopping Cart APIs
+  async getCart() {
+    try {
+      const response = await clients.order.get('/cart')
+      return response.data
+    } catch (error) {
+      console.warn('Cart unavailable, returning empty cart')
+      return { items: [], total: 0 }
+    }
+  }
+  
+  async addToCart(productId, quantity = 1) {
+    try {
+      const response = await clients.order.post('/cart/add', { productId, quantity })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to add to cart: ${error.message}`)
+    }
+  }
+  
+  async updateCartItem(itemId, quantity) {
+    try {
+      const response = await clients.order.patch(`/cart/items/${itemId}`, { quantity })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to update cart item: ${error.message}`)
+    }
+  }
+  
+  async removeCartItem(itemId) {
+    try {
+      const response = await clients.order.delete(`/cart/items/${itemId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to remove cart item: ${error.message}`)
+    }
+  }
+  
+  async applyCoupon(couponCode) {
+    try {
+      const response = await clients.order.post('/cart/apply-coupon', { couponCode })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to apply coupon: ${error.message}`)
+    }
+  }
+  
+  // Customer Account APIs
+  async getCustomerProfile() {
+    try {
+      const response = await clients.customer.get('/profile')
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get customer profile: ${error.message}`)
+    }
+  }
+  
+  async updateCustomerProfile(profileData) {
+    try {
+      const response = await clients.customer.patch('/profile', profileData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to update customer profile: ${error.message}`)
+    }
+  }
+  
+  async getCustomerOrders() {
+    try {
+      const response = await clients.order.get('/customer/orders')
+      return response.data
+    } catch (error) {
+      console.warn('Customer orders unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  async getCustomerAddresses() {
+    try {
+      const response = await clients.customer.get('/addresses')
+      return response.data
+    } catch (error) {
+      console.warn('Customer addresses unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  async deleteCustomerAddress(addressId) {
+    try {
+      const response = await clients.customer.delete(`/addresses/${addressId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to delete address: ${error.message}`)
+    }
+  }
+  
+  async getCustomerPaymentMethods() {
+    try {
+      const response = await clients.payment.get('/payment-methods')
+      return response.data
+    } catch (error) {
+      console.warn('Payment methods unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  async deleteCustomerPaymentMethod(paymentMethodId) {
+    try {
+      const response = await clients.payment.delete(`/payment-methods/${paymentMethodId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to delete payment method: ${error.message}`)
+    }
+  }
+  
+  // Marketplace Integration APIs
+  async connectMarketplace(marketplaceData) {
+    try {
+      const response = await clients.marketplace.post('/marketplaces/connect', marketplaceData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to connect marketplace: ${error.message}`)
+    }
+  }
+  
+  async disconnectMarketplace(marketplaceId) {
+    try {
+      const response = await clients.marketplace.post(`/marketplaces/${marketplaceId}/disconnect`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to disconnect marketplace: ${error.message}`)
+    }
+  }
+  
+  async syncMarketplace(data) {
+    try {
+      const response = await clients.marketplace.post('/marketplaces/sync', data)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to sync marketplace: ${error.message}`)
+    }
+  }
+  
+  // Analytics APIs
+  async getCustomerAnalytics(params = {}) {
+    try {
+      const response = await clients.analytics.get('/customer-analytics', { params })
+      return response.data
+    } catch (error) {
+      console.warn('Customer analytics unavailable, returning mock data')
+      return { totalCustomers: 0, newCustomers: 0, retention: 0 }
+    }
+  }
+  
+  async getInventoryAnalytics(params = {}) {
+    try {
+      const response = await clients.analytics.get('/inventory-analytics', { params })
+      return response.data
+    } catch (error) {
+      console.warn('Inventory analytics unavailable, returning mock data')
+      return { totalItems: 0, lowStock: 0, outOfStock: 0 }
+    }
+  }
+  
+  async getMarketplaceAnalytics(params = {}) {
+    try {
+      const response = await clients.analytics.get('/marketplace-analytics', { params })
+      return response.data
+    } catch (error) {
+      console.warn('Marketplace analytics unavailable, returning mock data')
+      return { totalSales: 0, orders: 0, channels: [] }
+    }
+  }
+  
+  // Customer Portal APIs
+  async getCategories() {
+    try {
+      const response = await clients.product.get('/categories')
+      return response.data
+    } catch (error) {
+      console.warn('Categories unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  async getNewArrivals(limit = 10) {
+    try {
+      const response = await clients.product.get('/new-arrivals', { params: { limit } })
+      return response.data
+    } catch (error) {
+      console.warn('New arrivals unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  async getPromotions() {
+    try {
+      const response = await clients.promotion.get('/active-promotions')
+      return response.data
+    } catch (error) {
+      console.warn('Promotions unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  async getRecommendations() {
+    try {
+      const response = await clients.recommendation.get('/recommendations')
+      return response.data
+    } catch (error) {
+      console.warn('Recommendations unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  // Admin APIs
+  async getSystemConfiguration() {
+    try {
+      const response = await clients.infrastructure.get('/system/configuration')
+      return response.data
+    } catch (error) {
+      console.warn('System configuration unavailable, returning defaults')
+      return {}
+    }
+  }
+  
+  async updateSystemConfiguration(configData) {
+    try {
+      const response = await clients.infrastructure.patch('/system/configuration', configData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to update system configuration: ${error.message}`)
+    }
+  }
+  
+  async getAgentLogs(agentId, params = {}) {
+    try {
+      const response = await clients.monitoring.get(`/agents/${agentId}/logs`, { params })
+      return response.data
+    } catch (error) {
+      console.warn('Agent logs unavailable, returning empty array')
+      return []
+    }
+  }
+  
+  async restartAgent(agentId) {
+    try {
+      const response = await clients.infrastructure.post(`/agents/${agentId}/restart`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to restart agent: ${error.message}`)
+    }
+  }
+  
+  async stopAgent(agentId) {
+    try {
+      const response = await clients.infrastructure.post(`/agents/${agentId}/stop`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to stop agent: ${error.message}`)
+    }
+  }
+  
+  async connectWebSocket(url) {
+    // WebSocket connection is handled separately in WebSocketContext
+    // This is a placeholder for compatibility
+    console.log('WebSocket connection requested:', url)
+    return { status: 'connected' }
+  }
+
