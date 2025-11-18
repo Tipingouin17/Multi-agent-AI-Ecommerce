@@ -11,4 +11,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    host: true, // Listen on all addresses
+    allowedHosts: [
+      '.ngrok-free.app', // Allow all ngrok free domains
+      '.ngrok.io',       // Allow all ngrok paid domains
+      'localhost',       // Allow localhost
+    ],
+  },
 })
