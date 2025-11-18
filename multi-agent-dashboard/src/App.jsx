@@ -326,13 +326,6 @@ function App() {
     <AuthProvider>
       <WebSocketProvider>
       <BrowserRouter>
-        {!selectedInterface && (
-          <InterfaceSelector 
-            onSelect={handleInterfaceSelect} 
-            databaseStatus={databaseStatus}
-          />
-        )}
-        
         {/* Public routes */}
         <Routes>
           <Route path="/login" element={<Login />} />
