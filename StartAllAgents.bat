@@ -13,7 +13,7 @@ REM Create logs directory
 if not exist "%LOGS_DIR%" mkdir "%LOGS_DIR%"
 
 echo ==========================================
-echo Starting All 37 V3 Agents
+echo Starting All 38 V3 Agents (Including Authentication)
 echo ==========================================
 echo.
 
@@ -36,7 +36,8 @@ goto :eof
 
 :start_agents
 
-echo Core Business Agents (8):
+echo Core Business Agents (9):
+call :start_agent "auth_agent_v3.py" 8017
 call :start_agent "order_agent_v3.py" 8000
 call :start_agent "product_agent_v3.py" 8001
 call :start_agent "inventory_agent_v3.py" 8002
@@ -89,7 +90,7 @@ call :start_agent "demand_forecasting_agent_v3.py" 8037
 call :start_agent "international_shipping_agent_v3.py" 8038
 
 echo ==========================================
-echo All 37 agents started!
+echo All 38 agents started!
 echo ==========================================
 echo.
 echo Logs available in: %LOGS_DIR%
@@ -106,6 +107,7 @@ echo.
 echo Agent Port Mapping:
 echo.
 echo Core Business Agents:
+echo   8017 - auth_agent (Authentication)
 echo   8000 - order_agent
 echo   8001 - product_agent
 echo   8002 - inventory_agent

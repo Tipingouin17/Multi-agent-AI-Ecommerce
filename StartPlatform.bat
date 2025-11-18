@@ -19,7 +19,7 @@ echo ===========================================================================
 echo.
 echo   Multi-Agent E-commerce Platform - Complete System Launcher
 echo.
-echo   Starting: PostgreSQL + 37 Agents + Frontend UI
+echo   Starting: PostgreSQL + 38 Agents + Frontend UI
 echo.
 echo ===============================================================================
 echo.
@@ -178,7 +178,7 @@ REM ############################################################################
 
 echo.
 echo ===============================================================================
-echo STEP 3: Starting All 37 Backend Agents (8 Feature + 29 Core^)
+echo STEP 3: Starting All 38 Backend Agents (9 Core + 8 Feature + 21 Other^)
 echo ===============================================================================
 echo.
 
@@ -266,7 +266,7 @@ echo ===========================================================================
 echo                        SYSTEM STATUS
 echo ===============================================================================
 echo.
-echo   ✓ Backend Agents:        37 agents launched
+echo   ✓ Backend Agents:        38 agents launched (including Authentication)
 echo   ✓ Frontend UI:           Running on port 5173
 echo.
 echo ===============================================================================
