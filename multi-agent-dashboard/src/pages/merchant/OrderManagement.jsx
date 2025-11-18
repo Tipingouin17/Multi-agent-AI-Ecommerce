@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { apiService } from '@/lib/api'
+import { formatDateTime, formatDate as formatDateUtil } from '@/utils/dateFormatter'
 
 /**
  * Order Management
@@ -238,11 +239,8 @@ function OrderManagement() {
     }
   }
   
-  // Format date
-  function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  }
+  // Using centralized date formatter utility
+  const formatDate = formatDateUtil;
   
   // Format currency
   function formatCurrency(amount) {
