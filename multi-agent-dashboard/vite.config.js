@@ -49,6 +49,7 @@ Object.entries(AGENT_PORTS).forEach(([agentName, port]) => {
   proxyConfig[`/api/${agentName}`] = {
     target: `http://localhost:${port}`,
     changeOrigin: true,
+        ws: true,
     rewrite: (path) => {
       // Simply strip /api/{agentName} from the path
       // /api/product/health -> /health
