@@ -455,8 +455,18 @@ class ApiService {
   // ==================== ANALYTICS APIs ====================
   
   async getProductAnalytics(params = {}) {
-    const response = await clients.product.get('/api/analytics', { params })
-    return response.data
+    try {
+      const response = await clients.product.get('/api/analytics', { params })
+      return response.data
+    } catch (error) {
+      console.warn('Product analytics unavailable, returning mock data')
+      return {
+        topProducts: [],
+        categoryBreakdown: [],
+        totalRevenue: 0,
+        totalSold: 0
+      }
+    }
   }
 
   // ==================== CUSTOMER PORTAL APIs ====================
