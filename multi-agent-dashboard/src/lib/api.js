@@ -58,8 +58,9 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 // Create axios instances for each agent
 const createAgentClient = (agentName) => {
-  // Use relative URL with /api prefix for proxy routing
-  const baseURL = BASE_URL ? `${BASE_URL}:${AGENT_PORTS[agentName]}` : `/api`
+  // Use relative URL with /api/{agentName} prefix for proxy routing
+  // In development: Vite proxy routes /api/order -> localhost:8000, /api/product -> localhost:8001, etc.
+  const baseURL = BASE_URL ? `${BASE_URL}:${AGENT_PORTS[agentName]}` : `/api/${agentName}`
   
   const client = axios.create({
     baseURL,
