@@ -41,8 +41,8 @@ function Dashboard() {
       setRecentOrders(orders);
       
       // Load inventory alerts
-      const alerts = await apiService.getInventoryAlerts();
-      setInventoryAlerts(alerts);
+      const alertsResponse = await apiService.getInventoryAlerts();
+      setInventoryAlerts(alertsResponse.alerts || alertsResponse || []);
       
       // Load marketplace performance
       const performance = await apiService.getMarketplacePerformance(timeRange);
