@@ -239,6 +239,37 @@ class ApiService {
   async getInventory(params = {}) {
     try {
       const response = await clients.inventory.get('/api/inventory', { params })
+      const data = response.data
+      
+      // Transform backend data to match frontend expectations
+      if (data.inventory && Array.isArray(data.inventory)) {
+        const transformedInventory = data.inventory.map(item => ({
+          id: item.id,
+          sku: item.product?.sku || 'N/A',
+          name: item.product?.name || 'Unknown Product',
+          price: item.product?.price || 0,
+          category: item.product?.category || 'Uncategorized',
+          totalStock: item.quantity || 0,
+          lowStockThreshold: item.reorder_point || 10,
+          productId: item.product_id,
+          image: item.product?.image_url || null,
+          warehouses: [{
+            id: item.warehouse?.id,
+            name: item.warehouse?.name || 'Unknown Warehouse',
+            code: item.warehouse?.code || 'N/A',
+            quantity: item.quantity || 0
+          }],
+          is_low_stock: item.is_low_stock || false,
+          is_out_of_stock: item.is_out_of_stock || false
+        }))
+        
+        return {
+          inventory: transformedInventory,
+          totalPages: data.pagination?.pages || 1,
+          totalItems: data.pagination?.total || transformedInventory.length
+        }
+      }
+      
       return response.data
     } catch (error) {
       console.warn('Inventory data unavailable, using mock data')
