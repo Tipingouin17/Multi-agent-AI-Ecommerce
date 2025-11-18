@@ -18,10 +18,24 @@ import sys
 # Add parent directory to path for shared modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from shared.db_connection import get_db_session
+from shared.db_connection import get_sync_database_url
 from shared.db_models import User, Merchant, Customer
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 app = FastAPI(title="Authentication Agent", version="3.0")
+
+# Database setup
+engine = create_engine(get_sync_database_url())
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db_session():
+    """Get database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # CORS Configuration
 app.add_middleware(
