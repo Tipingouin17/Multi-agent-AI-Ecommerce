@@ -800,7 +800,7 @@ function InventoryManagement() {
                           {inventory
                             .filter(item => transferData.items.includes(item.id))
                             .map(item => {
-                              const sourceWarehouse = item.warehouses.find(wh => wh.id === transferData.sourceWarehouse);
+                              const sourceWarehouse = item.warehouses?.find(wh => wh.id === transferData.sourceWarehouse);
                               const availableQuantity = sourceWarehouse ? sourceWarehouse.quantity : 0;
                               
                               return (
