@@ -41,6 +41,7 @@ const AGENT_PORTS = {
   forecasting: 8037,
   international: 8038,
   gateway: 8100,
+  auth: 8017,
 };
 
 // Create proxy configuration for each agent
