@@ -116,7 +116,7 @@ class ApiService {
   
   async getSystemOverview() {
     try {
-      const response = await clients.monitoring.get('/system/overview')
+      const response = await clients.monitoring.get('/api/system/overview')
       return response.data
     } catch (error) {
       // Fallback to mock data if monitoring agent is not available
@@ -127,7 +127,7 @@ class ApiService {
 
   async getAgentHealth() {
     try {
-      const response = await clients.monitoring.get('/agents')
+      const response = await clients.monitoring.get('/api/agents')
       return response.data
     } catch (error) {
       console.warn('Agent health data unavailable, using mock data')
@@ -137,7 +137,7 @@ class ApiService {
 
   async getSystemAlerts(activeOnly = true) {
     try {
-      const response = await clients.monitoring.get('/alerts', {
+      const response = await clients.monitoring.get('/api/alerts', {
         params: { active_only: activeOnly }
       })
       return response.data
@@ -149,7 +149,7 @@ class ApiService {
 
   async resolveAlert(alertId, resolution) {
     try {
-      const response = await clients.monitoring.post(`/alerts/${alertId}/resolve`, resolution)
+      const response = await clients.monitoring.post(`/api/alerts/${alertId}/resolve`, resolution)
       return response.data
     } catch (error) {
       throw new Error(`Failed to resolve alert: ${error.message}`)
@@ -160,7 +160,7 @@ class ApiService {
 
   async getProducts(params = {}) {
     try {
-      const response = await clients.product.get('/products', { params })
+      const response = await clients.product.get('/api/products', { params })
       return response.data
     } catch (error) {
       console.warn('Product data unavailable, using mock data')
@@ -179,7 +179,7 @@ class ApiService {
 
   async createProduct(productData) {
     try {
-      const response = await clients.product.post('/products', productData)
+      const response = await clients.product.post('/api/products', productData)
       return response.data
     } catch (error) {
       throw new Error(`Failed to create product: ${error.message}`)
@@ -188,7 +188,7 @@ class ApiService {
 
   async updateProduct(productId, productData) {
     try {
-      const response = await clients.product.put(`/products/${productId}`, productData)
+      const response = await clients.product.put(`/api/products/${productId}`, productData)
       return response.data
     } catch (error) {
       throw new Error(`Failed to update product: ${error.message}`)
@@ -199,7 +199,7 @@ class ApiService {
 
   async getOrders(params = {}) {
     try {
-      const response = await clients.order.get('/orders', { params })
+      const response = await clients.order.get('/api/orders', { params })
       return response.data
     } catch (error) {
       console.warn('Order data unavailable, using mock data')
@@ -209,7 +209,7 @@ class ApiService {
 
   async getOrder(orderId) {
     try {
-      const response = await clients.order.get(`/orders/${orderId}`)
+      const response = await clients.order.get(`/api/orders/${orderId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to fetch order: ${error.message}`)
@@ -218,7 +218,7 @@ class ApiService {
 
   async createOrder(orderData) {
     try {
-      const response = await clients.order.post('/orders', orderData)
+      const response = await clients.order.post('/api/orders', orderData)
       return response.data
     } catch (error) {
       throw new Error(`Failed to create order: ${error.message}`)
@@ -238,7 +238,7 @@ class ApiService {
 
   async getInventory(params = {}) {
     try {
-      const response = await clients.inventory.get('/inventory', { params })
+      const response = await clients.inventory.get('/api/inventory', { params })
       return response.data
     } catch (error) {
       console.warn('Inventory data unavailable, using mock data')
@@ -263,7 +263,7 @@ class ApiService {
 
   async getPerformanceMetrics(timeRange = '24h') {
     try {
-      const response = await clients.monitoring.get('/metrics/performance', {
+      const response = await clients.monitoring.get('/api/metrics/performance', {
         params: { time_range: timeRange }
       })
       return response.data
@@ -275,7 +275,7 @@ class ApiService {
 
   async getSalesAnalytics(params = {}) {
     try {
-      const response = await clients.order.get('/analytics/sales', { params })
+      const response = await clients.order.get('/api/analytics/sales', { params })
       return response.data
     } catch (error) {
       console.warn('Sales analytics unavailable, using mock data')
@@ -287,7 +287,7 @@ class ApiService {
   
   async getMerchantKpis(timeRange = '7d') {
     try {
-      const response = await clients.order.get('/analytics/kpis', { params: { timeRange } })
+      const response = await clients.order.get('/api/analytics/kpis', { params: { timeRange } })
       return response.data
     } catch (error) {
       console.warn('Merchant KPIs unavailable, using mock data')
@@ -297,7 +297,7 @@ class ApiService {
   
   async getRecentOrders(limit = 10) {
     try {
-      const response = await clients.order.get('/orders/recent', { params: { limit } })
+      const response = await clients.order.get('/api/orders/recent', { params: { limit } })
       return response.data
     } catch (error) {
       console.warn('Recent orders unavailable, using mock data')
@@ -307,7 +307,7 @@ class ApiService {
   
   async getInventoryAlerts() {
     try {
-      const response = await clients.inventory.get('/alerts')
+      const response = await clients.inventory.get('/api/alerts')
       return response.data
     } catch (error) {
       console.warn('Inventory alerts unavailable, using mock data')
@@ -317,7 +317,7 @@ class ApiService {
   
   async getMarketplacePerformance(timeRange = '7d') {
     try {
-      const response = await clients.marketplace.get('/performance', { params: { timeRange } })
+      const response = await clients.marketplace.get('/api/performance', { params: { timeRange } })
       return response.data
     } catch (error) {
       console.warn('Marketplace performance unavailable, using mock data')
@@ -327,7 +327,7 @@ class ApiService {
   
   async getProductCategories() {
     try {
-      const response = await clients.product.get('/categories')
+      const response = await clients.product.get('/api/categories')
       return response.data
     } catch (error) {
       console.warn('Product categories unavailable, using mock data')
@@ -339,7 +339,7 @@ class ApiService {
   
   async getWarehouses() {
     try {
-      const response = await clients.warehouse.get('/warehouses')
+      const response = await clients.warehouse.get('/api/warehouses')
       return response.data
     } catch (error) {
       console.warn('Warehouses unavailable, using mock data')
@@ -349,7 +349,7 @@ class ApiService {
   
   async getWarehouse(warehouseId) {
     try {
-      const response = await clients.warehouse.get(`/warehouses/${warehouseId}`)
+      const response = await clients.warehouse.get(`/api/warehouses/${warehouseId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to get warehouse: ${error.message}`)
@@ -360,7 +360,7 @@ class ApiService {
   
   async getMarketplaces() {
     try {
-      const response = await clients.marketplace.get('/marketplaces')
+      const response = await clients.marketplace.get('/api/marketplaces')
       return response.data
     } catch (error) {
       console.warn('Marketplaces unavailable, using mock data')
@@ -370,7 +370,7 @@ class ApiService {
   
   async getMarketplace(marketplaceId) {
     try {
-      const response = await clients.marketplace.get(`/marketplaces/${marketplaceId}`)
+      const response = await clients.marketplace.get(`/api/marketplaces/${marketplaceId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to get marketplace: ${error.message}`)
@@ -381,7 +381,7 @@ class ApiService {
   
   async getWarehouses() {
     try {
-      const response = await clients.warehouse.get('/warehouses')
+      const response = await clients.warehouse.get('/api/warehouses')
       return response.data
     } catch (error) {
       console.warn('Warehouses unavailable, using mock data')
@@ -391,7 +391,7 @@ class ApiService {
   
   async getWarehouse(warehouseId) {
     try {
-      const response = await clients.warehouse.get(`/warehouses/${warehouseId}`)
+      const response = await clients.warehouse.get(`/api/warehouses/${warehouseId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to get warehouse: ${error.message}`)
@@ -402,7 +402,7 @@ class ApiService {
   
   async getMarketplaces() {
     try {
-      const response = await clients.marketplace.get('/marketplaces')
+      const response = await clients.marketplace.get('/api/marketplaces')
       return response.data
     } catch (error) {
       console.warn('Marketplaces unavailable, using mock data')
@@ -417,7 +417,7 @@ class ApiService {
   
   async getAvailableMarketplaces() {
     try {
-      const response = await clients.marketplace.get('/marketplaces/available')
+      const response = await clients.marketplace.get('/api/marketplaces/available')
       return response.data
     } catch (error) {
       console.warn('Available marketplaces unavailable, using mock data')
@@ -427,7 +427,7 @@ class ApiService {
   
   async getMarketplace(marketplaceId) {
     try {
-      const response = await clients.marketplace.get(`/marketplaces/${marketplaceId}`)
+      const response = await clients.marketplace.get(`/api/marketplaces/${marketplaceId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to get marketplace: ${error.message}`)
@@ -437,21 +437,21 @@ class ApiService {
   // ==================== MARKETPLACE SYNC APIs ====================
   
   async getMarketplaceSyncStatus() {
-    const response = await clients.marketplace.get('/sync/status')
+    const response = await clients.marketplace.get('/api/sync/status')
     return response.data
   }
 
   // ==================== ANALYTICS APIs ====================
   
   async getProductAnalytics(params = {}) {
-    const response = await clients.product.get('/analytics', { params })
+    const response = await clients.product.get('/api/analytics', { params })
     return response.data
   }
 
   // ==================== CUSTOMER PORTAL APIs ====================
   
   async getFeaturedProducts(limit = 10) {
-    const response = await clients.product.get('/featured', { params: { limit } })
+    const response = await clients.product.get('/api/featured', { params: { limit } })
     return response.data
   }
 
@@ -978,7 +978,7 @@ class ApiService {
   // Order Management APIs
   async getOrderDetails(orderId) {
     try {
-      const response = await clients.order.get(`/orders/${orderId}`)
+      const response = await clients.order.get(`/api/orders/${orderId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to get order details: ${error.message}`)
@@ -987,7 +987,7 @@ class ApiService {
   
   async exportOrders(orderIds) {
     try {
-      const response = await clients.order.post('/orders/export', { orderIds })
+      const response = await clients.order.post('/api/orders/export', { orderIds })
       return response.data
     } catch (error) {
       throw new Error(`Failed to export orders: ${error.message}`)
@@ -996,7 +996,7 @@ class ApiService {
   
   async bulkUpdateOrderStatus(orderIds, status) {
     try {
-      const response = await clients.order.post('/orders/bulk-update-status', { orderIds, status })
+      const response = await clients.order.post('/api/orders/bulk-update-status', { orderIds, status })
       return response.data
     } catch (error) {
       throw new Error(`Failed to bulk update order status: ${error.message}`)
@@ -1006,7 +1006,7 @@ class ApiService {
   // Product Management APIs
   async deleteProduct(productId) {
     try {
-      const response = await clients.product.delete(`/products/${productId}`)
+      const response = await clients.product.delete(`/api/products/${productId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to delete product: ${error.message}`)
@@ -1015,7 +1015,7 @@ class ApiService {
   
   async bulkDeleteProducts(productIds) {
     try {
-      const response = await clients.product.post('/products/bulk-delete', { productIds })
+      const response = await clients.product.post('/api/products/bulk-delete', { productIds })
       return response.data
     } catch (error) {
       throw new Error(`Failed to bulk delete products: ${error.message}`)
@@ -1024,7 +1024,7 @@ class ApiService {
   
   async bulkSyncProducts(productIds) {
     try {
-      const response = await clients.product.post('/products/bulk-sync', { productIds })
+      const response = await clients.product.post('/api/products/bulk-sync', { productIds })
       return response.data
     } catch (error) {
       throw new Error(`Failed to bulk sync products: ${error.message}`)
@@ -1033,7 +1033,7 @@ class ApiService {
   
   async bulkUpdateProductStatus(productIds, status) {
     try {
-      const response = await clients.product.post('/products/bulk-update-status', { productIds, status })
+      const response = await clients.product.post('/api/products/bulk-update-status', { productIds, status })
       return response.data
     } catch (error) {
       throw new Error(`Failed to bulk update product status: ${error.message}`)
@@ -1042,7 +1042,7 @@ class ApiService {
   
   async syncProductsWithMarketplaces() {
     try {
-      const response = await clients.product.post('/products/sync-all')
+      const response = await clients.product.post('/api/products/sync-all')
       return response.data
     } catch (error) {
       throw new Error(`Failed to sync products with marketplaces: ${error.message}`)
@@ -1051,7 +1051,7 @@ class ApiService {
   
   async getProductDetails(productId) {
     try {
-      const response = await clients.product.get(`/products/${productId}`)
+      const response = await clients.product.get(`/api/products/${productId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to get product details: ${error.message}`)
@@ -1060,7 +1060,7 @@ class ApiService {
   
   async getProductReviews(productId) {
     try {
-      const response = await clients.product.get(`/products/${productId}/reviews`)
+      const response = await clients.product.get(`/api/products/${productId}/reviews`)
       return response.data
     } catch (error) {
       console.warn('Product reviews unavailable, returning empty array')
@@ -1070,7 +1070,7 @@ class ApiService {
   
   async getRelatedProducts(productId) {
     try {
-      const response = await clients.recommendation.get(`/products/${productId}/related`)
+      const response = await clients.recommendation.get(`/api/products/${productId}/related`)
       return response.data
     } catch (error) {
       console.warn('Related products unavailable, returning empty array')
@@ -1081,7 +1081,7 @@ class ApiService {
   // Inventory Management APIs
   async exportInventory(itemIds) {
     try {
-      const response = await clients.inventory.post('/inventory/export', { itemIds })
+      const response = await clients.inventory.post('/api/inventory/export', { itemIds })
       return response.data
     } catch (error) {
       throw new Error(`Failed to export inventory: ${error.message}`)
@@ -1090,7 +1090,7 @@ class ApiService {
   
   async bulkReorderItems(itemIds) {
     try {
-      const response = await clients.inventory.post('/inventory/bulk-reorder', { itemIds })
+      const response = await clients.inventory.post('/api/inventory/bulk-reorder', { itemIds })
       return response.data
     } catch (error) {
       throw new Error(`Failed to bulk reorder items: ${error.message}`)
@@ -1099,7 +1099,7 @@ class ApiService {
   
   async transferInventory(data) {
     try {
-      const response = await clients.inventory.post('/inventory/transfer', data)
+      const response = await clients.inventory.post('/api/inventory/transfer', data)
       return response.data
     } catch (error) {
       throw new Error(`Failed to transfer inventory: ${error.message}`)
@@ -1108,7 +1108,7 @@ class ApiService {
   
   async adjustInventory(data) {
     try {
-      const response = await clients.inventory.post('/inventory/adjust', data)
+      const response = await clients.inventory.post('/api/inventory/adjust', data)
       return response.data
     } catch (error) {
       throw new Error(`Failed to adjust inventory: ${error.message}`)
@@ -1118,7 +1118,7 @@ class ApiService {
   // Shopping Cart APIs
   async getCart() {
     try {
-      const response = await clients.order.get('/cart')
+      const response = await clients.order.get('/api/cart')
       return response.data
     } catch (error) {
       console.warn('Cart unavailable, returning empty cart')
@@ -1128,7 +1128,7 @@ class ApiService {
   
   async addToCart(productId, quantity = 1) {
     try {
-      const response = await clients.order.post('/cart/add', { productId, quantity })
+      const response = await clients.order.post('/api/cart/add', { productId, quantity })
       return response.data
     } catch (error) {
       throw new Error(`Failed to add to cart: ${error.message}`)
@@ -1146,7 +1146,7 @@ class ApiService {
   
   async removeCartItem(itemId) {
     try {
-      const response = await clients.order.delete(`/cart/items/${itemId}`)
+      const response = await clients.order.delete(`/api/cart/items/${itemId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to remove cart item: ${error.message}`)
@@ -1155,7 +1155,7 @@ class ApiService {
   
   async applyCoupon(couponCode) {
     try {
-      const response = await clients.order.post('/cart/apply-coupon', { couponCode })
+      const response = await clients.order.post('/api/cart/apply-coupon', { couponCode })
       return response.data
     } catch (error) {
       throw new Error(`Failed to apply coupon: ${error.message}`)
@@ -1165,7 +1165,7 @@ class ApiService {
   // Customer Account APIs
   async getCustomerProfile() {
     try {
-      const response = await clients.customer.get('/profile')
+      const response = await clients.customer.get('/api/profile')
       return response.data
     } catch (error) {
       throw new Error(`Failed to get customer profile: ${error.message}`)
@@ -1183,7 +1183,7 @@ class ApiService {
   
   async getCustomerOrders() {
     try {
-      const response = await clients.order.get('/customer/orders')
+      const response = await clients.order.get('/api/customer/orders')
       return response.data
     } catch (error) {
       console.warn('Customer orders unavailable, returning empty array')
@@ -1193,7 +1193,7 @@ class ApiService {
   
   async getCustomerAddresses() {
     try {
-      const response = await clients.customer.get('/addresses')
+      const response = await clients.customer.get('/api/addresses')
       return response.data
     } catch (error) {
       console.warn('Customer addresses unavailable, returning empty array')
@@ -1203,7 +1203,7 @@ class ApiService {
   
   async deleteCustomerAddress(addressId) {
     try {
-      const response = await clients.customer.delete(`/addresses/${addressId}`)
+      const response = await clients.customer.delete(`/api/addresses/${addressId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to delete address: ${error.message}`)
@@ -1212,7 +1212,7 @@ class ApiService {
   
   async getCustomerPaymentMethods() {
     try {
-      const response = await clients.payment.get('/payment-methods')
+      const response = await clients.payment.get('/api/payment-methods')
       return response.data
     } catch (error) {
       console.warn('Payment methods unavailable, returning empty array')
@@ -1222,7 +1222,7 @@ class ApiService {
   
   async deleteCustomerPaymentMethod(paymentMethodId) {
     try {
-      const response = await clients.payment.delete(`/payment-methods/${paymentMethodId}`)
+      const response = await clients.payment.delete(`/api/payment-methods/${paymentMethodId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to delete payment method: ${error.message}`)
@@ -1232,7 +1232,7 @@ class ApiService {
   // Marketplace Integration APIs
   async connectMarketplace(marketplaceData) {
     try {
-      const response = await clients.marketplace.post('/marketplaces/connect', marketplaceData)
+      const response = await clients.marketplace.post('/api/marketplaces/connect', marketplaceData)
       return response.data
     } catch (error) {
       throw new Error(`Failed to connect marketplace: ${error.message}`)
@@ -1241,7 +1241,7 @@ class ApiService {
   
   async disconnectMarketplace(marketplaceId) {
     try {
-      const response = await clients.marketplace.post(`/marketplaces/${marketplaceId}/disconnect`)
+      const response = await clients.marketplace.post(`/api/marketplaces/${marketplaceId}/disconnect`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to disconnect marketplace: ${error.message}`)
@@ -1250,7 +1250,7 @@ class ApiService {
   
   async syncMarketplace(data) {
     try {
-      const response = await clients.marketplace.post('/marketplaces/sync', data)
+      const response = await clients.marketplace.post('/api/marketplaces/sync', data)
       return response.data
     } catch (error) {
       throw new Error(`Failed to sync marketplace: ${error.message}`)
@@ -1260,7 +1260,7 @@ class ApiService {
   // Analytics APIs
   async getCustomerAnalytics(params = {}) {
     try {
-      const response = await clients.analytics.get('/customer-analytics', { params })
+      const response = await clients.analytics.get('/api/customer-analytics', { params })
       return response.data
     } catch (error) {
       console.warn('Customer analytics unavailable, returning mock data')
@@ -1270,7 +1270,7 @@ class ApiService {
   
   async getInventoryAnalytics(params = {}) {
     try {
-      const response = await clients.analytics.get('/inventory-analytics', { params })
+      const response = await clients.analytics.get('/api/inventory-analytics', { params })
       return response.data
     } catch (error) {
       console.warn('Inventory analytics unavailable, returning mock data')
@@ -1280,7 +1280,7 @@ class ApiService {
   
   async getMarketplaceAnalytics(params = {}) {
     try {
-      const response = await clients.analytics.get('/marketplace-analytics', { params })
+      const response = await clients.analytics.get('/api/marketplace-analytics', { params })
       return response.data
     } catch (error) {
       console.warn('Marketplace analytics unavailable, returning mock data')
@@ -1291,7 +1291,7 @@ class ApiService {
   // Customer Portal APIs
   async getCategories() {
     try {
-      const response = await clients.product.get('/categories')
+      const response = await clients.product.get('/api/categories')
       return response.data
     } catch (error) {
       console.warn('Categories unavailable, returning empty array')
@@ -1301,7 +1301,7 @@ class ApiService {
   
   async getNewArrivals(limit = 10) {
     try {
-      const response = await clients.product.get('/new-arrivals', { params: { limit } })
+      const response = await clients.product.get('/api/new-arrivals', { params: { limit } })
       return response.data
     } catch (error) {
       console.warn('New arrivals unavailable, returning empty array')
@@ -1311,7 +1311,7 @@ class ApiService {
   
   async getPromotions() {
     try {
-      const response = await clients.promotion.get('/active-promotions')
+      const response = await clients.promotion.get('/api/active-promotions')
       return response.data
     } catch (error) {
       console.warn('Promotions unavailable, returning empty array')
@@ -1321,7 +1321,7 @@ class ApiService {
   
   async getRecommendations() {
     try {
-      const response = await clients.recommendation.get('/recommendations')
+      const response = await clients.recommendation.get('/api/recommendations')
       return response.data
     } catch (error) {
       console.warn('Recommendations unavailable, returning empty array')
@@ -1332,7 +1332,7 @@ class ApiService {
   // Admin APIs
   async getSystemConfiguration() {
     try {
-      const response = await clients.infrastructure.get('/system/configuration')
+      const response = await clients.infrastructure.get('/api/system/configuration')
       return response.data
     } catch (error) {
       console.warn('System configuration unavailable, returning defaults')
@@ -1351,7 +1351,7 @@ class ApiService {
   
   async getAgentLogs(agentId, params = {}) {
     try {
-      const response = await clients.monitoring.get(`/agents/${agentId}/logs`, { params })
+      const response = await clients.monitoring.get(`/api/agents/${agentId}/logs`, { params })
       return response.data
     } catch (error) {
       console.warn('Agent logs unavailable, returning empty array')
@@ -1361,7 +1361,7 @@ class ApiService {
   
   async restartAgent(agentId) {
     try {
-      const response = await clients.infrastructure.post(`/agents/${agentId}/restart`)
+      const response = await clients.infrastructure.post(`/api/agents/${agentId}/restart`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to restart agent: ${error.message}`)
@@ -1370,7 +1370,7 @@ class ApiService {
   
   async stopAgent(agentId) {
     try {
-      const response = await clients.infrastructure.post(`/agents/${agentId}/stop`)
+      const response = await clients.infrastructure.post(`/api/agents/${agentId}/stop`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to stop agent: ${error.message}`)
