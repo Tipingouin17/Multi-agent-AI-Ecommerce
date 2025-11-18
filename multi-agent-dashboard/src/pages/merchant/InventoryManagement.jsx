@@ -601,7 +601,7 @@ function InventoryManagement() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex flex-col space-y-1">
-                            {item.warehouses.map(warehouse => (
+                            {item.warehouses?.map(warehouse => (
                               <div key={warehouse.id} className="flex justify-between">
                                 <span>{warehouse.name}:</span>
                                 <span className="font-medium">{warehouse.quantity}</span>
