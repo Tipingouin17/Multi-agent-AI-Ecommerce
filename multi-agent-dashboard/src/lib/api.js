@@ -200,6 +200,37 @@ class ApiService {
   async getOrders(params = {}) {
     try {
       const response = await clients.order.get('/api/orders', { params })
+      const data = response.data
+      
+      // Transform backend data to match frontend expectations
+      if (data.orders && Array.isArray(data.orders)) {
+        const transformedOrders = data.orders.map(order => ({
+          id: order.id,
+          orderNumber: order.order_number,
+          customerId: order.customer_id,
+          merchantId: order.merchant_id,
+          status: order.status,
+          paymentStatus: order.payment_status,
+          fulfillmentStatus: order.fulfillment_status,
+          total: order.total,
+          subtotal: order.subtotal,
+          tax: order.tax,
+          shipping: order.shipping,
+          discount: order.discount,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+          customer: order.customer,
+          itemsCount: order.items_count,
+          notes: order.notes,
+          customerNotes: order.customer_notes
+        }))
+        
+        return {
+          orders: transformedOrders,
+          pagination: data.pagination
+        }
+      }
+      
       return response.data
     } catch (error) {
       console.warn('Order data unavailable, using mock data')
@@ -210,6 +241,62 @@ class ApiService {
   async getOrder(orderId) {
     try {
       const response = await clients.order.get(`/api/orders/${orderId}`)
+      const order = response.data
+      
+      // Transform backend data to match frontend expectations
+      if (order) {
+        const transformedOrder = {
+          id: order.id,
+          orderNumber: order.order_number,
+          customerId: order.customer_id,
+          merchantId: order.merchant_id,
+          status: order.status,
+          paymentStatus: order.payment_status,
+          fulfillmentStatus: order.fulfillment_status,
+          total: order.total,
+          subtotal: order.subtotal,
+          tax: order.tax,
+          shipping: order.shipping,
+          discount: order.discount,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+          customer: order.customer,
+          notes: order.notes,
+          customerNotes: order.customer_notes,
+          // Transform items array
+          items: order.items ? order.items.map(item => ({
+            id: item.id,
+            orderId: item.order_id,
+            productId: item.product_id,
+            quantity: item.quantity,
+            unitPrice: item.unit_price,
+            subtotal: item.subtotal,
+            product: item.product
+          })) : [],
+          // Transform addresses
+          shippingAddress: order.shipping_address ? {
+            id: order.shipping_address.id,
+            addressLine1: order.shipping_address.address_line_1,
+            addressLine2: order.shipping_address.address_line_2,
+            city: order.shipping_address.city,
+            state: order.shipping_address.state,
+            postalCode: order.shipping_address.postal_code,
+            country: order.shipping_address.country
+          } : null,
+          billingAddress: order.billing_address ? {
+            id: order.billing_address.id,
+            addressLine1: order.billing_address.address_line_1,
+            addressLine2: order.billing_address.address_line_2,
+            city: order.billing_address.city,
+            state: order.billing_address.state,
+            postalCode: order.billing_address.postal_code,
+            country: order.billing_address.country
+          } : null
+        }
+        
+        return transformedOrder
+      }
+      
       return response.data
     } catch (error) {
       throw new Error(`Failed to fetch order: ${error.message}`)
