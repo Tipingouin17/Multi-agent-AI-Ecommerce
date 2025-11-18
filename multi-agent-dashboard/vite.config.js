@@ -19,37 +19,187 @@ export default defineConfig({
       'localhost',       // Allow localhost
     ],
     proxy: {
-      // Proxy all API calls to localhost backend agents
-      '/api': {
+      // Agent-name-based proxy routing
+      // Routes /api/{agentName}/* to localhost:{port}/*
+      '/api/order': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            // Dynamically route to correct agent based on path
-            const path = req.url;
-            let targetPort = 8000; // default to order agent
-            
-            // Route to appropriate agent based on API path
-            if (path.includes('/products') || path.includes('/categories')) targetPort = 8001;
-            else if (path.includes('/inventory')) targetPort = 8002;
-            else if (path.includes('/marketplaces') && !path.includes('/analytics')) targetPort = 8003;
-            else if (path.includes('/carriers') || path.includes('/shipments')) targetPort = 8004;
-            else if (path.includes('/warehouse')) targetPort = 8005;
-            else if (path.includes('/transport')) targetPort = 8015;
-            else if (path.includes('/customers')) targetPort = 8007;
-            else if (path.includes('/payments')) targetPort = 8008;
-            else if (path.includes('/analytics')) targetPort = 8013;
-            else if (path.includes('/recommendations')) targetPort = 8014;
-            else if (path.includes('/promotions')) targetPort = 8016;
-            else if (path.includes('/infrastructure') || path.includes('/system')) targetPort = 8017;
-            else if (path.includes('/monitoring') || path.includes('/agents')) targetPort = 8018;
-            
-            // Update the target for this specific request
-            proxyReq.path = path.replace('/api', '');
-            proxyReq.host = 'localhost';
-            proxyReq.port = targetPort;
-          });
-        },
+        rewrite: (path) => path.replace(/^\/api\/order/, ''),
+      },
+      '/api/product': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/product/, ''),
+      },
+      '/api/inventory': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/inventory/, ''),
+      },
+      '/api/marketplace': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/marketplace/, ''),
+      },
+      '/api/payment': {
+        target: 'http://localhost:8004',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/payment/, ''),
+      },
+      '/api/pricing': {
+        target: 'http://localhost:8005',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/pricing/, ''),
+      },
+      '/api/carrier': {
+        target: 'http://localhost:8006',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/carrier/, ''),
+      },
+      '/api/customer': {
+        target: 'http://localhost:8007',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/customer/, ''),
+      },
+      '/api/warehouse': {
+        target: 'http://localhost:8008',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/warehouse/, ''),
+      },
+      '/api/returns': {
+        target: 'http://localhost:8009',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/returns/, ''),
+      },
+      '/api/fraud': {
+        target: 'http://localhost:8010',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/fraud/, ''),
+      },
+      '/api/risk': {
+        target: 'http://localhost:8011',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/risk/, ''),
+      },
+      '/api/knowledge': {
+        target: 'http://localhost:8012',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/knowledge/, ''),
+      },
+      '/api/analytics': {
+        target: 'http://localhost:8013',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/analytics/, ''),
+      },
+      '/api/recommendation': {
+        target: 'http://localhost:8014',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/recommendation/, ''),
+      },
+      '/api/transport': {
+        target: 'http://localhost:8015',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/transport/, ''),
+      },
+      '/api/documents': {
+        target: 'http://localhost:8016',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/documents/, ''),
+      },
+      '/api/support': {
+        target: 'http://localhost:8018',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/support/, ''),
+      },
+      '/api/communication': {
+        target: 'http://localhost:8019',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/communication/, ''),
+      },
+      '/api/promotion': {
+        target: 'http://localhost:8020',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/promotion/, ''),
+      },
+      '/api/aftersales': {
+        target: 'http://localhost:8021',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/aftersales/, ''),
+      },
+      '/api/infrastructure': {
+        target: 'http://localhost:8022',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/infrastructure/, ''),
+      },
+      '/api/monitoring': {
+        target: 'http://localhost:8023',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/monitoring/, ''),
+      },
+      '/api/aimonitoring': {
+        target: 'http://localhost:8024',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/aimonitoring/, ''),
+      },
+      '/api/d2c': {
+        target: 'http://localhost:8026',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/d2c/, ''),
+      },
+      '/api/backoffice': {
+        target: 'http://localhost:8027',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/backoffice/, ''),
+      },
+      '/api/quality': {
+        target: 'http://localhost:8028',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/quality/, ''),
+      },
+      '/api/replenishment': {
+        target: 'http://localhost:8031',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/replenishment/, ''),
+      },
+      '/api/inbound': {
+        target: 'http://localhost:8032',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/inbound/, ''),
+      },
+      '/api/fulfillment': {
+        target: 'http://localhost:8033',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/fulfillment/, ''),
+      },
+      '/api/carrierai': {
+        target: 'http://localhost:8034',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/carrierai/, ''),
+      },
+      '/api/rma': {
+        target: 'http://localhost:8035',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/rma/, ''),
+      },
+      '/api/advancedanalytics': {
+        target: 'http://localhost:8036',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/advancedanalytics/, ''),
+      },
+      '/api/forecasting': {
+        target: 'http://localhost:8037',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/forecasting/, ''),
+      },
+      '/api/international': {
+        target: 'http://localhost:8038',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/international/, ''),
+      },
+      '/api/gateway': {
+        target: 'http://localhost:8100',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/gateway/, ''),
       },
     },
   },
