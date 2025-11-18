@@ -51,12 +51,18 @@ const AGENT_PORTS = {
   gateway: 8100             // system_api_gateway_v3.py
 }
 
-const BASE_URL = 'http://localhost' || process.env.REACT_APP_API_BASE_URL 
+// Use relative URLs for Vite proxy support
+// In development: /api routes through Vite proxy to localhost:PORT
+// In production: set VITE_API_BASE_URL environment variable
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 // Create axios instances for each agent
 const createAgentClient = (agentName) => {
+  // Use relative URL with /api prefix for proxy routing
+  const baseURL = BASE_URL ? `${BASE_URL}:${AGENT_PORTS[agentName]}` : `/api`
+  
   const client = axios.create({
-    baseURL: `${BASE_URL}:${AGENT_PORTS[agentName]}`,
+    baseURL,
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',
@@ -583,7 +589,10 @@ class ApiService {
 
   connectWebSocket(onMessage, onError) {
     try {
-      const ws = new WebSocket(`ws://localhost:${AGENT_PORTS.monitoring}/ws`)
+      // Use relative WebSocket URL (wss for https, ws for http)
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${protocol}//${window.location.host}/api/ws`
+      const ws = new WebSocket(wsUrl)
       
       ws.onopen = () => {
         console.log('WebSocket connected to monitoring agent')
