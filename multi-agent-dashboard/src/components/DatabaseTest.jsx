@@ -65,7 +65,7 @@ export default function DatabaseTest({ onReset }) {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`/api/product/products`)
+      const response = await fetch(`/api/product/api/products`)
       if (response.ok) {
         const data = await response.json()
         const products = data.products || data || []
@@ -83,7 +83,7 @@ export default function DatabaseTest({ onReset }) {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`/api/order/orders`)
+      const response = await fetch(`/api/order/api/orders`)
       if (response.ok) {
         const data = await response.json()
         const orders = data.orders || data || []
