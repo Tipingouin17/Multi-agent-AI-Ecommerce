@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '@/lib/api'
+import { formatDateTime } from '@/utils/dateFormatter'
 
 /**
  * Product Management
@@ -292,10 +293,7 @@ function ProductManagement() {
   }
   
   // Format date
-  function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  }
+  // Using centralized date formatter utility
   
   // Format currency
   function formatCurrency(amount) {
@@ -649,7 +647,7 @@ function ProductManagement() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(product.updatedAt)}
+                          {formatDateTime(product.updatedAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex -space-x-1">
