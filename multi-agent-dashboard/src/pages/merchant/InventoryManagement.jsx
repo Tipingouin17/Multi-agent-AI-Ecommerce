@@ -54,7 +54,7 @@ function InventoryManagement() {
     async function loadFilterOptions() {
       try {
         const categoriesData = await apiService.getProductCategories();
-        setCategories(categoriesData || []);
+        setCategories(categoriesData.categories || categoriesData || []);
         
         const warehousesData = await apiService.getWarehouses();
         setWarehouses(warehousesData || []);
