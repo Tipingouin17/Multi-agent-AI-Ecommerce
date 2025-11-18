@@ -26,14 +26,17 @@ export default function Login() {
     setLoading(false);
 
     if (result.success) {
-      // Redirect based on user role
+      // Set interface based on user role
       const role = result.user.role;
+      localStorage.setItem('selectedInterface', role);
+      
+      // Redirect based on user role
       if (role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate('/dashboard');
       } else if (role === 'merchant') {
         navigate('/dashboard');
       } else {
-        navigate(from, { replace: true });
+        navigate('/');
       }
     } else {
       setError(result.error);
