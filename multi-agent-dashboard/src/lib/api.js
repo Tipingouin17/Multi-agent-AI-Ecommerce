@@ -170,7 +170,7 @@ class ApiService {
 
   async getProduct(productId) {
     try {
-      const response = await clients.product.get(`/products/${productId}`)
+      const response = await clients.product.get(`/api/products/${productId}`)
       return response.data
     } catch (error) {
       throw new Error(`Failed to fetch product: ${error.message}`)
