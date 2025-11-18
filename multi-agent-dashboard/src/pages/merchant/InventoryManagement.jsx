@@ -905,7 +905,7 @@ function InventoryManagement() {
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select Warehouse</option>
-                      {adjustData.item.warehouses.map(warehouse => (
+                      {adjustData.item?.warehouses?.map(warehouse => (
                         <option key={warehouse.id} value={warehouse.id}>
                           {warehouse.name} (Current: {warehouse.quantity})
                         </option>
