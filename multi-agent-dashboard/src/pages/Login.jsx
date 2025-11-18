@@ -30,13 +30,14 @@ export default function Login() {
       const role = result.user.role;
       localStorage.setItem('selectedInterface', role);
       
+      // Force page reload to update App component's selectedInterface state
       // Redirect based on user role
       if (role === 'admin') {
-        navigate('/dashboard');
+        window.location.href = '/dashboard';
       } else if (role === 'merchant') {
-        navigate('/dashboard');
+        window.location.href = '/dashboard';
       } else {
-        navigate('/');
+        window.location.href = '/';
       }
     } else {
       setError(result.error);
