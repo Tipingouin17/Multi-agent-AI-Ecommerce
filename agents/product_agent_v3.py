@@ -185,6 +185,26 @@ def get_products(
         logger.error(f"Error getting products: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/products/stats")
+def get_product_stats(db: Session = Depends(get_db)):
+    """Get product statistics"""
+    try:
+        total_products = db.query(func.count(Product.id)).scalar()
+        active_products = db.query(func.count(Product.id)).filter(
+            Product.status == 'active'
+        ).scalar()
+        
+        total_value = db.query(func.sum(Product.price * Product.sales_count)).scalar() or 0
+        
+        return {
+            "total_products": total_products,
+            "active_products": active_products,
+            "inactive_products": total_products - active_products,
+            "total_value": float(total_value)
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting product stats: {e}")
 @app.get("/api/products/{product_id}")
 def get_product(product_id: int, db: Session = Depends(get_db)):
     """Get a single product by ID"""
@@ -313,26 +333,6 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/products/stats")
-def get_product_stats(db: Session = Depends(get_db)):
-    """Get product statistics"""
-    try:
-        total_products = db.query(func.count(Product.id)).scalar()
-        active_products = db.query(func.count(Product.id)).filter(
-            Product.status == 'active'
-        ).scalar()
-        
-        total_value = db.query(func.sum(Product.price * Product.sales_count)).scalar() or 0
-        
-        return {
-            "total_products": total_products,
-            "active_products": active_products,
-            "inactive_products": total_products - active_products,
-            "total_value": float(total_value)
-        }
-    
-    except Exception as e:
-        logger.error(f"Error getting product stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/analytics")
