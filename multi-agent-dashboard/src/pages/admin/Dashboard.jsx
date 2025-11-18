@@ -23,6 +23,7 @@ import {
   HardDrive,
   Network
 } from 'lucide-react'
+import { formatDateTime, formatRelativeTime } from '@/utils/dateFormatter'
 
 // Import our new components
 import { useWebSocket, useAgentStatus, useSystemAlerts, useSystemMetrics } from '@/contexts/WebSocketContext'
@@ -174,7 +175,7 @@ const AdminDashboard = () => {
           </Badge>
           
           <span className="text-sm text-gray-500">
-            Last updated: {lastUpdated.toLocaleTimeString()}
+            Last updated: {formatDateTime(lastUpdated)}
           </span>
           <Button onClick={handleRefresh} variant="outline" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatLongDate } from '@/utils/dateFormatter';
 import { useParams, Link } from 'react-router-dom';
 import { apiService } from '@/lib/api'
 
@@ -55,11 +56,8 @@ function OrderTracking() {
     }
   }
   
-  // Format date
-  function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  }
+  // Note: formatDate is now imported as formatLongDate from utils/dateFormatter
+  const formatDate = formatLongDate;
   
   // Render loading state
   if (loading) {

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Download, Printer } from 'lucide-react'
 import api from '@/lib/api-enhanced'
+import { formatDate } from '@/utils/dateFormatter'
 
 const OrderConfirmation = () => {
   const { orderId } = useParams()
@@ -38,7 +39,7 @@ const OrderConfirmation = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Order Date</p>
-                <p className="font-medium">{new Date(order?.created_at).toLocaleDateString()}</p>
+                <p className="font-medium">{formatDate(order?.created_at)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Estimated Delivery</p>

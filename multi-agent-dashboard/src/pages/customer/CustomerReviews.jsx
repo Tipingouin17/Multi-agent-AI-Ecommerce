@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Star } from 'lucide-react'
 import api from '@/lib/api-enhanced'
+import { formatDate } from '@/utils/dateFormatter'
 
 const CustomerReviews = () => {
   const { data: reviews, isLoading } = useQuery({
@@ -33,7 +34,7 @@ const CustomerReviews = () => {
                         {[...Array(5)].map((_, i) => (
                           <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                         ))}
-                        <span className="ml-2 text-sm text-gray-600">{new Date(review.created_at).toLocaleDateString()}</span>
+                        <span className="ml-2 text-sm text-gray-600">{formatDate(review.created_at)}</span>
                       </div>
                       <p className="mt-2 text-gray-700">{review.comment}</p>
                       <div className="flex space-x-2 mt-3">

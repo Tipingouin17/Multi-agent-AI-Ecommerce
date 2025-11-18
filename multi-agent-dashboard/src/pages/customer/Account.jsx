@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatLongDate } from '@/utils/dateFormatter';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '@/lib/api'
 
@@ -147,11 +148,8 @@ function Account() {
     }
   }
   
-  // Format date
-  function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  }
+  // Note: formatDate is now imported as formatLongDate from utils/dateFormatter
+  const formatDate = formatLongDate;
   
   // Get status color based on order status
   function getStatusColor(status) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '@/lib/api'
+import { formatDate, formatCurrency as formatCurrencyUtil } from '@/utils/dateFormatter'
 
 /**
  * Merchant Dashboard
@@ -62,12 +63,9 @@ function Dashboard() {
     }
   }
   
-  // Format currency
+  // Format currency (using utility)
   function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    return formatCurrencyUtil(amount);
   }
   
   // Format percentage
@@ -79,11 +77,7 @@ function Dashboard() {
     }).format(value / 100);
   }
   
-  // Format date
-  function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  }
+  // Note: formatDate is now imported from utils/dateFormatter
   
   return (
     <div className="p-6">

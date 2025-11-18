@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiService } from '@/lib/api'
+import { formatDate } from '@/utils/dateFormatter'
 
 /**
  * Product Details Page
@@ -447,7 +448,7 @@ function ProductDetails() {
                           <div className="flex items-center text-sm text-gray-500 mb-2">
                             <span>{review.author}</span>
                             <span className="mx-1">•</span>
-                            <span>{new Date(review.date).toLocaleDateString()}</span>
+                            <span>{formatDate(review.date)}</span>
                           </div>
                           <p className="text-gray-700">{review.content}</p>
                         </div>

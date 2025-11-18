@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, Package, Truck, CheckCircle, XCircle } from 'lucide-react'
 import api from '@/lib/api-enhanced'
+import { formatDate } from '@/utils/dateFormatter'
 
 const OrderDetail = () => {
   const { orderId } = useParams()
@@ -41,7 +42,7 @@ const OrderDetail = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Order #{order?.order_number}</h1>
-            <p className="text-gray-600">Placed on {new Date(order?.created_at).toLocaleDateString()}</p>
+            <p className="text-gray-600">Placed on {formatDate(order?.created_at)}</p>
           </div>
           <div className="flex space-x-2">
             <Button variant="outline">
