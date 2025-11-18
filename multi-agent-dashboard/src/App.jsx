@@ -64,7 +64,8 @@ import InventoryDashboard from './pages/merchant/InventoryDashboard'
 import FinancialOverviewDashboard from './pages/merchant/FinancialOverviewDashboard'
 import CustomerAnalyticsDashboard from './pages/merchant/CustomerAnalyticsDashboard'
 import ProductAnalyticsDashboard from './pages/merchant/ProductAnalyticsDashboard'
-import MarketingAnalyticsDashboard from './pages/merchant/MarketingAnalyticsDashboard'import OperationalMetricsDashboard from './pages/merchant/OperationalMetricsDashboard';
+import MarketingAnalyticsDashboard from './pages/merchant/MarketingAnalyticsDashboard'
+import OperationalMetricsDashboard from './pages/merchant/OperationalMetricsDashboard';
 import ReplenishmentDashboard from './pages/merchant/ReplenishmentDashboard';
 import InboundManagementDashboard from './pages/admin/InboundManagementDashboard';
 import FulfillmentDashboard from './pages/admin/FulfillmentDashboard';
