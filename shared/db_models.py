@@ -1297,12 +1297,12 @@ class Promotion(Base):
 
 
 # ============================================================================
-# PAYMENT METHODS MODEL
+# CUSTOMER PAYMENT METHODS MODEL
 # ============================================================================
 
-class PaymentMethod(Base):
-    """Saved payment methods"""
-    __tablename__ = "payment_methods"
+class CustomerPaymentMethod(Base):
+    """Saved customer payment methods"""
+    __tablename__ = "customer_payment_methods"
     
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
