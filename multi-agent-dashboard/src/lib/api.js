@@ -756,7 +756,9 @@ class ApiService {
       averageOrderValue: 100.92,
       conversionRate: 3.45,
       salesGrowth: 12.5,
-      ordersGrowth: 8.3
+      ordersGrowth: 8.3,
+      aovGrowth: 5.2,
+      conversionGrowth: 0.8
     }
   }
   
