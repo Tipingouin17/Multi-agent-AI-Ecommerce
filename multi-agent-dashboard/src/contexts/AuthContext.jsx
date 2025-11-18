@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       if (token) {
         try {
-          const response = await axios.get('/api/auth/api/auth/me');
+          const response = await axios.get('/api/auth/me');
           setUser(response.data);
         } catch (error) {
           console.error('Failed to load user:', error);
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/api/auth/login', {
+      const response = await axios.post('/api/auth/login', {
         email,
         password
       });
@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, username, password, role = 'customer', firstName = '', lastName = '') => {
     try {
-      const response = await axios.post('/api/auth/api/auth/register', {
+      const response = await axios.post('/api/auth/register', {
         email,
         username,
         password,
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       if (token) {
-        await axios.post('/api/auth/api/auth/logout');
+        await axios.post('/api/auth/logout');
       }
     } catch (error) {
       console.error('Logout request failed:', error);
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await axios.put('/api/auth/api/auth/profile', profileData);
+      const response = await axios.put('/api/auth/profile', profileData);
       setUser(response.data);
       return { success: true };
     } catch (error) {
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      await axios.post('/api/auth/api/auth/change-password', {
+      await axios.post('/api/auth/change-password', {
         current_password: currentPassword,
         new_password: newPassword
       });
