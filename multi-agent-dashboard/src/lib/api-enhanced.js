@@ -7,8 +7,8 @@
 
 import axios from 'axios'
 
-// Get API base URL from environment or default
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Use relative URL to work with Vite proxy and ngrok
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 // Create axios instance with default config
 const apiClient = axios.create({

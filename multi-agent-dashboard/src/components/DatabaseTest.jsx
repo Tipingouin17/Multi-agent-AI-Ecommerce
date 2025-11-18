@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 
-const API_BASE_URL = 'http://localhost'
-
+// Use relative URLs to work with Vite proxy and ngrok
 const AGENTS = [
-  { name: 'Monitoring Agent', port: 8014, endpoint: '/health' },
-  { name: 'Product Agent', port: 8002, endpoint: '/health' },
-  { name: 'Order Agent', port: 8001, endpoint: '/health' },
-  { name: 'Inventory Agent', port: 8003, endpoint: '/health' },
-  { name: 'Communication Agent', port: 8008, endpoint: '/health' }
+  { name: 'Monitoring Agent', agent: 'recommendation', endpoint: '/health' },
+  { name: 'Product Agent', agent: 'product', endpoint: '/health' },
+  { name: 'Order Agent', agent: 'order', endpoint: '/health' },
+  { name: 'Inventory Agent', agent: 'inventory', endpoint: '/health' },
+  { name: 'Communication Agent', agent: 'communication', endpoint: '/health' }
 ]
 
 export default function DatabaseTest({ onReset }) {
@@ -21,7 +20,7 @@ export default function DatabaseTest({ onReset }) {
   const checkAgentHealth = async (agent) => {
     try {
       const startTime = Date.now()
-      const response = await fetch(`${API_BASE_URL}:${agent.port}${agent.endpoint}`)
+      const response = await fetch(`/api/${agent.agent}${agent.endpoint}`)
       const responseTime = Date.now() - startTime
       
       if (response.ok) {
@@ -50,7 +49,7 @@ export default function DatabaseTest({ onReset }) {
 
   const fetchSystemOverview = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}:8014/system/overview`)
+      const response = await fetch(`/api/recommendation/system/overview`)
       if (response.ok) {
         const data = await response.json()
         setSystemOverview(data)
@@ -66,7 +65,7 @@ export default function DatabaseTest({ onReset }) {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}:8002/products`)
+      const response = await fetch(`/api/product/products`)
       if (response.ok) {
         const data = await response.json()
         const products = data.products || data || []
@@ -84,7 +83,7 @@ export default function DatabaseTest({ onReset }) {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}:8001/orders`)
+      const response = await fetch(`/api/order/orders`)
       if (response.ok) {
         const data = await response.json()
         const orders = data.orders || data || []
