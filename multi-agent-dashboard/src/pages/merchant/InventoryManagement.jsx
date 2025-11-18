@@ -57,7 +57,7 @@ function InventoryManagement() {
         setCategories(categoriesData.categories || categoriesData || []);
         
         const warehousesData = await apiService.getWarehouses();
-        setWarehouses(warehousesData || []);
+        setWarehouses(warehousesData.warehouses || warehousesData || []);
       } catch (err) {
         console.error("Failed to load filter options:", err);
         // Set empty arrays on error
