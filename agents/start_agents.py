@@ -12,12 +12,7 @@ import subprocess
 import signal
 import argparse
 
-import structlog
-
-logger = structlog.get_logger(__name__)
 from typing import List, Dict
-
-from shared.db_helpers import DatabaseHelper
 import psutil
 
 # Add the project root to the Python path
@@ -152,15 +147,15 @@ def start_agent(agent: Dict) -> subprocess.Popen:
     
     # Check if the agent file exists
     if not os.path.exists(agent_path):
-        logger.warning(f"⚠️ Warning: Agent file not found: {agent_path}")
+        print(f"⚠️ Warning: Agent file not found: {agent_path}")
         return None
     
     # Check if the port is already in use
     if is_port_in_use(agent["port"]):
-        logger.warning(f"⚠️ Warning: Port {agent['port']} is already in use. Agent {agent['name']} may not start correctly.")
+        print(f"⚠️ Warning: Port {agent['port']} is already in use. Agent {agent['name']} may not start correctly.")
     
     # Start the agent process
-    logger.info(f"🚀 Starting {agent['name']}...")
+    print(f"🚀 Starting {agent['name']}...")
     
     # Use pythonw.exe on Windows to avoid console windows
     if sys.platform == 'win32':
@@ -183,15 +178,15 @@ def start_agent(agent: Dict) -> subprocess.Popen:
     # Wait a moment to check for immediate crashes
     time.sleep(1)
     if process.poll() is not None:
-        logger.error(f"❌ Error: {agent['name']} failed to start!")
+        print(f"❌ Error: {agent['name']} failed to start!")
         stdout, stderr = process.communicate()
         if stdout:
-            logger.info(f"Standard output: {stdout}")
+            print(f"Standard output: {stdout}")
         if stderr:
-            logger.error(f"Error output: {stderr}")
+            print(f"Error output: {stderr}")
         return None
     
-    logger.info(f"✅ {agent['name']} started successfully (PID: {process.pid})")
+    print(f"✅ {agent['name']} started successfully (PID: {process.pid})")
     return process
 
 def stop_agent(name: str, process: subprocess.Popen) -> None:
@@ -199,7 +194,7 @@ def stop_agent(name: str, process: subprocess.Popen) -> None:
     if process is None or process.poll() is not None:
         return
     
-    logger.info(f"🛑 Stopping {name}...")
+    print(f"🛑 Stopping {name}...")
     
     if sys.platform == 'win32':
         # On Windows, we need to use taskkill to kill the process tree
@@ -214,16 +209,16 @@ def stop_agent(name: str, process: subprocess.Popen) -> None:
     # Wait for the process to terminate
     try:
         process.wait(timeout=5)
-        logger.info(f"✅ {name} stopped")
+        print(f"✅ {name} stopped")
     except subprocess.TimeoutExpired:
-        logger.info(f"⚠️ {name} did not terminate gracefully, forcing...")
+        print(f"⚠️ {name} did not terminate gracefully, forcing...")
         process.kill()
 
 def signal_handler(sig, frame):
     """Handle Ctrl+C to gracefully shut down all agents"""
     global stop_requested
     if not stop_requested:
-        logger.info("\n🛑 Shutdown requested. Stopping all agents...")
+        print("\n🛑 Shutdown requested. Stopping all agents...")
         stop_requested = True
         stop_all_agents()
         sys.exit(0)
@@ -263,11 +258,11 @@ def start_all_agents(selected_agents=None):
         dependencies_met = True
         for dependency in agent["dependencies"]:
             if dependency not in started_agents:
-                logger.info(f"⚠️ Dependency not met for {name}: {dependency} not started")
+                print(f"⚠️ Dependency not met for {name}: {dependency} not started")
                 dependencies_met = False
         
         if not dependencies_met:
-            logger.info(f"⚠️ Skipping {name} due to unmet dependencies")
+            print(f"⚠️ Skipping {name} due to unmet dependencies")
             continue
         
         # Start the agent
@@ -279,14 +274,14 @@ def start_all_agents(selected_agents=None):
             # Wait for the specified startup delay
             time.sleep(agent["startup_delay"])
     
-    logger.info(f"\n✅ Started {len(running_processes)}/{len(AGENTS)} agents successfully")
+    print(f"\n✅ Started {len(running_processes)}/{len(AGENTS)} agents successfully")
     
     # Keep the script running to manage the processes
     try:
         while not stop_requested:
             time.sleep(1)
     except KeyboardInterrupt:
-        logger.info("\n🛑 Shutdown requested. Stopping all agents...")
+        print("\n🛑 Shutdown requested. Stopping all agents...")
         stop_all_agents()
 
 def parse_arguments():
@@ -300,13 +295,13 @@ def main():
     args = parse_arguments()
     selected_agents = args.agents
     
-    logger.info("🤖 Multi-Agent E-commerce System Launcher")
-    logger.info("----------------------------------------")
+    print("🤖 Multi-Agent E-commerce System Launcher")
+    print("----------------------------------------")
     
     if selected_agents:
-        logger.info(f"Starting selected agents: {', '.join(selected_agents)}")
+        print(f"Starting selected agents: {', '.join(selected_agents)}")
     else:
-        logger.info("Starting all agents")
+        print("Starting all agents")
     
     start_all_agents(selected_agents)
 
