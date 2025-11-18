@@ -71,7 +71,7 @@ function ProductCatalog() {
   async function loadCategories() {
     try {
       const data = await apiService.getCategories();
-      setCategories(data);
+      setCategories(data.categories || data || []);
     } catch (err) {
       console.error("Failed to load categories:", err);
     }
