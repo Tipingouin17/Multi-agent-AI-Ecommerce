@@ -1,0 +1,19 @@
+=== TESTING ORDER → INVENTORY WORKFLOW ===
+
+Step 1: Current Inventory for Product 5
+  Warehouse 1: 50 units
+  Total: 50 units
+
+Step 2: Creating order for 5 units of Product 5
+  ❌ Error: (psycopg2.errors.ForeignKeyViolation) insert or update on table "orders" violates foreign key constraint "orders_shipping_address_id_fkey"
+DETAIL:  Key (shipping_address_id)=(1) is not present in table "addresses".
+
+[SQL: INSERT INTO orders (order_number, customer_id, merchant_id, status, payment_status, fulfillment_status, subtotal, tax, shipping_cost, discount, total, currency, shipping_address_id, billing_address_id, notes, customer_notes, created_at, updated_at, confirmed_at, shipped_at, delivered_at, cancelled_at) VALUES (%(order_number)s, %(customer_id)s, %(merchant_id)s, %(status)s, %(payment_status)s, %(fulfillment_status)s, %(subtotal)s, %(tax)s, %(shipping_cost)s, %(discount)s, %(total)s, %(currency)s, %(shipping_address_id)s, %(billing_address_id)s, %(notes)s, %(customer_notes)s, %(created_at)s, %(updated_at)s, %(confirmed_at)s, %(shipped_at)s, %(delivered_at)s, %(cancelled_at)s) RETURNING orders.id]
+[parameters: {'order_number': 'ORD-000005', 'customer_id': 1, 'merchant_id': 3, 'status': 'pending', 'payment_status': 'pending', 'fulfillment_status': 'unfulfilled', 'subtotal': Decimal('249.95'), 'tax': Decimal('24.9950'), 'shipping_cost': Decimal('10.00'), 'discount': 0.0, 'total': Decimal('284.9450'), 'currency': 'USD', 'shipping_address_id': 1, 'billing_address_id': 1, 'notes': None, 'customer_notes': None, 'created_at': datetime.datetime(2025, 11, 18, 16, 38, 45, 444576), 'updated_at': datetime.datetime(2025, 11, 18, 16, 38, 45, 444580), 'confirmed_at': None, 'shipped_at': None, 'delivered_at': None, 'cancelled_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+Step 3: Inventory After Order
+  Warehouse 1: 50 units (Reserved: 2)
+  Total: 50 units
+
+=== TEST COMPLETE ===

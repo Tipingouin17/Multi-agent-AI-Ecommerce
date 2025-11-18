@@ -1,0 +1,138 @@
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4A90E2','primaryTextColor':'#fff','primaryBorderColor':'#2E5C8A','lineColor':'#5C6BC0','secondaryColor':'#7CB342','tertiaryColor':'#FFA726'}}}%%
+
+graph TB
+    %% Customer-Facing Layer
+    subgraph Customer["👤 Customer Portal"]
+        CP[Customer UI]
+    end
+    
+    subgraph Merchant["🏪 Merchant Portal"]
+        MP[Merchant UI]
+    end
+    
+    subgraph Admin["⚙️ Admin Portal"]
+        AP[Admin UI]
+    end
+    
+    %% Core Business Agents
+    subgraph CoreAgents["🎯 Core Business Agents"]
+        AUTH[Auth Agent<br/>Port 8017<br/>JWT Authentication]
+        ORDER[Order Agent<br/>Port 8000<br/>Order Management]
+        PRODUCT[Product Agent<br/>Port 8001<br/>Product Catalog]
+        INVENTORY[Inventory Agent<br/>Port 8002<br/>Stock Management]
+        ANALYTICS[Analytics Agent<br/>Port 8031<br/>Business Intelligence]
+    end
+    
+    %% Warehouse & Logistics
+    subgraph Warehouse["📦 Warehouse & Logistics"]
+        WH[Warehouse Agent<br/>Port 8016<br/>Warehouse Operations]
+        INBOUND[Inbound Agent<br/>Port 8018<br/>Receiving & Putaway]
+        TRANSPORT[Transport Agent<br/>Shipping & Delivery]
+    end
+    
+    %% Customer Service
+    subgraph CustomerService["💬 Customer Service"]
+        RMA[RMA Agent<br/>Port 8019<br/>Returns & Refunds]
+        RETURNS[Returns Agent<br/>Return Processing]
+        AFTERSALES[After Sales Agent<br/>Customer Support]
+    end
+    
+    %% Advanced Intelligence
+    subgraph Intelligence["🤖 AI & Intelligence"]
+        DEMAND[Demand Forecasting<br/>ML-Based Predictions]
+        PRICING[Dynamic Pricing<br/>Price Optimization]
+        FRAUD[Fraud Detection<br/>Risk Analysis]
+        QUALITY[Quality Control<br/>Inspection Automation]
+    end
+    
+    %% Integration & Events
+    subgraph Integration["🔄 Integration Layer"]
+        MARKETPLACE[Marketplace Connector<br/>Port 8003<br/>Multi-Channel]
+        BACKOFFICE[Backoffice Agent<br/>ERP Integration]
+        KNOWLEDGE[Knowledge Management<br/>Documentation]
+    end
+    
+    %% Database
+    DB[(PostgreSQL Database<br/>multi_agent_ecommerce)]
+    
+    %% Customer Portal Connections
+    CP -->|Login/Register| AUTH
+    CP -->|Browse Products| PRODUCT
+    CP -->|Place Order| ORDER
+    CP -->|Track Order| ORDER
+    CP -->|Request Return| RMA
+    
+    %% Merchant Portal Connections
+    MP -->|Login| AUTH
+    MP -->|Manage Products| PRODUCT
+    MP -->|View Orders| ORDER
+    MP -->|Manage Inventory| INVENTORY
+    MP -->|View Analytics| ANALYTICS
+    MP -->|Manage Warehouse| WH
+    
+    %% Admin Portal Connections
+    AP -->|Login| AUTH
+    AP -->|System Analytics| ANALYTICS
+    AP -->|Monitor Agents| ANALYTICS
+    AP -->|Manage Users| AUTH
+    AP -->|View All Data| DB
+    
+    %% Critical Workflow Integrations
+    ORDER -.->|1. Check Stock| INVENTORY
+    ORDER -.->|2. Deduct Inventory| INVENTORY
+    INVENTORY -.->|Stock Alerts| DEMAND
+    
+    INBOUND -.->|Receive Goods| WH
+    INBOUND -.->|Generate Putaway| WH
+    INBOUND -.->|3. Update Stock| INVENTORY
+    
+    RMA -.->|Inspect Return| QUALITY
+    RMA -.->|4. Restore Inventory| INVENTORY
+    RMA -.->|Process Refund| ORDER
+    
+    INVENTORY -.->|Transfer Stock| WH
+    WH -.->|Multi-Warehouse| INVENTORY
+    
+    %% Agent to Database Connections
+    AUTH ---|Read/Write| DB
+    ORDER ---|Read/Write| DB
+    PRODUCT ---|Read/Write| DB
+    INVENTORY ---|Read/Write| DB
+    ANALYTICS ---|Read| DB
+    WH ---|Read/Write| DB
+    INBOUND ---|Read/Write| DB
+    RMA ---|Read/Write| DB
+    RETURNS ---|Read/Write| DB
+    
+    %% AI Agent Connections
+    DEMAND ---|Read| DB
+    PRICING ---|Read/Write| DB
+    FRAUD ---|Read| DB
+    QUALITY ---|Read/Write| DB
+    
+    %% Integration Connections
+    MARKETPLACE ---|Sync| PRODUCT
+    MARKETPLACE ---|Sync| ORDER
+    MARKETPLACE ---|Sync| INVENTORY
+    BACKOFFICE ---|ERP Sync| DB
+    
+    %% Styling
+    classDef customerClass fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    classDef merchantClass fill:#7CB342,stroke:#558B2F,stroke-width:3px,color:#fff
+    classDef adminClass fill:#FFA726,stroke:#F57C00,stroke-width:3px,color:#fff
+    classDef coreClass fill:#5C6BC0,stroke:#3949AB,stroke-width:2px,color:#fff
+    classDef warehouseClass fill:#8D6E63,stroke:#5D4037,stroke-width:2px,color:#fff
+    classDef serviceClass fill:#EC407A,stroke:#C2185B,stroke-width:2px,color:#fff
+    classDef aiClass fill:#AB47BC,stroke:#7B1FA2,stroke-width:2px,color:#fff
+    classDef integrationClass fill:#26A69A,stroke:#00796B,stroke-width:2px,color:#fff
+    classDef dbClass fill:#455A64,stroke:#263238,stroke-width:4px,color:#fff
+    
+    class CP customerClass
+    class MP merchantClass
+    class AP adminClass
+    class AUTH,ORDER,PRODUCT,INVENTORY,ANALYTICS coreClass
+    class WH,INBOUND,TRANSPORT warehouseClass
+    class RMA,RETURNS,AFTERSALES serviceClass
+    class DEMAND,PRICING,FRAUD,QUALITY aiClass
+    class MARKETPLACE,BACKOFFICE,KNOWLEDGE integrationClass
+    class DB dbClass
