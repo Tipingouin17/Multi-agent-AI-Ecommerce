@@ -547,11 +547,134 @@ class ApiService {
   }
 
   getMockInventory() {
-    return [
-      { product_id: '1', product_name: 'Wireless Headphones', warehouse: 'NA-DC-01', quantity: 150, reserved: 25 },
-      { product_id: '2', product_name: 'Smart Watch', warehouse: 'NA-DC-01', quantity: 75, reserved: 10 },
-      { product_id: '3', product_name: 'Bluetooth Speaker', warehouse: 'EU-DH-01', quantity: 200, reserved: 35 }
-    ]
+    return {
+      inventory: [
+        { 
+          id: '1', 
+          sku: 'SKU-1001', 
+          name: 'Wireless Headphones', 
+          category: 'Electronics',
+          price: 79.99,
+          totalStock: 150, 
+          lowStockThreshold: 50,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 150 }
+          ]
+        },
+        { 
+          id: '2', 
+          sku: 'SKU-1002', 
+          name: 'Smart Watch', 
+          category: 'Electronics',
+          price: 199.99,
+          totalStock: 75, 
+          lowStockThreshold: 30,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 75 }
+          ]
+        },
+        { 
+          id: '3', 
+          sku: 'SKU-1003', 
+          name: 'Bluetooth Speaker', 
+          category: 'Electronics',
+          price: 49.99,
+          totalStock: 200, 
+          lowStockThreshold: 60,
+          warehouses: [
+            { id: 'WH-002', name: 'EU-DH-01', quantity: 200 }
+          ]
+        },
+        { 
+          id: '4', 
+          sku: 'SKU-1004', 
+          name: 'Mechanical Keyboard', 
+          category: 'Electronics',
+          price: 129.99,
+          totalStock: 85, 
+          lowStockThreshold: 40,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 85 }
+          ]
+        },
+        { 
+          id: '5', 
+          sku: 'SKU-1005', 
+          name: 'USB-C Cable', 
+          category: 'Electronics',
+          price: 12.99,
+          totalStock: 500, 
+          lowStockThreshold: 100,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 300 },
+            { id: 'WH-002', name: 'EU-DH-01', quantity: 200 }
+          ]
+        },
+        { 
+          id: '6', 
+          sku: 'SKU-1006', 
+          name: 'Laptop Stand', 
+          category: 'Electronics',
+          price: 39.99,
+          totalStock: 120, 
+          lowStockThreshold: 50,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 120 }
+          ]
+        },
+        { 
+          id: '7', 
+          sku: 'SKU-1007', 
+          name: 'Screen Protector', 
+          category: 'Electronics',
+          price: 9.99,
+          totalStock: 0, 
+          lowStockThreshold: 200,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 0 }
+          ]
+        },
+        { 
+          id: '8', 
+          sku: 'SKU-1008', 
+          name: 'Phone Case', 
+          category: 'Electronics',
+          price: 19.99,
+          totalStock: 250, 
+          lowStockThreshold: 100,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 150 },
+            { id: 'WH-002', name: 'EU-DH-01', quantity: 100 }
+          ]
+        },
+        { 
+          id: '9', 
+          sku: 'SKU-1009', 
+          name: 'Men\'s Jeans', 
+          category: 'Clothing',
+          price: 59.99,
+          totalStock: 180, 
+          lowStockThreshold: 80,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 180 }
+          ]
+        },
+        { 
+          id: '10', 
+          sku: 'SKU-1010', 
+          name: 'Women\'s Dress', 
+          category: 'Clothing',
+          price: 79.99,
+          totalStock: 95, 
+          lowStockThreshold: 50,
+          warehouses: [
+            { id: 'WH-001', name: 'NA-DC-01', quantity: 95 }
+          ]
+        }
+      ],
+      totalPages: 1,
+      totalItems: 10
+    }
   }
 
   getMockPerformanceMetrics() {
