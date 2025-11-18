@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,10 +33,11 @@ const AdminLayout = ({ onInterfaceReset }) => {
   const { user } = useUser()
   const { logout } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const handleLogout = async () => {
     await logout()
-    window.location.href = '/login'
+    navigate('/login', { replace: true })
   }
   
   // Close dropdowns when clicking outside
