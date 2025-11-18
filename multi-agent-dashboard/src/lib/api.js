@@ -436,9 +436,20 @@ class ApiService {
 
   // ==================== MARKETPLACE SYNC APIs ====================
   
-  async getMarketplaceSyncStatus() {
-    const response = await clients.marketplace.get('/api/sync/status')
-    return response.data
+  async getMarketplaceSyncStatus(marketplaceId) {
+    try {
+      const response = await clients.marketplace.get(`/api/sync/status/${marketplaceId}`)
+      return response.data
+    } catch (error) {
+      console.warn(`Marketplace sync status unavailable for ${marketplaceId}, using mock data`)
+      return {
+        last_sync: new Date(Date.now() - 300000).toISOString(),
+        status: 'success',
+        synced_products: 0,
+        synced_orders: 0,
+        synced_inventory: 0
+      }
+    }
   }
 
   // ==================== ANALYTICS APIs ====================
@@ -884,61 +895,6 @@ class ApiService {
     ]
   }
   
-  getMockMarketplaces() {
-    return [
-      {
-        id: 'MKT-001',
-        name: 'Amazon France',
-        platform: 'Amazon',
-        status: 'connected',
-        active_listings: 1245,
-        monthly_sales: 45230.50,
-        commission_rate: 15,
-        last_sync: '2024-10-24T10:30:00Z'
-      },
-      {
-        id: 'MKT-002',
-        name: 'eBay France',
-        platform: 'eBay',
-        status: 'connected',
-        active_listings: 892,
-        monthly_sales: 32450.75,
-        commission_rate: 12,
-        last_sync: '2024-10-24T10:25:00Z'
-      },
-      {
-        id: 'MKT-003',
-        name: 'CDiscount',
-        platform: 'CDiscount',
-        status: 'connected',
-        active_listings: 567,
-        monthly_sales: 18900.25,
-        commission_rate: 10,
-        last_sync: '2024-10-24T10:20:00Z'
-      },
-      {
-        id: 'MKT-004',
-        name: 'BackMarket',
-        platform: 'BackMarket',
-        status: 'connected',
-        active_listings: 234,
-        monthly_sales: 12340.00,
-        commission_rate: 8,
-        last_sync: '2024-10-24T10:15:00Z'
-      },
-      {
-        id: 'MKT-005',
-        name: 'Refurbed',
-        platform: 'Refurbed',
-        status: 'pending',
-        active_listings: 0,
-        monthly_sales: 0,
-        commission_rate: 9,
-        last_sync: null
-      }
-    ]
-  }
-
   getMockSalesAnalytics() {
     return {
       daily_sales: [
