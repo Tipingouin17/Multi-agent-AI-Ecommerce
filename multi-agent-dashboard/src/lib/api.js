@@ -963,12 +963,6 @@ class ApiService {
     ]
   }
 
-}
-
-// Export singleton instance
-export const apiService = new ApiService()
-export default apiService
-
   // ==================== MISSING APIs - IMPLEMENTATION ====================
   
   // Order Management APIs
@@ -1380,3 +1374,8 @@ export default apiService
     return { status: 'connected' }
   }
 
+}
+
+// Export singleton instance
+export const apiService = new ApiService()
+export default apiService
