@@ -11,7 +11,11 @@ import AlertsManagement from './pages/admin/AlertsManagement'
 import PerformanceAnalytics from './pages/admin/PerformanceAnalytics'
 import SystemConfiguration from './pages/admin/SystemConfiguration'
 import { WebSocketProvider } from './contexts/WebSocketContext'
+import { AuthProvider } from './contexts/AuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
+import ProtectedRoute from './components/ProtectedRoute'
+import Login from './pages/Login'
+import Register from './pages/Register'
 // Merchant components
 import MerchantLayout from './components/layouts/MerchantLayout'
 import MerchantDashboard from './pages/merchant/Dashboard'
@@ -318,6 +322,7 @@ function App() {
   };
 
   return (
+    <AuthProvider>
       <WebSocketProvider>
       <BrowserRouter>
         {!selectedInterface && (
@@ -327,9 +332,15 @@ function App() {
           />
         )}
         
+        {/* Public routes */}
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+
         {selectedInterface === 'admin' && (
           <Routes>
-            <Route path="/" element={<AdminLayout onInterfaceReset={handleInterfaceReset} />}>
+            <Route path="/" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout onInterfaceReset={handleInterfaceReset} /></ProtectedRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
               <Route path="/agents" element={<ErrorBoundary><AgentManagement /></ErrorBoundary>} />
@@ -351,7 +362,7 @@ function App() {
         
         {selectedInterface === 'merchant' && (
           <Routes>
-            <Route path="/" element={<MerchantLayout onInterfaceReset={handleInterfaceReset} />}>
+            <Route path="/" element={<ProtectedRoute allowedRoles={['merchant']}><MerchantLayout onInterfaceReset={handleInterfaceReset} /></ProtectedRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<ErrorBoundary><MerchantDashboard /></ErrorBoundary>} />
               <Route path="/products" element={<ErrorBoundary><ProductManagement /></ErrorBoundary>} />
@@ -410,7 +421,7 @@ function App() {
         
         {selectedInterface === 'customer' && (
           <Routes>
-            <Route path="/" element={<CustomerLayout onInterfaceReset={handleInterfaceReset} />}>
+            <Route path="/" element={<ProtectedRoute allowedRoles={['customer']}><CustomerLayout onInterfaceReset={handleInterfaceReset} /></ProtectedRoute>}>
               <Route index element={<Home />} />
               <Route path="/products" element={<ErrorBoundary><ProductCatalog /></ErrorBoundary>} />
               <Route path="/products/:productId" element={<ErrorBoundary><ProductDetails /></ErrorBoundary>} />
@@ -436,6 +447,7 @@ function App() {
         )}
       </BrowserRouter>
       </WebSocketProvider>
+    </AuthProvider>
   );
 }
 

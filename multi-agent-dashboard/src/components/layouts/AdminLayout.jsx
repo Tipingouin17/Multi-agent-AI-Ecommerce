@@ -24,13 +24,20 @@ import {
 import UserProfileDropdown from '../shared/UserProfileDropdown'
 import NotificationsDropdown from '../shared/NotificationsDropdown'
 import { useUser } from '../../contexts/UserContext'
+import { useAuth } from '../../contexts/AuthContext'
 
 const AdminLayout = ({ onInterfaceReset }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const { user } = useUser()
+  const { logout } = useAuth()
   const location = useLocation()
+
+  const handleLogout = async () => {
+    await logout()
+    window.location.href = '/login'
+  }
   
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -128,13 +135,20 @@ const AdminLayout = ({ onInterfaceReset }) => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-800">
+          <div className="p-4 border-t border-gray-800 space-y-2">
             <Button
               variant="ghost"
-              onClick={onInterfaceReset}
+              onClick={handleLogout}
               className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-800"
             >
               <LogOut className="w-4 h-4" />
+              {sidebarOpen && <span className="ml-3">Logout</span>}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={onInterfaceReset}
+              className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-800 text-xs"
+            >
               {sidebarOpen && <span className="ml-3">Switch Interface</span>}
             </Button>
           </div>

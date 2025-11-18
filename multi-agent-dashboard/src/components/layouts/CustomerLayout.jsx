@@ -18,13 +18,20 @@ import {
 import UserProfileDropdown from '../shared/UserProfileDropdown'
 import NotificationsDropdown from '../shared/NotificationsDropdown'
 import { useUser } from '../../contexts/UserContext'
+import { useAuth } from '../../contexts/AuthContext'
 
 const CustomerLayout = ({ onInterfaceReset }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const { user } = useUser()
+  const { logout } = useAuth()
   const location = useLocation()
+
+  const handleLogout = async () => {
+    await logout()
+    window.location.href = '/login'
+  }
   
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -210,10 +217,17 @@ const CustomerLayout = ({ onInterfaceReset }) => {
               {/* Switch Interface */}
               <Button
                 variant="ghost"
-                onClick={onInterfaceReset}
+                onClick={handleLogout}
                 className="w-full justify-start text-gray-600 hover:text-purple-600 hover:bg-purple-50"
               >
                 <LogOut className="w-4 h-4 mr-3" />
+                Logout
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={onInterfaceReset}
+                className="w-full justify-start text-gray-600 hover:text-purple-600 hover:bg-purple-50 text-xs"
+              >
                 Switch Interface
               </Button>
             </div>
@@ -268,6 +282,7 @@ const CustomerLayout = ({ onInterfaceReset }) => {
                 <li><Link to="/account" className="hover:text-white">My Account</Link></li>
                 <li><Link to="/orders" className="hover:text-white">Order History</Link></li>
                 <li><Link to="/wishlist" className="hover:text-white">Wishlist</Link></li>
+                <li><Button onClick={handleLogout} className="text-gray-400 hover:text-white p-0 h-auto font-normal text-sm">Logout</Button></li>
                 <li><Button onClick={onInterfaceReset} className="text-gray-400 hover:text-white p-0 h-auto font-normal text-sm">Switch Interface</Button></li>
               </ul>
             </div>
