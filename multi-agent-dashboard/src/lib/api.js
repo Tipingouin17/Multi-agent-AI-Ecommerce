@@ -348,7 +348,7 @@ class ApiService {
   
   async getMarketplacePerformance(timeRange = '7d') {
     try {
-      const response = await clients.marketplace.get('/api/performance', { params: { timeRange } })
+      const response = await clients.marketplace.get('/performance', { params: { timeRange } })
       return response.data
     } catch (error) {
       console.warn('Marketplace performance unavailable, using mock data')
@@ -469,7 +469,7 @@ class ApiService {
   
   async getMarketplaceSyncStatus(marketplaceId) {
     try {
-      const response = await clients.marketplace.get(`/api/sync/status/${marketplaceId}`)
+      const response = await clients.marketplace.get('/sync/status')
       return response.data
     } catch (error) {
       console.warn(`Marketplace sync status unavailable for ${marketplaceId}, using mock data`)
