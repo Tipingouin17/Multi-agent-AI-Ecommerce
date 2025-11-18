@@ -236,7 +236,41 @@ if exist "%FRONTEND_DIR%" (
 )
 
 REM ################################################################################
-REM STEP 5: System Status Summary
+REM STEP 5: Start ngrok for External Access
+REM ################################################################################
+
+echo.
+echo ===============================================================================
+echo STEP 5: Starting ngrok for External Access
+echo ===============================================================================
+echo.
+
+if exist "%PROJECT_ROOT%ngrok.exe" (
+    echo Starting ngrok to expose frontend on port 5173...
+    
+    REM Start ngrok in background
+    start /B "" cmd /c ""%PROJECT_ROOT%ngrok.exe" http 5173 > "%LOGS_DIR%\ngrok.log" 2>&1"
+    
+    echo ✓ ngrok started!
+    echo   Logs: %LOGS_DIR%\ngrok.log
+    
+    echo.
+    echo Waiting 5 seconds for ngrok to initialize...
+    timeout /t 5 /nobreak >nul
+    
+    echo.
+    echo ✓ ngrok is running! Check the ngrok web interface at http://127.0.0.1:4040
+    echo   to get your public URL.
+    echo.
+) else (
+    echo ⚠ ngrok.exe not found in project root. Skipping external access setup.
+    echo   To enable external access, download ngrok.exe from https://ngrok.com/download
+    echo   and place it in: %PROJECT_ROOT%
+    echo.
+)
+
+REM ################################################################################
+REM STEP 6: System Status Summary
 REM ################################################################################
 
 echo.
@@ -249,10 +283,11 @@ echo                        ACCESS POINTS
 echo ===============================================================================
 echo.
 echo 📱 User Interfaces:
-echo   Frontend UI:         http://localhost:5173
-echo   Admin Dashboard:     http://localhost:5173 -^> Select 'Admin Dashboard'
-echo   Merchant Portal:     http://localhost:5173 -^> Select 'Merchant Portal'
-echo   Customer Portal:     http://localhost:5173 -^> Select 'Customer Portal'
+echo   Frontend UI (Local):  http://localhost:5173
+echo   Frontend UI (Public): http://127.0.0.1:4040 (ngrok web interface - get public URL)
+echo   Admin Dashboard:      http://localhost:5173 -^> Select 'Admin Dashboard'
+echo   Merchant Portal:      http://localhost:5173 -^> Select 'Merchant Portal'
+echo   Customer Portal:      http://localhost:5173 -^> Select 'Customer Portal'
 echo.
 echo 🔧 Backend Services:
 echo   System API Gateway:  http://localhost:8100
@@ -268,6 +303,7 @@ echo ===========================================================================
 echo.
 echo   ✓ Backend Agents:        38 agents launched (including Authentication)
 echo   ✓ Frontend UI:           Running on port 5173
+echo   ✓ ngrok:                 External access enabled (if ngrok.exe found)
 echo.
 echo ===============================================================================
 echo                        STOP COMMANDS
