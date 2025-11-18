@@ -163,7 +163,7 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "agent": "authentication", "version": "3.0"}
 
-@app.post("/api/auth/register", response_model=TokenResponse)
+@app.post("/register", response_model=TokenResponse)
 async def register(request: RegisterRequest, db: Session = Depends(get_db_session)):
     """Register a new user"""
     try:
@@ -232,7 +232,7 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db_sessio
             detail=f"Registration failed: {str(e)}"
         )
 
-@app.post("/api/auth/login", response_model=TokenResponse)
+@app.post("/login", response_model=TokenResponse)
 async def login(request: LoginRequest, db: Session = Depends(get_db_session)):
     """Login user and return access token"""
     try:
@@ -280,17 +280,17 @@ async def login(request: LoginRequest, db: Session = Depends(get_db_session)):
             detail=f"Login failed: {str(e)}"
         )
 
-@app.post("/api/auth/logout")
+@app.post("/logout")
 async def logout(current_user: User = Depends(get_current_user)):
     """Logout user (client should discard token)"""
     return {"message": "Successfully logged out"}
 
-@app.get("/api/auth/me", response_model=UserResponse)
+@app.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
     return current_user.to_dict()
 
-@app.put("/api/auth/profile")
+@app.put("/profile")
 async def update_profile(
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
@@ -320,7 +320,7 @@ async def update_profile(
             detail=f"Profile update failed: {str(e)}"
         )
 
-@app.post("/api/auth/change-password")
+@app.post("/change-password")
 async def change_password(
     current_password: str,
     new_password: str,
