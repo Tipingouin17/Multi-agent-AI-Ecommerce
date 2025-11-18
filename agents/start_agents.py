@@ -29,6 +29,13 @@ if project_root not in sys.path:
 # Agent configuration with dependencies and startup order
 AGENTS = [
     {
+        "name": "Authentication Agent",
+        "file": "auth_agent_v3.py",
+        "port": 8017,
+        "dependencies": [],  # No dependencies, starts first
+        "startup_delay": 2,
+    },
+    {
         "name": "AI Monitoring Agent",
         "file": "ai_monitoring_agent.py",
         "port": 8014,
