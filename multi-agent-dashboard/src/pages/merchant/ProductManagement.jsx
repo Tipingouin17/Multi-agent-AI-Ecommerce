@@ -61,7 +61,7 @@ function ProductManagement() {
     async function loadFilterOptions() {
       try {
         const categoriesData = await apiService.getProductCategories();
-        setCategories(categoriesData || []);
+        setCategories(categoriesData.categories || categoriesData || []);
         
         const marketplacesData = await apiService.getMarketplaces();
         setMarketplaces(marketplacesData || []);
