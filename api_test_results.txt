@@ -1,0 +1,145 @@
+=========================================
+BACKEND API TESTING SUITE
+=========================================
+
+=== AUTH AGENT (8017) ===
+Health Check:
+{
+    "status": "healthy",
+    "agent": "authentication",
+    "version": "3.0"
+}
+
+=== ORDER AGENT (8000) ===
+Health Check:
+{
+    "status": "healthy",
+    "agent": "order_agent_v3",
+    "version": "3.0.0"
+}
+
+Get Orders:
+{
+    "orders": [
+        {
+            "id": 1,
+            "order_number": "ORD-00000001",
+            "customer_id": 1,
+            "merchant_id": 3,
+            "status": "confirmed",
+            "payment_status": "paid",
+            "fulfillment_status": "unfulfilled",
+            "subtotal": 299.98,
+            "tax": 20.0,
+            "shipping_cost": 5.0,
+            "discount": 0.0,
+            "total": 324.98,
+            "currency": "USD",
+            "shipping_address_id": null,
+            "billing_address_id": null,
+            "notes": "Test order for customer portal testing",
+            "customer_notes": null,
+
+Get Single Order:
+{
+    "id": 1,
+    "order_number": "ORD-00000001",
+    "customer_id": 1,
+    "merchant_id": 3,
+    "status": "confirmed",
+    "payment_status": "paid",
+    "fulfillment_status": "unfulfilled",
+    "subtotal": 299.98,
+    "tax": 20.0,
+    "shipping_cost": 5.0,
+    "discount": 0.0,
+    "total": 324.98,
+    "currency": "USD",
+    "shipping_address_id": null,
+    "billing_address_id": null,
+    "notes": "Test order for customer portal testing",
+    "customer_notes": null,
+    "metadata": null,
+    "created_at": "2025-11-18T10:40:11.515049",
+    "updated_at": "2025-11-18T10:40:11.515049",
+    "confirmed_at": null,
+    "shipped_at": null,
+    "delivered_at": null,
+    "cancelled_at": null,
+    "customer": {
+        "id": 1,
+        "user_id": 11,
+        "name": "Alice Johnson",
+        "email": "customer1@example.com",
+
+=== PRODUCT AGENT (8001) ===
+Health Check:
+{
+    "status": "healthy",
+    "agent": "product_agent_v3",
+    "version": "3.0.0"
+}
+
+Get Products:
+{
+    "products": [
+        {
+            "id": 5,
+            "merchant_id": 3,
+            "category_id": 1,
+            "sku": "WH-001",
+            "name": "Wireless Headphones",
+            "slug": "wireless-headphones",
+            "description": "High-quality Bluetooth headphones with noise cancellation",
+            "short_description": null,
+            "price": 99.99,
+            "cost": 45.0,
+            "compare_at_price": 149.99,
+            "weight": 0.0,
+            "dimensions": null,
+            "images": [],
+            "status": "active",
+            "is_featured": true,
+            "rating": 0.0,
+            "review_count": 0,
+            "view_count": 0,
+            "sales_count": 0,
+            "tags": [],
+            "metadata": null,
+            "created_at": "2025-11-18T10:39:31.592297",
+            "updated_at": "2025-11-18T10:39:31.592297",
+            "inventory": {
+                "total_quantity": 0,
+                "available_quantity": 0,
+
+=== INVENTORY AGENT (8002) ===
+Health Check:
+{
+    "status": "healthy",
+    "agent": "inventory_agent_v3",
+    "version": "3.0.0"
+}
+
+Get Inventory:
+{
+    "inventory": [],
+    "pagination": {
+        "page": 1,
+        "limit": 2,
+        "total": 0,
+        "pages": 0
+    }
+}
+
+=== ANALYTICS AGENT (8031) ===
+Health Check:
+{
+    "status": "healthy",
+    "service": "analytics_agent",
+    "version": "3.0.0",
+    "timestamp": "2025-11-18T10:46:27.149944"
+}
+
+=========================================
+API TESTS COMPLETE
+=========================================

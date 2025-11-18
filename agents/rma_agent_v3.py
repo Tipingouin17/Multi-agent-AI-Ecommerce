@@ -464,6 +464,30 @@ async def record_inspection(rma_id: int, inspection: InspectionRecord):
             WHERE id = %s
         """, (inspection.condition_assessment, inspection.rma_item_id))
         
+        # If inspection passed, restore inventory
+        if inspection.passed_inspection:
+            # Get RMA item details
+            cursor.execute("""
+                SELECT product_id, quantity_received
+                FROM rma_items
+                WHERE id = %s
+            """, (inspection.rma_item_id,))
+            item = cursor.fetchone()
+            
+            if item:
+                # Restore inventory to default warehouse (warehouse_id = 1)
+                # In production, you'd want to route to the appropriate warehouse
+                cursor.execute("""
+                    INSERT INTO inventory (product_id, warehouse_id, quantity, reserved_quantity, updated_at)
+                    VALUES (%s, 1, %s, 0, NOW())
+                    ON CONFLICT (product_id, warehouse_id)
+                    DO UPDATE SET
+                        quantity = inventory.quantity + EXCLUDED.quantity,
+                        updated_at = NOW()
+                """, (item['product_id'], item['quantity_received']))
+                
+                print(f"Restored {item['quantity_received']} units of product {item['product_id']} to inventory")
+        
         # Update RMA status
         cursor.execute("""
             UPDATE rma_requests

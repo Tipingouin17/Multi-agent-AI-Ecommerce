@@ -46,8 +46,8 @@ def seed_auth_users():
             role='admin',
             first_name='System',
             last_name='Administrator',
-            verified=True,
-            active=True,
+            is_verified=True,
+            is_active=True,
             created_at=datetime.utcnow(),
             last_login=datetime.utcnow()
         )
@@ -62,8 +62,8 @@ def seed_auth_users():
             role='merchant',
             first_name='John',
             last_name='Merchant',
-            verified=True,
-            active=True,
+            is_verified=True,
+            is_active=True,
             created_at=datetime.utcnow(),
             last_login=datetime.utcnow()
         )
@@ -72,16 +72,10 @@ def seed_auth_users():
         
         # Create Merchant Profile
         merchant_profile1 = Merchant(
-            user_id=merchant_user1.user_id,
+            user_id=merchant_user1.id,
             business_name='Tech Gadgets Store',
-            business_email='merchant1@example.com',
-            business_phone='+1-555-0101',
+            business_type='Electronics',
             tax_id='TAX-001',
-            business_address='123 Tech Street',
-            business_city='San Francisco',
-            business_state='CA',
-            business_country='USA',
-            business_postal_code='94102',
             status='active',
             commission_rate=15.0,
             created_at=datetime.utcnow()
@@ -97,8 +91,8 @@ def seed_auth_users():
             role='merchant',
             first_name='Sarah',
             last_name='Seller',
-            verified=True,
-            active=True,
+            is_verified=True,
+            is_active=True,
             created_at=datetime.utcnow(),
             last_login=datetime.utcnow()
         )
@@ -106,16 +100,10 @@ def seed_auth_users():
         session.flush()
         
         merchant_profile2 = Merchant(
-            user_id=merchant_user2.user_id,
+            user_id=merchant_user2.id,
             business_name='Fashion Boutique',
-            business_email='merchant2@example.com',
-            business_phone='+1-555-0102',
+            business_type='Fashion',
             tax_id='TAX-002',
-            business_address='456 Fashion Ave',
-            business_city='New York',
-            business_state='NY',
-            business_country='USA',
-            business_postal_code='10001',
             status='active',
             commission_rate=12.0,
             created_at=datetime.utcnow()
@@ -131,24 +119,19 @@ def seed_auth_users():
             role='customer',
             first_name='Alice',
             last_name='Johnson',
-            verified=True,
-            active=True,
+            is_verified=True,
+            is_active=True,
             created_at=datetime.utcnow(),
             last_login=datetime.utcnow()
         )
         session.add(customer_user1)
         session.flush()
         
-        # Create Customer Profile
-        customer_profile1 = Customer(
-            user_id=customer_user1.user_id,
-            email='customer1@example.com',
-            first_name='Alice',
-            last_name='Johnson',
-            phone='+1-555-1001',
-            address='789 Customer Lane',
-            city='Los Angeles',
-            state='CA',
+        # Create Customer Profile        customer_profile1 = Customer(
+            user_id=customer_user1.id,
+            customer_group='retail',
+            created_at=datetime.utcnow()
+        )tate='CA',
             country='USA',
             postal_code='90001',
             loyalty_points=100,
@@ -166,23 +149,18 @@ def seed_auth_users():
             role='customer',
             first_name='Bob',
             last_name='Smith',
-            verified=True,
-            active=True,
+            is_verified=True,
+            is_active=True,
             created_at=datetime.utcnow(),
             last_login=datetime.utcnow()
         )
         session.add(customer_user2)
         session.flush()
-        
-        customer_profile2 = Customer(
-            user_id=customer_user2.user_id,
-            email='customer2@example.com',
-            first_name='Bob',
-            last_name='Smith',
-            phone='+1-555-1002',
-            address='321 Buyer Street',
-            city='Chicago',
-            state='IL',
+             customer_profile2 = Customer(
+            user_id=customer_user2.id,
+            customer_group='retail',
+            created_at=datetime.utcnow()
+        )te='IL',
             country='USA',
             postal_code='60601',
             loyalty_points=250,
@@ -200,23 +178,17 @@ def seed_auth_users():
             role='customer',
             first_name='Carol',
             last_name='Williams',
-            verified=True,
-            active=True,
+            is_verified=True,
+            is_active=True,
             created_at=datetime.utcnow(),
             last_login=datetime.utcnow()
         )
         session.add(customer_user3)
-        session.flush()
-        
-        customer_profile3 = Customer(
-            user_id=customer_user3.user_id,
-            email='customer3@example.com',
-            first_name='Carol',
-            last_name='Williams',
-            phone='+1-555-1003',
-            address='555 Shopper Blvd',
-            city='Seattle',
-            state='WA',
+        session.flush(        customer_profile3 = Customer(
+            user_id=customer_user3.id,
+            customer_group='wholesale',
+            created_at=datetime.utcnow()
+        ) state='WA',
             country='USA',
             postal_code='98101',
             loyalty_points=500,

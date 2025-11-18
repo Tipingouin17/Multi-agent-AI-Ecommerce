@@ -26,7 +26,7 @@ project_root = os.path.dirname(current_dir)
 sys.path.insert(0, project_root)
 
 # Import shared modules
-from shared.db_models import Order, OrderItem, Customer, Product, User, Address
+from shared.db_models import Order, OrderItem, Customer, Product, User, Address, Inventory
 from shared.db_connection import get_database_url
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -251,6 +251,17 @@ def create_order(order_data: OrderCreate, db: Session = Depends(get_db)):
             if not product:
                 raise HTTPException(status_code=404, detail=f"Product {item.product_id} not found")
             
+            # Check inventory availability
+            total_available = db.query(func.sum(Inventory.quantity)).filter(
+                Inventory.product_id == item.product_id
+            ).scalar() or 0
+            
+            if total_available < item.quantity:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Insufficient inventory for product {product.name}. Available: {total_available}, Requested: {item.quantity}"
+                )
+            
             unit_price = Decimal(str(item.unit_price))
             quantity = item.quantity
             total_price = unit_price * quantity
@@ -294,7 +305,7 @@ def create_order(order_data: OrderCreate, db: Session = Depends(get_db)):
         db.add(order)
         db.flush()  # Get order ID
         
-        # Create order items
+        # Create order items and reserve inventory
         for item_data in items_data:
             order_item = OrderItem(
                 order_id=order.id,
@@ -306,6 +317,27 @@ def create_order(order_data: OrderCreate, db: Session = Depends(get_db)):
                 total_price=item_data['total_price']
             )
             db.add(order_item)
+            
+            # Deduct inventory (FIFO - deduct from warehouses with stock)
+            remaining_qty = item_data['quantity']
+            inventory_items = db.query(Inventory).filter(
+                and_(
+                    Inventory.product_id == item_data['product_id'],
+                    Inventory.quantity > 0
+                )
+            ).order_by(Inventory.quantity.desc()).all()
+            
+            for inv_item in inventory_items:
+                if remaining_qty <= 0:
+                    break
+                    
+                deduct_qty = min(remaining_qty, inv_item.quantity)
+                inv_item.quantity -= deduct_qty
+                inv_item.reserved_quantity = (inv_item.reserved_quantity or 0) + deduct_qty
+                inv_item.updated_at = datetime.utcnow()
+                remaining_qty -= deduct_qty
+                
+                logger.info(f"Reserved {deduct_qty} units of product {item_data['product_id']} from warehouse {inv_item.warehouse_id}")
         
         db.commit()
         db.refresh(order)
