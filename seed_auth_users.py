@@ -17,7 +17,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'shared'))
 from db_models import User, Merchant, Customer
 
 # Database connection
-DATABASE_URL = "postgresql://admin:admin123@localhost:5432/multi_agent_ecommerce"
+DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/multi_agent_ecommerce"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 
