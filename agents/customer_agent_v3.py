@@ -28,6 +28,7 @@ sys.path.insert(0, project_root)
 # Import shared modules
 from shared.db_models import Customer, User, Address, Order
 from shared.db_connection import get_database_url
+from shared.auth import get_current_user, User as AuthUser
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -422,20 +423,15 @@ def get_customer_addresses(customer_id: int, db: Session = Depends(get_db)):
 # CUSTOMER PROFILE ENDPOINTS
 # ============================================================================
 
-@app.get("/profile")
+@app.get("/api/profile")
 def get_customer_profile(
-    customer_id: Optional[int] = Query(None),
-    user_id: Optional[int] = Query(None),
+    current_user: AuthUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get customer profile"""
+    """Get customer profile for authenticated user"""
     try:
-        if customer_id:
-            customer = db.query(Customer).filter(Customer.id == customer_id).first()
-        elif user_id:
-            customer = db.query(Customer).filter(Customer.user_id == user_id).first()
-        else:
-            raise HTTPException(status_code=400, detail="customer_id or user_id required")
+        # Get customer by user_id from JWT token
+        customer = db.query(Customer).filter(Customer.user_id == int(current_user.user_id)).first()
         
         if not customer:
             raise HTTPException(status_code=404, detail="Customer not found")
@@ -447,21 +443,16 @@ def get_customer_profile(
         logger.error(f"Error getting customer profile: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.patch("/profile")
+@app.patch("/api/profile")
 def update_customer_profile(
     profileData: Dict[str, Any],
-    customer_id: Optional[int] = Query(None),
-    user_id: Optional[int] = Query(None),
+    current_user: AuthUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Update customer profile"""
+    """Update customer profile for authenticated user"""
     try:
-        if customer_id:
-            customer = db.query(Customer).filter(Customer.id == customer_id).first()
-        elif user_id:
-            customer = db.query(Customer).filter(Customer.user_id == user_id).first()
-        else:
-            raise HTTPException(status_code=400, detail="customer_id or user_id required")
+        # Get customer by user_id from JWT token
+        customer = db.query(Customer).filter(Customer.user_id == int(current_user.user_id)).first()
         
         if not customer:
             raise HTTPException(status_code=404, detail="Customer not found")
