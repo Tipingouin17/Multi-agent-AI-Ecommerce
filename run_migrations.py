@@ -151,17 +151,21 @@ def run_migration_with_sqlalchemy():
                 with open(migration_file, 'r') as f:
                     sql = f.read()
                     
-                    # Execute SQL
-                    try:
-                        conn.execute(text(sql))
-                        conn.commit()
-                        print(f"✅ Successfully completed: {migration_file}\n")
-                    except Exception as e:
-                        if "already exists" in str(e):
-                            print(f"⚠️  Tables already exist, skipping...\n")
-                        else:
-                            print(f"❌ Error: {e}")
-                            raise
+                    # Split by semicolon and execute each statement separately
+                    statements = [s.strip() for s in sql.split(';') if s.strip() and not s.strip().startswith('--')]
+                    
+                    for i, statement in enumerate(statements, 1):
+                        try:
+                            conn.execute(text(statement))
+                            conn.commit()
+                        except Exception as e:
+                            if "already exists" in str(e):
+                                pass  # Skip if already exists
+                            else:
+                                print(f"❌ Error in statement {i}: {e}")
+                                raise
+                    
+                    print(f"✅ Successfully completed: {migration_file}\n")
             
             print("\n✅ ALL MIGRATIONS COMPLETED SUCCESSFULLY!")
             return True
