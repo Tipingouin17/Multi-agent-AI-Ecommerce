@@ -331,4 +331,14 @@ echo.
 REM Open browser automatically
 start http://localhost:5173
 
-pause
+echo.
+echo Press any key to close this window (agents will continue running in background)...
+pause >nul
+
+echo.
+echo ✓ Startup complete! All agents are running in background.
+echo   To stop all agents, run: StopAllAgents.bat
+echo.
+
+REM Exit cleanly without killing background processes
+exit /b 0

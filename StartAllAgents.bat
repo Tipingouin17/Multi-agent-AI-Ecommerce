@@ -166,4 +166,5 @@ echo Infrastructure:
 echo   8100 - system_api_gateway
 echo.
 
-pause
+REM No pause here - this script is called by StartPlatform.bat
+exit /b 0
