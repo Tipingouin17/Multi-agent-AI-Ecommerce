@@ -260,7 +260,7 @@ async def create_offer(
             display_badge=offer_data.display_badge,
             display_banner_url=offer_data.display_banner_url,
             created_by=int(current_user.user_id),
-            metadata=offer_data.metadata
+            extra_data=offer_data.metadata
         )
         
         db.add(offer)
