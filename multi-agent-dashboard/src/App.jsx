@@ -82,6 +82,7 @@ import ProductCatalog from './pages/customer/ProductCatalog'
 import ProductDetails from './pages/customer/ProductDetails'
 import ShoppingCart from './pages/customer/ShoppingCart'
 import OrderTracking from './pages/customer/OrderTracking'
+import OrdersList from './pages/customer/OrdersList'
 import Account from './pages/customer/Account'
 import Checkout from './pages/customer/Checkout'
 import OrderConfirmation from './pages/customer/OrderConfirmation'
@@ -423,7 +424,7 @@ function App() {
               <Route path="/products" element={<ErrorBoundary><ProductCatalog /></ErrorBoundary>} />
               <Route path="/products/:productId" element={<ErrorBoundary><ProductDetails /></ErrorBoundary>} />
               <Route path="/cart" element={<ErrorBoundary><ShoppingCart /></ErrorBoundary>} />
-              <Route path="/orders" element={<ErrorBoundary><OrderTracking /></ErrorBoundary>} />
+              <Route path="/orders" element={<ErrorBoundary><OrdersList /></ErrorBoundary>} />
               <Route path="/account" element={<ErrorBoundary><Account /></ErrorBoundary>} />
               <Route path="/checkout" element={<ErrorBoundary><Checkout /></ErrorBoundary>} />
               <Route path="/order-confirmation/:orderId" element={<ErrorBoundary><OrderConfirmation /></ErrorBoundary>} />
