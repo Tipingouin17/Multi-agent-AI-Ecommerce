@@ -264,14 +264,15 @@ class AuthAgent(BaseAgentV2):
         except Exception as e:
             logger.error(f"Error creating default admin: {e}")
     
-    def create_access_token(self, user_id: str, role: str) -> str:
+    def create_access_token(self, user_id: str, role: str, username: str = None, email: str = None) -> str:
         """Create JWT access token"""
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode = {
-            "sub": user_id,
+            "user_id": user_id,
+            "username": username or email or user_id,
             "role": role,
-            "exp": expire,
-            "type": "access"
+            "token_type": "access",
+            "exp": expire
         }
         return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     
@@ -389,7 +390,7 @@ class AuthAgent(BaseAgentV2):
                     await session.commit()
                     
                     # Create tokens
-                    access_token = self.create_access_token(user.id, user.role)
+                    access_token = self.create_access_token(user.id, user.role, username=user.username, email=user.email)
                     refresh_token = self.create_refresh_token(user.id)
                     
                     # Store refresh token
@@ -454,7 +455,7 @@ class AuthAgent(BaseAgentV2):
                         raise HTTPException(status_code=401, detail="User not found or inactive")
                     
                     # Create new access token
-                    access_token = self.create_access_token(user.id, user.role)
+                    access_token = self.create_access_token(user.id, user.role, username=user.username, email=user.email)
                     
                     return {
                         "access_token": access_token,

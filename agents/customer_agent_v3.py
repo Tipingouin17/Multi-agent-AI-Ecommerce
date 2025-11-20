@@ -428,19 +428,36 @@ def get_customer_addresses(customer_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @app.get("/api/profile")
-def get_customer_profile(
+async def get_customer_profile(
     current_user: AuthUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get customer profile for authenticated user"""
     try:
-        # Get customer by user_id from JWT token
-        customer = db.query(Customer).filter(Customer.user_id == int(current_user.user_id)).first()
+        logger.info(f"Getting profile for user_id: {current_user.user_id}, role: {current_user.role}")
+        
+        # Get customer by user_id from JWT token with user relationship loaded
+        customer = db.query(Customer).options(joinedload(Customer.user)).filter(
+            Customer.user_id == int(current_user.user_id)
+        ).first()
         
         if not customer:
+            logger.error(f"Customer not found for user_id: {current_user.user_id}")
             raise HTTPException(status_code=404, detail="Customer not found")
         
-        return customer.to_dict()
+        # Combine customer and user data
+        profile_data = customer.to_dict()
+        if customer.user:
+            profile_data.update({
+                "email": customer.user.email,
+                "username": customer.user.username,
+                "first_name": customer.user.first_name,
+                "last_name": customer.user.last_name,
+                "phone": customer.user.phone,
+            })
+        
+        logger.info(f"Customer profile found: {profile_data.get('email')}")
+        return profile_data
     except HTTPException:
         raise
     except Exception as e:
