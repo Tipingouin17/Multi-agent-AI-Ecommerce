@@ -1,7 +1,7 @@
 @echo off
 REM Start All V3 Agents Script for Windows
-REM This script starts all 37 V3 agents in the background with correct port assignments
-REM Updated to include all 8 feature agents + 29 core agents
+REM This script starts all 42 V3 agents in the background with correct port assignments
+REM Updated to include all 8 feature agents + 29 core agents + 4 world-class agents
 
 setlocal enabledelayedexpansion
 
@@ -13,7 +13,7 @@ REM Create logs directory
 if not exist "%LOGS_DIR%" mkdir "%LOGS_DIR%"
 
 echo ==========================================
-echo Starting All 38 V3 Agents (Including Authentication)
+echo Starting All 42 V3 Agents (Including Authentication + World-Class Features)
 echo ==========================================
 echo.
 
@@ -90,7 +90,17 @@ call :start_agent "demand_forecasting_agent_v3.py" 8037
 call :start_agent "international_shipping_agent_v3.py" 8038
 
 echo ==========================================
-echo All 38 agents started!
+echo World-Class Feature Agents (4):
+echo ==========================================
+echo.
+
+call :start_agent "offers_agent_v3.py" 8040
+call :start_agent "advertising_agent_v3.py" 8041
+call :start_agent "supplier_agent_v3.py" 8042
+call :start_agent "marketplace_agent_v3.py" 8043
+
+echo ==========================================
+echo All 42 agents started!
 echo ==========================================
 echo.
 echo Logs available in: %LOGS_DIR%
@@ -145,6 +155,12 @@ echo   8035 - rma_agent (Complete RMA Workflow)
 echo   8036 - advanced_analytics_agent (Advanced Analytics ^& Reporting)
 echo   8037 - demand_forecasting_agent (ML-Based Demand Forecasting)
 echo   8038 - international_shipping_agent (International Shipping)
+echo.
+echo World-Class Feature Agents:
+echo   8040 - offers_agent (Offers Management - Promotions ^& Discounts)
+echo   8041 - advertising_agent (Advertising Campaign Management)
+echo   8042 - supplier_agent (Supplier Management ^& Procurement)
+echo   8043 - marketplace_agent (Marketplace Integration - Amazon, eBay, Walmart)
 echo.
 echo Infrastructure:
 echo   8100 - system_api_gateway

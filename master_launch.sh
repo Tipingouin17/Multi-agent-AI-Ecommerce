@@ -254,6 +254,10 @@ AGENTS=(
     "ai_monitoring_agent_self_healing:8023"
     "monitoring_agent:8024"
     "quality_control_agent_production:8025"
+    "offers_agent_v3:8040"
+    "advertising_agent_v3:8041"
+    "supplier_agent_v3:8042"
+    "marketplace_agent_v3:8043"
 )
 
 start_agent() {
