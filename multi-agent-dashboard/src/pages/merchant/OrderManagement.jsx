@@ -83,8 +83,8 @@ function OrderManagement() {
       setOrders(data.orders || []);
       setPagination({
         ...pagination,
-        totalPages: data.totalPages || 1,
-        totalItems: data.totalItems || 0
+        totalPages: data.pagination?.pages || 1,
+        totalItems: data.pagination?.total || 0
       });
       
       setError(null);
