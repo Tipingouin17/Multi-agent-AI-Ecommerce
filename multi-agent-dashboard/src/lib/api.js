@@ -50,7 +50,10 @@ const AGENT_PORTS = {
   // System Gateway
   gateway: 8100,            // system_api_gateway_v3.py
   // Business Management
-  offers: 8040              // offers_agent_v3.py
+  offers: 8040,             // offers_agent_v3.py
+  advertising: 8041,        // advertising_agent_v3.py
+  supplier: 8042,           // supplier_agent_v3.py
+  marketplaceintegration: 8043  // marketplace_agent_v3.py
 }
 
 // Use relative URLs for Vite proxy support
@@ -1660,6 +1663,258 @@ class ApiService {
       return response.data
     } catch (error) {
       throw new Error(`Failed to get offer analytics: ${error.message}`)
+    }
+  }
+
+  // ==================== ADVERTISING CAMPAIGN MANAGEMENT ====================
+
+  async getCampaigns(params = {}) {
+    try {
+      const response = await clients.advertising.get('/api/campaigns', { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get campaigns: ${error.message}`)
+    }
+  }
+
+  async getCampaign(campaignId) {
+    try {
+      const response = await clients.advertising.get(`/api/campaigns/${campaignId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get campaign: ${error.message}`)
+    }
+  }
+
+  async createCampaign(campaignData) {
+    try {
+      const response = await clients.advertising.post('/api/campaigns', campaignData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to create campaign: ${error.message}`)
+    }
+  }
+
+  async updateCampaign(campaignId, campaignData) {
+    try {
+      const response = await clients.advertising.patch(`/api/campaigns/${campaignId}`, campaignData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to update campaign: ${error.message}`)
+    }
+  }
+
+  async deleteCampaign(campaignId) {
+    try {
+      const response = await clients.advertising.delete(`/api/campaigns/${campaignId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to delete campaign: ${error.message}`)
+    }
+  }
+
+  async getCampaignAnalytics(campaignId, params = {}) {
+    try {
+      const response = await clients.advertising.get(`/api/campaigns/${campaignId}/analytics`, { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get campaign analytics: ${error.message}`)
+    }
+  }
+
+  // ==================== SUPPLIER MANAGEMENT ====================
+
+  async getSuppliers(params = {}) {
+    try {
+      const response = await clients.supplier.get('/api/suppliers', { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get suppliers: ${error.message}`)
+    }
+  }
+
+  async getSupplier(supplierId) {
+    try {
+      const response = await clients.supplier.get(`/api/suppliers/${supplierId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get supplier: ${error.message}`)
+    }
+  }
+
+  async createSupplier(supplierData) {
+    try {
+      const response = await clients.supplier.post('/api/suppliers', supplierData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to create supplier: ${error.message}`)
+    }
+  }
+
+  async updateSupplier(supplierId, supplierData) {
+    try {
+      const response = await clients.supplier.patch(`/api/suppliers/${supplierId}`, supplierData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to update supplier: ${error.message}`)
+    }
+  }
+
+  async deleteSupplier(supplierId) {
+    try {
+      const response = await clients.supplier.delete(`/api/suppliers/${supplierId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to delete supplier: ${error.message}`)
+    }
+  }
+
+  async getSupplierProducts(supplierId, params = {}) {
+    try {
+      const response = await clients.supplier.get(`/api/suppliers/${supplierId}/products`, { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get supplier products: ${error.message}`)
+    }
+  }
+
+  async createSupplierProduct(productData) {
+    try {
+      const response = await clients.supplier.post('/api/supplier-products', productData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to create supplier product: ${error.message}`)
+    }
+  }
+
+  async getPurchaseOrders(params = {}) {
+    try {
+      const response = await clients.supplier.get('/api/purchase-orders', { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get purchase orders: ${error.message}`)
+    }
+  }
+
+  async createPurchaseOrder(poData) {
+    try {
+      const response = await clients.supplier.post('/api/purchase-orders', poData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to create purchase order: ${error.message}`)
+    }
+  }
+
+  async getSupplierPerformance(supplierId, params = {}) {
+    try {
+      const response = await clients.supplier.get(`/api/suppliers/${supplierId}/performance`, { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get supplier performance: ${error.message}`)
+    }
+  }
+
+  // ==================== MARKETPLACE INTEGRATION ====================
+
+  async getMarketplaces(params = {}) {
+    try {
+      const response = await clients.marketplaceintegration.get('/api/marketplaces', { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get marketplaces: ${error.message}`)
+    }
+  }
+
+  async getMarketplace(marketplaceId) {
+    try {
+      const response = await clients.marketplaceintegration.get(`/api/marketplaces/${marketplaceId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get marketplace: ${error.message}`)
+    }
+  }
+
+  async connectMarketplace(marketplaceData) {
+    try {
+      const response = await clients.marketplaceintegration.post('/api/marketplaces/connect', marketplaceData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to connect marketplace: ${error.message}`)
+    }
+  }
+
+  async updateMarketplace(marketplaceId, marketplaceData) {
+    try {
+      const response = await clients.marketplaceintegration.patch(`/api/marketplaces/${marketplaceId}`, marketplaceData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to update marketplace: ${error.message}`)
+    }
+  }
+
+  async disconnectMarketplace(marketplaceId) {
+    try {
+      const response = await clients.marketplaceintegration.delete(`/api/marketplaces/${marketplaceId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to disconnect marketplace: ${error.message}`)
+    }
+  }
+
+  async getMarketplaceListings(marketplaceId, params = {}) {
+    try {
+      const response = await clients.marketplaceintegration.get(`/api/marketplaces/${marketplaceId}/listings`, { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get marketplace listings: ${error.message}`)
+    }
+  }
+
+  async createListing(listingData) {
+    try {
+      const response = await clients.marketplaceintegration.post('/api/listings', listingData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to create listing: ${error.message}`)
+    }
+  }
+
+  async syncMarketplace(marketplaceId, syncType = 'all') {
+    try {
+      const response = await clients.marketplaceintegration.post('/api/sync', {
+        marketplace_id: marketplaceId,
+        sync_type: syncType
+      })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to sync marketplace: ${error.message}`)
+    }
+  }
+
+  async getMarketplaceSyncStatus(marketplaceId) {
+    try {
+      const response = await clients.marketplaceintegration.get(`/api/marketplaces/${marketplaceId}/sync-status`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get sync status: ${error.message}`)
+    }
+  }
+
+  async getMarketplaceAnalytics(marketplaceId, params = {}) {
+    try {
+      const response = await clients.marketplaceintegration.get(`/api/marketplaces/${marketplaceId}/analytics`, { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get marketplace analytics: ${error.message}`)
+    }
+  }
+
+  async getSupportedPlatforms() {
+    try {
+      const response = await clients.marketplaceintegration.get('/api/platforms')
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get supported platforms: ${error.message}`)
     }
   }
 
