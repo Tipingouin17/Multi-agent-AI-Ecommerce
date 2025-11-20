@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '@/lib/api'
 import { formatDateTime, formatDate as formatDateUtil } from '@/utils/dateFormatter'
 
