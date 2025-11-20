@@ -1334,3 +1334,502 @@ class CustomerPaymentMethod(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+# ============================================================================
+# OFFERS MANAGEMENT MODELS
+# ============================================================================
+
+class Offer(Base):
+    """Special offers and promotions"""
+    __tablename__ = "offers"
+    
+    id = Column(Integer, primary_key=True)
+    
+    # Basic Information
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    offer_type = Column(String(50), nullable=False)  # percentage, fixed_amount, buy_x_get_y, bundle
+    status = Column(String(50), default='draft')  # draft, active, paused, expired, cancelled
+    
+    # Pricing & Discount
+    discount_type = Column(String(50))  # percentage, fixed
+    discount_value = Column(Numeric(10, 2))
+    min_purchase_amount = Column(Numeric(15, 2))
+    max_discount_amount = Column(Numeric(15, 2))
+    
+    # Scheduling
+    start_date = Column(DateTime)
+    end_date = Column(DateTime)
+    is_scheduled = Column(Boolean, default=False)
+    
+    # Targeting
+    target_customer_groups = Column(JSON)
+    target_marketplaces = Column(JSON)
+    target_products = Column(JSON)
+    target_categories = Column(JSON)
+    
+    # Usage Limits
+    usage_limit_per_customer = Column(Integer)
+    total_usage_limit = Column(Integer)
+    current_usage_count = Column(Integer, default=0)
+    
+    # Conditions
+    conditions = Column(JSON)
+    stackable = Column(Boolean, default=False)
+    
+    # Priority & Display
+    priority = Column(Integer, default=0)
+    display_badge = Column(String(100))
+    display_banner_url = Column(Text)
+    
+    # Metadata
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    metadata = Column(JSON)
+    
+    # Relationships
+    products = relationship("OfferProduct", back_populates="offer", cascade="all, delete-orphan")
+    marketplaces = relationship("OfferMarketplace", back_populates="offer", cascade="all, delete-orphan")
+    usage_records = relationship("OfferUsage", back_populates="offer")
+    analytics = relationship("OfferAnalytics", back_populates="offer")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "offer_type": self.offer_type,
+            "status": self.status,
+            "discount_type": self.discount_type,
+            "discount_value": float(self.discount_value) if self.discount_value else None,
+            "min_purchase_amount": float(self.min_purchase_amount) if self.min_purchase_amount else None,
+            "max_discount_amount": float(self.max_discount_amount) if self.max_discount_amount else None,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
+            "is_scheduled": self.is_scheduled,
+            "target_customer_groups": self.target_customer_groups or [],
+            "target_marketplaces": self.target_marketplaces or [],
+            "target_products": self.target_products or [],
+            "target_categories": self.target_categories or [],
+            "usage_limit_per_customer": self.usage_limit_per_customer,
+            "total_usage_limit": self.total_usage_limit,
+            "current_usage_count": self.current_usage_count,
+            "conditions": self.conditions or {},
+            "stackable": self.stackable,
+            "priority": self.priority,
+            "display_badge": self.display_badge,
+            "display_banner_url": self.display_banner_url,
+            "created_by": self.created_by,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "metadata": self.metadata or {}
+        }
+
+
+class OfferProduct(Base):
+    """Products included in offers (Many-to-Many)"""
+    __tablename__ = "offer_products"
+    
+    id = Column(Integer, primary_key=True)
+    offer_id = Column(Integer, ForeignKey("offers.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    custom_discount_value = Column(Numeric(10, 2))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    offer = relationship("Offer", back_populates="products")
+    product = relationship("Product")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "offer_id": self.offer_id,
+            "product_id": self.product_id,
+            "custom_discount_value": float(self.custom_discount_value) if self.custom_discount_value else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class OfferMarketplace(Base):
+    """Marketplaces where offers are active (Many-to-Many)"""
+    __tablename__ = "offer_marketplaces"
+    
+    id = Column(Integer, primary_key=True)
+    offer_id = Column(Integer, ForeignKey("offers.id", ondelete="CASCADE"), nullable=False)
+    marketplace_id = Column(Integer, ForeignKey("marketplaces.id", ondelete="CASCADE"), nullable=False)
+    marketplace_offer_id = Column(String(255))
+    sync_status = Column(String(50), default='pending')
+    last_synced_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    offer = relationship("Offer", back_populates="marketplaces")
+    marketplace = relationship("Marketplace")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "offer_id": self.offer_id,
+            "marketplace_id": self.marketplace_id,
+            "marketplace_offer_id": self.marketplace_offer_id,
+            "sync_status": self.sync_status,
+            "last_synced_at": self.last_synced_at.isoformat() if self.last_synced_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class OfferUsage(Base):
+    """Tracking of offer usage by customers"""
+    __tablename__ = "offer_usage"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    offer_id = Column(Integer, ForeignKey("offers.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), index=True)
+    discount_applied = Column(Numeric(15, 2))
+    original_amount = Column(Numeric(15, 2))
+    final_amount = Column(Numeric(15, 2))
+    used_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    offer = relationship("Offer", back_populates="usage_records")
+    customer = relationship("Customer")
+    order = relationship("Order")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "offer_id": self.offer_id,
+            "customer_id": self.customer_id,
+            "order_id": self.order_id,
+            "discount_applied": float(self.discount_applied) if self.discount_applied else 0.0,
+            "original_amount": float(self.original_amount) if self.original_amount else 0.0,
+            "final_amount": float(self.final_amount) if self.final_amount else 0.0,
+            "used_at": self.used_at.isoformat() if self.used_at else None
+        }
+
+
+class OfferAnalytics(Base):
+    """Daily analytics for offer performance"""
+    __tablename__ = "offer_analytics"
+    
+    id = Column(Integer, primary_key=True)
+    offer_id = Column(Integer, ForeignKey("offers.id", ondelete="CASCADE"), nullable=False)
+    date = Column(Date, nullable=False)
+    views_count = Column(Integer, default=0)
+    clicks_count = Column(Integer, default=0)
+    usage_count = Column(Integer, default=0)
+    revenue_generated = Column(Numeric(15, 2), default=0.00)
+    discount_given = Column(Numeric(15, 2), default=0.00)
+    orders_count = Column(Integer, default=0)
+    conversion_rate = Column(Numeric(5, 2))
+    average_order_value = Column(Numeric(15, 2))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    offer = relationship("Offer", back_populates="analytics")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "offer_id": self.offer_id,
+            "date": self.date.isoformat() if self.date else None,
+            "views_count": self.views_count,
+            "clicks_count": self.clicks_count,
+            "usage_count": self.usage_count,
+            "revenue_generated": float(self.revenue_generated) if self.revenue_generated else 0.0,
+            "discount_given": float(self.discount_given) if self.discount_given else 0.0,
+            "orders_count": self.orders_count,
+            "conversion_rate": float(self.conversion_rate) if self.conversion_rate else 0.0,
+            "average_order_value": float(self.average_order_value) if self.average_order_value else 0.0,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+# ============================================================================
+# SUPPLIER MANAGEMENT MODELS
+# ============================================================================
+
+class Supplier(Base):
+    """Supplier and vendor management"""
+    __tablename__ = "suppliers"
+    
+    id = Column(Integer, primary_key=True)
+    
+    # Basic Information
+    name = Column(String(255), nullable=False)
+    company_name = Column(String(255))
+    supplier_code = Column(String(100), unique=True)
+    status = Column(String(50), default='active')
+    
+    # Contact Information
+    contact_person = Column(String(255))
+    email = Column(String(255))
+    phone = Column(String(50))
+    website = Column(String(255))
+    
+    # Address
+    address_line1 = Column(String(255))
+    address_line2 = Column(String(255))
+    city = Column(String(100))
+    state = Column(String(100))
+    postal_code = Column(String(20))
+    country = Column(String(100))
+    
+    # Business Details
+    tax_id = Column(String(100))
+    payment_terms = Column(String(100))
+    currency = Column(String(10), default='USD')
+    minimum_order_value = Column(Numeric(15, 2))
+    
+    # Performance Metrics
+    rating = Column(Numeric(3, 2))
+    total_orders = Column(Integer, default=0)
+    total_spend = Column(Numeric(15, 2), default=0.00)
+    on_time_delivery_rate = Column(Numeric(5, 2))
+    quality_score = Column(Numeric(5, 2))
+    
+    # Metadata
+    notes = Column(Text)
+    tags = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    metadata = Column(JSON)
+    
+    # Relationships
+    products = relationship("SupplierProduct", back_populates="supplier")
+    purchase_orders = relationship("PurchaseOrder", back_populates="supplier")
+    payments = relationship("SupplierPayment", back_populates="supplier")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "company_name": self.company_name,
+            "supplier_code": self.supplier_code,
+            "status": self.status,
+            "contact_person": self.contact_person,
+            "email": self.email,
+            "phone": self.phone,
+            "website": self.website,
+            "address_line1": self.address_line1,
+            "address_line2": self.address_line2,
+            "city": self.city,
+            "state": self.state,
+            "postal_code": self.postal_code,
+            "country": self.country,
+            "tax_id": self.tax_id,
+            "payment_terms": self.payment_terms,
+            "currency": self.currency,
+            "minimum_order_value": float(self.minimum_order_value) if self.minimum_order_value else None,
+            "rating": float(self.rating) if self.rating else None,
+            "total_orders": self.total_orders,
+            "total_spend": float(self.total_spend) if self.total_spend else 0.0,
+            "on_time_delivery_rate": float(self.on_time_delivery_rate) if self.on_time_delivery_rate else None,
+            "quality_score": float(self.quality_score) if self.quality_score else None,
+            "notes": self.notes,
+            "tags": self.tags or [],
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_by": self.created_by,
+            "metadata": self.metadata or {}
+        }
+
+
+class SupplierProduct(Base):
+    """Products sourced from suppliers"""
+    __tablename__ = "supplier_products"
+    
+    id = Column(Integer, primary_key=True)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Supplier-specific product info
+    supplier_sku = Column(String(255))
+    supplier_product_name = Column(String(255))
+    cost_price = Column(Numeric(15, 2))
+    minimum_order_quantity = Column(Integer, default=1)
+    lead_time_days = Column(Integer)
+    
+    # Status
+    is_primary_supplier = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    
+    # Metadata
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    supplier = relationship("Supplier", back_populates="products")
+    product = relationship("Product")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "supplier_id": self.supplier_id,
+            "product_id": self.product_id,
+            "supplier_sku": self.supplier_sku,
+            "supplier_product_name": self.supplier_product_name,
+            "cost_price": float(self.cost_price) if self.cost_price else None,
+            "minimum_order_quantity": self.minimum_order_quantity,
+            "lead_time_days": self.lead_time_days,
+            "is_primary_supplier": self.is_primary_supplier,
+            "is_active": self.is_active,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class PurchaseOrder(Base):
+    """Purchase orders to suppliers"""
+    __tablename__ = "purchase_orders"
+    
+    id = Column(Integer, primary_key=True)
+    
+    # Order Information
+    po_number = Column(String(100), unique=True, nullable=False)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id"), index=True)
+    status = Column(String(50), default='draft', index=True)
+    
+    # Dates
+    order_date = Column(Date, index=True)
+    expected_delivery_date = Column(Date, index=True)
+    actual_delivery_date = Column(Date)
+    
+    # Financial
+    subtotal = Column(Numeric(15, 2), default=0.00)
+    tax_amount = Column(Numeric(15, 2), default=0.00)
+    shipping_cost = Column(Numeric(15, 2), default=0.00)
+    total_amount = Column(Numeric(15, 2), default=0.00)
+    currency = Column(String(10), default='USD')
+    
+    # Delivery
+    shipping_address = Column(JSON)
+    tracking_number = Column(String(255))
+    
+    # Metadata
+    notes = Column(Text)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    metadata = Column(JSON)
+    
+    # Relationships
+    supplier = relationship("Supplier", back_populates="purchase_orders")
+    items = relationship("PurchaseOrderItem", back_populates="purchase_order", cascade="all, delete-orphan")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "po_number": self.po_number,
+            "supplier_id": self.supplier_id,
+            "status": self.status,
+            "order_date": self.order_date.isoformat() if self.order_date else None,
+            "expected_delivery_date": self.expected_delivery_date.isoformat() if self.expected_delivery_date else None,
+            "actual_delivery_date": self.actual_delivery_date.isoformat() if self.actual_delivery_date else None,
+            "subtotal": float(self.subtotal) if self.subtotal else 0.0,
+            "tax_amount": float(self.tax_amount) if self.tax_amount else 0.0,
+            "shipping_cost": float(self.shipping_cost) if self.shipping_cost else 0.0,
+            "total_amount": float(self.total_amount) if self.total_amount else 0.0,
+            "currency": self.currency,
+            "shipping_address": self.shipping_address or {},
+            "tracking_number": self.tracking_number,
+            "notes": self.notes,
+            "created_by": self.created_by,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "metadata": self.metadata or {}
+        }
+
+
+class PurchaseOrderItem(Base):
+    """Line items in purchase orders"""
+    __tablename__ = "purchase_order_items"
+    
+    id = Column(Integer, primary_key=True)
+    purchase_order_id = Column(Integer, ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    supplier_product_id = Column(Integer, ForeignKey("supplier_products.id"))
+    
+    # Item Details
+    quantity = Column(Integer, nullable=False)
+    unit_price = Column(Numeric(15, 2), nullable=False)
+    tax_rate = Column(Numeric(5, 2), default=0.00)
+    line_total = Column(Numeric(15, 2), nullable=False)
+    
+    # Receiving
+    quantity_received = Column(Integer, default=0)
+    quantity_pending = Column(Integer)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    purchase_order = relationship("PurchaseOrder", back_populates="items")
+    product = relationship("Product")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "purchase_order_id": self.purchase_order_id,
+            "product_id": self.product_id,
+            "supplier_product_id": self.supplier_product_id,
+            "quantity": self.quantity,
+            "unit_price": float(self.unit_price) if self.unit_price else 0.0,
+            "tax_rate": float(self.tax_rate) if self.tax_rate else 0.0,
+            "line_total": float(self.line_total) if self.line_total else 0.0,
+            "quantity_received": self.quantity_received,
+            "quantity_pending": self.quantity_pending,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class SupplierPayment(Base):
+    """Payments made to suppliers"""
+    __tablename__ = "supplier_payments"
+    
+    id = Column(Integer, primary_key=True)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id"), index=True)
+    purchase_order_id = Column(Integer, ForeignKey("purchase_orders.id"))
+    
+    # Payment Details
+    payment_date = Column(Date, nullable=False)
+    amount = Column(Numeric(15, 2), nullable=False)
+    currency = Column(String(10), default='USD')
+    payment_method = Column(String(50))
+    reference_number = Column(String(255))
+    
+    # Status
+    status = Column(String(50), default='pending')
+    
+    # Metadata
+    notes = Column(Text)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    metadata = Column(JSON)
+    
+    # Relationships
+    supplier = relationship("Supplier", back_populates="payments")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "supplier_id": self.supplier_id,
+            "purchase_order_id": self.purchase_order_id,
+            "payment_date": self.payment_date.isoformat() if self.payment_date else None,
+            "amount": float(self.amount) if self.amount else 0.0,
+            "currency": self.currency,
+            "payment_method": self.payment_method,
+            "reference_number": self.reference_number,
+            "status": self.status,
+            "notes": self.notes,
+            "created_by": self.created_by,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "metadata": self.metadata or {}
+        }

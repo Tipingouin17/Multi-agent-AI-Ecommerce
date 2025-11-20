@@ -48,7 +48,9 @@ const AGENT_PORTS = {
   forecasting: 8037,        // demand_forecasting_agent_v3.py
   international: 8038,      // international_shipping_agent_v3.py
   // System Gateway
-  gateway: 8100             // system_api_gateway_v3.py
+  gateway: 8100,            // system_api_gateway_v3.py
+  // Business Management
+  offers: 8040              // offers_agent_v3.py
 }
 
 // Use relative URLs for Vite proxy support
@@ -1587,6 +1589,79 @@ class ApiService {
   }
   
 
+  // ==================== OFFERS MANAGEMENT APIs ====================
+  
+  async getOffers(params = {}) {
+    try {
+      const response = await clients.offers.get('/api/offers', { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get offers: ${error.message}`)
+    }
+  }
+
+  async getOffer(offerId) {
+    try {
+      const response = await clients.offers.get(`/api/offers/${offerId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get offer: ${error.message}`)
+    }
+  }
+
+  async createOffer(offerData) {
+    try {
+      const response = await clients.offers.post('/api/offers', offerData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to create offer: ${error.message}`)
+    }
+  }
+
+  async updateOffer(offerId, offerData) {
+    try {
+      const response = await clients.offers.patch(`/api/offers/${offerId}`, offerData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to update offer: ${error.message}`)
+    }
+  }
+
+  async deleteOffer(offerId) {
+    try {
+      const response = await clients.offers.delete(`/api/offers/${offerId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to delete offer: ${error.message}`)
+    }
+  }
+
+  async addProductToOffer(offerId, productData) {
+    try {
+      const response = await clients.offers.post(`/api/offers/${offerId}/products`, productData)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to add product to offer: ${error.message}`)
+    }
+  }
+
+  async removeProductFromOffer(offerId, productId) {
+    try {
+      const response = await clients.offers.delete(`/api/offers/${offerId}/products/${productId}`)
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to remove product from offer: ${error.message}`)
+    }
+  }
+
+  async getOfferAnalytics(offerId, params = {}) {
+    try {
+      const response = await clients.offers.get(`/api/offers/${offerId}/analytics`, { params })
+      return response.data
+    } catch (error) {
+      throw new Error(`Failed to get offer analytics: ${error.message}`)
+    }
+  }
 
 }
 
