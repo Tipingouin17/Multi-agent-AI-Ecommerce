@@ -769,9 +769,9 @@ function OrderManagement() {
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Customer Information</h3>
                   <div className="bg-gray-50 p-4 rounded-md">
-                    <p className="font-medium">{selectedOrderDetails.customer.name}</p>
-                    <p className="text-gray-500">{selectedOrderDetails.customer.email}</p>
-                    <p className="text-gray-500">{selectedOrderDetails.customer.phone}</p>
+                    <p className="font-medium">{selectedOrderDetails.customer?.name || selectedOrderDetails.customer?.firstName + ' ' + selectedOrderDetails.customer?.lastName || 'N/A'}</p>
+                    <p className="text-gray-500">{selectedOrderDetails.customer?.email || 'N/A'}</p>
+                    <p className="text-gray-500">{selectedOrderDetails.customer?.phone || 'N/A'}</p>
                   </div>
                 </div>
               </div>
