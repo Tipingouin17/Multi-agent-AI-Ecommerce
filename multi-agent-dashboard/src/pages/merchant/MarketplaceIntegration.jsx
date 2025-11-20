@@ -237,6 +237,7 @@ function MarketplaceIntegration() {
   
   // Get marketplace logo
   function getMarketplaceLogo(type) {
+    if (!type) return 'https://via.placeholder.com/150?text=Marketplace';
     switch (type.toLowerCase()) {
       case 'amazon':
         return 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/2560px-Amazon_logo.svg.png';
