@@ -560,7 +560,7 @@ def bulk_update_product_status(
         logger.error(f"Error bulk updating products: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/products/sync-all")
+@app.post("/api/products/sync-all")
 def sync_all_products(
     db: Session = Depends(get_db)
 ):
