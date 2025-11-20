@@ -19,7 +19,10 @@
 | #7 | ✅ FIXED | **CRITICAL** | Vite Proxy | Missing proxy config for new agents |
 | #8 | ✅ FIXED | **CRITICAL** | Authentication | JWT token format mismatch |
 | #9 | ✅ FIXED | **CRITICAL** | Authentication | JWT_SECRET environment variable mismatch |
-| #12 | 🔴 OPEN | Medium | Customer Portal | 403 error on customer profile page |
+| #10 | ✅ FIXED | **CRITICAL** | Frontend API | localStorage key mismatch |
+| #11 | ✅ FIXED | **CRITICAL** | Backend Agent | Database column name mismatch |
+| #12 | ✅ FIXED | **CRITICAL** | Database Schema | Missing extra_data column in offers table |
+| #13 | 🔴 OPEN | Medium | Customer Portal | 403 error on customer profile page |
 
 ---
 
@@ -335,7 +338,138 @@ Fix Bug #9: Harmonize JWT_SECRET environment variable across all agents
 
 ---
 
-## Bug #12: Customer Profile 403 Error
+## Bug #10: localStorage Key Mismatch
+
+**Status:** ✅ FIXED
+**Severity:** **CRITICAL**
+**Component:** Frontend API (multi-agent-dashboard/src/lib/api.js)
+**Discovered:** Current session - During authentication debugging
+
+### Description
+The AuthContext was storing the authentication token with key `'token'` in localStorage, but the API client was looking for `'auth_token'`, causing no authentication token to be sent with API requests.
+
+### Root Cause
+**AuthContext.jsx:**
+```javascript
+localStorage.setItem('token', token)  // Saves as 'token'
+```
+
+**api.js:**
+```javascript
+const token = localStorage.getItem('auth_token')  // Looks for 'auth_token'
+```
+
+### Impact
+- **No authentication token sent** with API requests
+- **All authenticated endpoints failed** with 401/403 errors
+- **Offer creation failed** even after proxy and JWT fixes
+
+### Fix
+Updated `api.js` to use `'token'` key (matching AuthContext):
+
+```javascript
+const token = localStorage.getItem('token')  // Changed from 'auth_token'
+```
+
+### Files Changed
+- `/multi-agent-dashboard/src/lib/api.js`
+
+### Commit
+```
+commit a7f3c21
+Fix Bug #10: Harmonize localStorage key for authentication token
+```
+
+---
+
+## Bug #11: Database Column Name Mismatch
+
+**Status:** ✅ FIXED
+**Severity:** **CRITICAL**
+**Component:** Backend Agent (agents/offers_agent_v3.py)
+**Discovered:** Current session - During offer creation testing
+
+### Description
+The offers agent was trying to set `metadata=offer_data.metadata` when creating offers, but the database model defined the column as `extra_data`, causing a psycopg2.errors.UndefinedColumn error.
+
+### Root Cause
+**offers_agent_v3.py (line 263):**
+```python
+metadata=offer_data.metadata  # Wrong column name
+```
+
+**db_models.py (line 1390):**
+```python
+extra_data = Column(JSON)  # Actual column name
+```
+
+### Error Message
+```
+psycopg2.errors.UndefinedColumn: column "metadata" of relation "offers" does not exist
+```
+
+### Fix
+Updated offers_agent_v3.py to use correct column name:
+
+```python
+extra_data=offer_data.metadata  # Changed from metadata
+```
+
+### Files Changed
+- `/agents/offers_agent_v3.py`
+
+### Commit
+```
+commit eb14a3f
+Fix Bug #11: Column name mismatch in offers_agent_v3.py
+```
+
+---
+
+## Bug #12: Missing extra_data Column in Offers Table
+
+**Status:** ✅ FIXED
+**Severity:** **CRITICAL**
+**Component:** Database Schema
+**Discovered:** Current session - After Bug #11 fix
+
+### Description
+Even after fixing the column name in the code, the database table was missing the `extra_data` column because it was created before the column was added to the model definition.
+
+### Root Cause
+The offers table was created by an older version of `init_database.py` that didn't include the `extra_data` column in the Offer model.
+
+### Error Message
+```
+psycopg2.errors.UndefinedColumn: column "extra_data" of relation "offers" does not exist
+```
+
+### Fix
+Created migration script `migrate_offers_table.py` to add the missing column:
+
+```python
+ALTER TABLE offers ADD COLUMN extra_data JSON
+```
+
+### Files Changed
+- Created `/migrate_offers_table.py`
+
+### Commit
+```
+commit e48d079
+Add migration script to fix offers table extra_data column
+```
+
+### Verification Steps
+1. Pull latest changes: `git pull origin main`
+2. Run migration: `python migrate_offers_table.py`
+3. Restart offers agent (if running locally)
+4. Test Offer Wizard Complete button
+5. Verify offer appears in offers list
+
+---
+
+## Bug #13: Customer Profile 403 Error
 
 **Status:** 🔴 OPEN
 **Severity:** Medium
