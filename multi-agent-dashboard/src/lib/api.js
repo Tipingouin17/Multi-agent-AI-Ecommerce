@@ -1586,12 +1586,7 @@ class ApiService {
     }
   }
   
-  async connectWebSocket(url) {
-    // WebSocket connection is handled separately in WebSocketContext
-    // This is a placeholder for compatibility
-    console.log('WebSocket connection requested:', url)
-    return { status: 'connected' }
-  }
+
 
 }
 
