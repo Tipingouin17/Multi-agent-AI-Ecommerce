@@ -389,7 +389,7 @@ function ProductManagement() {
       
       {syncStatus.lastSync && (
         <div className="mb-4 text-sm text-gray-500">
-          Last sync: {formatDate(syncStatus.lastSync)}
+          Last sync: {formatDateTime(syncStatus.lastSync)}
           {Object.keys(syncStatus.marketplaces).length > 0 && (
             <span className="ml-2">
               ({Object.entries(syncStatus.marketplaces).map(([name, count]) => (
