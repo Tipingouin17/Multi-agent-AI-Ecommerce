@@ -1,0 +1,29 @@
+BUGS FOUND DURING MANUAL TESTING
+
+FIXED:
+1. Missing React imports - OrderManagement, InventoryManagement, Analytics, MarketplaceIntegration
+2. Analytics Agent column names (total_amount → total)
+3. Product creation merchant_id missing
+4. formatDate undefined → formatDateTime
+5. Order details customer.name undefined
+6. Marketplace logo toLowerCase null check
+
+TO FIX:
+7. Customer Home page - 404 error (missing API endpoint)
+8. Analytics page - NaN values (frontend not handling 0 properly)
+9. Customer Orders - needs testing
+10. Customer Cart - needs testing
+11. Customer Products - needs testing
+12. Admin Portal - not tested yet
+
+TESTING STATUS:
+- Merchant Portal: 60% complete (Dashboard, Products, Inventory, Orders partially tested)
+- Customer Portal: 10% complete (login works, home page has bug)
+- Admin Portal: 0% complete
+
+NEXT STEPS:
+1. Fix Customer Home page 404 error
+2. Fix Analytics NaN display
+3. Complete Customer portal testing
+4. Complete Admin portal testing
+5. Create final comprehensive test report

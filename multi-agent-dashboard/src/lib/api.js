@@ -590,7 +590,7 @@ class ApiService {
   // ==================== CUSTOMER PORTAL APIs ====================
   
   async getFeaturedProducts(limit = 10) {
-    const response = await clients.product.get('/api/featured', { params: { limit } })
+    const response = await clients.product.get('/featured', { params: { limit } })
     return response.data
   }
 
