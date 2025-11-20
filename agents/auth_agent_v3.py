@@ -99,13 +99,26 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Create a JWT access token"""
-    to_encode = data.copy()
+    """Create a JWT access token compatible with shared auth module"""
+    # Extract user data
+    user_id = data.get("sub") or data.get("user_id")
+    username = data.get("username", "")
+    role = data.get("role", "customer")
+    
+    # Create token in shared auth module format
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    
+    to_encode = {
+        "user_id": user_id,
+        "username": username,
+        "role": role,
+        "token_type": "access",
+        "exp": expire
+    }
+    
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -263,8 +276,13 @@ async def login(request: LoginRequest, db: Session = Depends(get_db_session)):
         user.last_login = datetime.utcnow()
         db.commit()
         
-        # Create access token
-        access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
+        # Create access token with all required fields
+        access_token = create_access_token(data={
+            "sub": str(user.id),
+            "user_id": str(user.id),
+            "username": user.username or user.email.split('@')[0],
+            "role": user.role
+        })
         
         return {
             "access_token": access_token,
