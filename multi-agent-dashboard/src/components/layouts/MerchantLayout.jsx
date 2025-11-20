@@ -15,7 +15,10 @@ import {
   LogOut,
   Bell,
   Search,
-  User
+  User,
+  Tag,
+  Megaphone,
+  Truck
 } from 'lucide-react'
 import UserProfileDropdown from '../shared/UserProfileDropdown'
 import NotificationsDropdown from '../shared/NotificationsDropdown'
@@ -53,6 +56,9 @@ const MerchantLayout = ({ onInterfaceReset }) => {
     { name: 'Products', href: '/products', icon: Package },
     { name: 'Orders', href: '/orders', icon: ShoppingCart },
     { name: 'Inventory', href: '/inventory', icon: Warehouse },
+    { name: 'Offers', href: '/offers', icon: Tag },
+    { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
+    { name: 'Suppliers', href: '/suppliers', icon: Truck },
     { name: 'Marketplaces', href: '/marketplaces', icon: Store },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   ]

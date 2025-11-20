@@ -44,6 +44,10 @@ import CustomerSegmentation from './pages/merchant/CustomerSegmentation'
 import LoyaltyProgram from './pages/merchant/LoyaltyProgram'
 import EmailCampaignBuilder from './pages/merchant/EmailCampaignBuilder'
 import MarketingAutomation from './pages/merchant/MarketingAutomation'
+import Offers from './pages/merchant/Offers'
+import OfferWizard from './pages/merchant/OfferWizard'
+import Campaigns from './pages/merchant/Campaigns'
+import Suppliers from './pages/merchant/Suppliers'
 import StoreSettings from './pages/merchant/StoreSettings'
 import PaymentSettings from './pages/merchant/PaymentSettings'
 import ShippingSettings from './pages/merchant/ShippingSettings'
@@ -388,6 +392,10 @@ function App() {
               <Route path="/marketing/automation" element={<ErrorBoundary><MarketingAutomation /></ErrorBoundary>} />
               <Route path="/inventory" element={<ErrorBoundary><InventoryManagement /></ErrorBoundary>} />
               <Route path="/marketplaces" element={<ErrorBoundary><MarketplaceIntegration /></ErrorBoundary>} />
+              <Route path="/offers" element={<ErrorBoundary><Offers /></ErrorBoundary>} />
+              <Route path="/offers/new" element={<ErrorBoundary><OfferWizard /></ErrorBoundary>} />
+              <Route path="/campaigns" element={<ErrorBoundary><Campaigns /></ErrorBoundary>} />
+              <Route path="/suppliers" element={<ErrorBoundary><Suppliers /></ErrorBoundary>} />
               <Route path="/analytics" element={<ErrorBoundary><MerchantAnalytics /></ErrorBoundary>} />
               <Route path="/analytics/sales-revenue" element={<ErrorBoundary><SalesRevenueDashboard /></ErrorBoundary>} />
               <Route path="/analytics/orders" element={<ErrorBoundary><OrderManagementDashboard /></ErrorBoundary>} />
