@@ -44,7 +44,7 @@ def run_migration_with_psycopg2():
         
         # Migration files
         migrations = [
-            'database/migrations/add_offers_management.sql',
+            'database/migrations/add_offers_management_fixed.sql',
             'database/migrations/add_supplier_management.sql'
         ]
         
@@ -136,7 +136,7 @@ def run_migration_with_sqlalchemy():
             
             # Migration files
             migrations = [
-                'database/migrations/add_offers_management.sql',
+                'database/migrations/add_offers_management_fixed.sql',
                 'database/migrations/add_supplier_management.sql'
             ]
             
@@ -180,7 +180,7 @@ def main():
     
     # Check if migration files exist
     migrations = [
-        'database/migrations/add_offers_management.sql',
+        'database/migrations/add_offers_management_fixed.sql',
         'database/migrations/add_supplier_management.sql'
     ]
     
