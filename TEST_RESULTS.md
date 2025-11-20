@@ -153,3 +153,13 @@
 
 ---
 
+
+### Bug #4: Missing use-toast Hook ✅ FIXED
+- **Severity:** HIGH
+- **Status:** ✅ FIXED (commit 4dbe2ea)
+- **Impact:** Offers and OfferWizard pages couldn't load
+- **Fix:** Created `/hooks/use-toast.js` with basic toast notification functionality
+- **Affected Files:** Offers.jsx, OfferWizard.jsx
+
+---
+
