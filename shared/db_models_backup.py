@@ -1687,6 +1687,109 @@ class SupplierProduct(Base):
         }
 
 
+class PurchaseOrder(Base):
+    """Purchase orders to suppliers"""
+    __tablename__ = "purchase_orders"
+    
+    id = Column(Integer, primary_key=True)
+    
+    # Order Information
+    po_number = Column(String(100), unique=True, nullable=False)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id"), index=True)
+    status = Column(String(50), default='draft', index=True)
+    
+    # Dates
+    order_date = Column(Date, index=True)
+    expected_delivery_date = Column(Date, index=True)
+    actual_delivery_date = Column(Date)
+    
+    # Financial
+    subtotal = Column(Numeric(15, 2), default=0.00)
+    tax_amount = Column(Numeric(15, 2), default=0.00)
+    shipping_cost = Column(Numeric(15, 2), default=0.00)
+    total_amount = Column(Numeric(15, 2), default=0.00)
+    currency = Column(String(10), default='USD')
+    
+    # Delivery
+    shipping_address = Column(JSON)
+    tracking_number = Column(String(255))
+    
+    # Metadata
+    notes = Column(Text)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    extra_data = Column(JSON)
+    
+    # Relationships
+    supplier = relationship("Supplier", back_populates="purchase_orders")
+    items = relationship("PurchaseOrderItem", back_populates="purchase_order", cascade="all, delete-orphan")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "po_number": self.po_number,
+            "supplier_id": self.supplier_id,
+            "status": self.status,
+            "order_date": self.order_date.isoformat() if self.order_date else None,
+            "expected_delivery_date": self.expected_delivery_date.isoformat() if self.expected_delivery_date else None,
+            "actual_delivery_date": self.actual_delivery_date.isoformat() if self.actual_delivery_date else None,
+            "subtotal": float(self.subtotal) if self.subtotal else 0.0,
+            "tax_amount": float(self.tax_amount) if self.tax_amount else 0.0,
+            "shipping_cost": float(self.shipping_cost) if self.shipping_cost else 0.0,
+            "total_amount": float(self.total_amount) if self.total_amount else 0.0,
+            "currency": self.currency,
+            "shipping_address": self.shipping_address or {},
+            "tracking_number": self.tracking_number,
+            "notes": self.notes,
+            "created_by": self.created_by,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "extra_data": self.extra_data or {}
+        }
+
+
+class PurchaseOrderItem(Base):
+    """Line items in purchase orders"""
+    __tablename__ = "purchase_order_items"
+    
+    id = Column(Integer, primary_key=True)
+    purchase_order_id = Column(Integer, ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    supplier_product_id = Column(Integer, ForeignKey("supplier_products.id"))
+    
+    # Item Details
+    quantity = Column(Integer, nullable=False)
+    unit_price = Column(Numeric(15, 2), nullable=False)
+    tax_rate = Column(Numeric(5, 2), default=0.00)
+    line_total = Column(Numeric(15, 2), nullable=False)
+    
+    # Receiving
+    quantity_received = Column(Integer, default=0)
+    quantity_pending = Column(Integer)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    purchase_order = relationship("PurchaseOrder", back_populates="items")
+    product = relationship("Product")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "purchase_order_id": self.purchase_order_id,
+            "product_id": self.product_id,
+            "supplier_product_id": self.supplier_product_id,
+            "quantity": self.quantity,
+            "unit_price": float(self.unit_price) if self.unit_price else 0.0,
+            "tax_rate": float(self.tax_rate) if self.tax_rate else 0.0,
+            "line_total": float(self.line_total) if self.line_total else 0.0,
+            "quantity_received": self.quantity_received,
+            "quantity_pending": self.quantity_pending,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+
 class SupplierPayment(Base):
     """Payments made to suppliers"""
     __tablename__ = "supplier_payments"
@@ -1729,55 +1832,4 @@ class SupplierPayment(Base):
             "created_by": self.created_by,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "extra_data": self.extra_data or {}
-        }
-
-
-
-# ============================================================================
-# MARKETPLACE MODELS
-# ============================================================================
-
-class Marketplace(Base):
-    """E-commerce marketplace integrations (Amazon, eBay, Walmart, etc.)"""
-    __tablename__ = "marketplaces"
-    
-    id = Column(Integer, primary_key=True)
-    
-    # Marketplace Information
-    name = Column(String(255), nullable=False)
-    platform = Column(String(100), nullable=False, index=True)
-    region = Column(String(50))
-    
-    # Connection
-    api_key = Column(String(500))
-    api_secret = Column(String(500))
-    merchant_id = Column(String(255))
-    is_active = Column(Boolean, default=True, index=True)
-    
-    # Configuration
-    settings = Column(JSON)
-    
-    # Sync
-    last_sync_at = Column(DateTime)
-    sync_frequency = Column(Integer, default=3600)
-    
-    # Metadata
-    created_by = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "id": self.id,
-            "name": self.name,
-            "platform": self.platform,
-            "region": self.region,
-            "merchant_id": self.merchant_id,
-            "is_active": self.is_active,
-            "settings": self.settings or {},
-            "last_sync_at": self.last_sync_at.isoformat() if self.last_sync_at else None,
-            "sync_frequency": self.sync_frequency,
-            "created_by": self.created_by,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }

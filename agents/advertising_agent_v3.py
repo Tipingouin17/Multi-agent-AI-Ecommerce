@@ -12,7 +12,9 @@ from datetime import datetime, date
 import uvicorn
 from dotenv import load_dotenv
 
-from shared.db_connection import get_db_session
+from shared.db_connection import get_database_url
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from shared.auth import get_current_user, require_merchant, User
 from shared.advertising_models import (
     AdvertisingCampaign, AdGroup, AdCreative, 
@@ -22,6 +24,17 @@ from sqlalchemy.orm import Session, joinedload
 
 # Load environment variables
 load_dotenv()
+
+# Create database engine and session
+engine = create_engine(get_database_url(), pool_pre_ping=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 app = FastAPI(title="Advertising Agent", version="3.0.0")
 
@@ -101,7 +114,7 @@ async def get_campaigns(
     status: Optional[str] = None,
     platform: Optional[str] = None,
     campaign_type: Optional[str] = None,
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_merchant)
 ):
     """Get all campaigns with optional filters"""
@@ -124,7 +137,7 @@ async def get_campaigns(
 @app.get("/api/campaigns/{campaign_id}")
 async def get_campaign(
     campaign_id: int,
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_merchant)
 ):
     """Get campaign by ID"""
@@ -140,7 +153,7 @@ async def get_campaign(
 @app.post("/api/campaigns")
 async def create_campaign(
     campaign_data: CampaignCreate,
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_merchant)
 ):
     """Create new campaign"""
@@ -170,7 +183,7 @@ async def create_campaign(
 async def update_campaign(
     campaign_id: int,
     campaign_data: CampaignUpdate,
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_merchant)
 ):
     """Update campaign"""
@@ -203,7 +216,7 @@ async def update_campaign(
 @app.delete("/api/campaigns/{campaign_id}")
 async def delete_campaign(
     campaign_id: int,
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_merchant)
 ):
     """Delete campaign"""
@@ -226,7 +239,7 @@ async def get_campaign_analytics(
     campaign_id: int,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_merchant)
 ):
     """Get campaign analytics"""
