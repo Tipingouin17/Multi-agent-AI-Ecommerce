@@ -114,20 +114,26 @@ function Analytics() {
   
   // Format currency
   function formatCurrency(amount) {
+    // Handle NaN, null, undefined, or invalid values
+    const validAmount = (amount && !isNaN(amount)) ? amount : 0;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
-    }).format(amount);
+    }).format(validAmount);
   }
   
   // Format percentage
   function formatPercentage(value) {
-    return `${(value * 100).toFixed(1)}%`;
+    // Handle NaN, null, undefined, or invalid values
+    const validValue = (value && !isNaN(value)) ? value : 0;
+    return `${(validValue * 100).toFixed(1)}%`;
   }
   
   // Format number with commas
   function formatNumber(num) {
-    return new Intl.NumberFormat('en-US').format(num);
+    // Handle NaN, null, undefined, or invalid values
+    const validNum = (num && !isNaN(num)) ? num : 0;
+    return new Intl.NumberFormat('en-US').format(validNum);
   }
   
   // Get trend indicator class
