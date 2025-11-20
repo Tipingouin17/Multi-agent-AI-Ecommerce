@@ -1603,7 +1603,8 @@ class Supplier(Base):
     
     # Relationships
     products = relationship("SupplierProduct", back_populates="supplier")
-    purchase_orders = relationship("PurchaseOrder", back_populates="supplier")
+    # Note: PurchaseOrder uses vendor_id, not supplier_id, so no direct relationship
+    # purchase_orders can be queried separately if needed
     payments = relationship("SupplierPayment", back_populates="supplier")
     
     def to_dict(self) -> Dict[str, Any]:
