@@ -17,6 +17,8 @@
 | #5 | ✅ FIXED | Medium | Dependencies | react-day-picker version incompatibility |
 | #6 | ✅ FIXED | Low | Navigation | Incorrect navigation paths in Offers.jsx |
 | #7 | ✅ FIXED | **CRITICAL** | Vite Proxy | Missing proxy config for new agents |
+| #8 | ✅ FIXED | **CRITICAL** | Authentication | JWT token format mismatch |
+| #9 | ✅ FIXED | **CRITICAL** | Authentication | JWT_SECRET environment variable mismatch |
 | #12 | 🔴 OPEN | Medium | Customer Portal | 403 error on customer profile page |
 
 ---
@@ -202,6 +204,134 @@ Fix Bug #7: Add missing agent proxy configurations (offers, advertising, supplie
 5. Click "Complete" button
 6. Verify redirect to /merchant/offers with success toast
 7. Verify new offer appears in the offers list
+
+---
+
+## Bug #8: JWT Token Format Mismatch
+
+**Status:** ✅ FIXED
+**Severity:** **CRITICAL**
+**Component:** Authentication (agents/auth_agent_v3.py)
+**Discovered:** Current session - During Offer Wizard Complete button testing
+
+### Description
+The auth agent was creating JWT tokens with a different payload structure than what the shared auth module expected, causing all new agents (offers, advertising, supplier, marketplace) to reject authentication with 403 Forbidden errors.
+
+### Root Cause
+The `auth_agent_v3.py` had its own `create_access_token()` function that created tokens with `{"sub": user_id, "role": role}` format, while `shared/auth.py` expected `{"user_id": user_id, "username": username, "role": role, "token_type": "access"}` format.
+
+### Error Message
+```
+API Error (offers): {detail: "Not authenticated"}
+Error creating offer: Error: Failed to create offer: Request failed with status code 403
+```
+
+### Impact
+- **All new agents** (offers, advertising, supplier, marketplace) rejected authentication
+- **Offer Wizard** Complete button failed with 403 Forbidden
+- **Any merchant operations** on new features were blocked
+
+### Fix
+Updated `auth_agent_v3.py` `create_access_token()` function to generate tokens in the shared auth module format:
+
+```python
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Create a JWT access token compatible with shared auth module"""
+    user_id = data.get("sub") or data.get("user_id")
+    username = data.get("username", "")
+    role = data.get("role", "customer")
+    
+    to_encode = {
+        "user_id": user_id,
+        "username": username,
+        "role": role,
+        "token_type": "access",
+        "exp": expire
+    }
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+```
+
+### Files Changed
+- `/agents/auth_agent_v3.py`
+
+### Commit
+```
+commit f1a3ce0
+Fix Bug #8: JWT token format mismatch between auth agent and shared auth module
+```
+
+### Verification Steps
+1. Clear browser localStorage: `localStorage.clear()`
+2. Log in again to get new token with correct format
+3. Test Offer Wizard Complete button
+4. Verify no 403 errors in console
+
+---
+
+## Bug #9: JWT_SECRET Environment Variable Mismatch
+
+**Status:** ✅ FIXED
+**Severity:** **CRITICAL**
+**Component:** Authentication (agents/auth_agent_v3.py)
+**Discovered:** Current session - Root cause analysis of authentication issues
+
+### Description
+The auth agent was looking for `JWT_SECRET_KEY` environment variable while the shared auth module and .env file used `JWT_SECRET`. This caused the auth agent to fall back to a default secret key, creating tokens that other agents couldn't validate.
+
+### Root Cause
+**auth_agent_v3.py (line 53):**
+```python
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+```
+
+**shared/auth.py (line 19):**
+```python
+SECRET_KEY = os.getenv("JWT_SECRET")
+```
+
+**.env file:**
+```
+JWT_SECRET=dev_jwt_secret_change_in_production_min_32_chars
+```
+
+**Result:** Auth agent used fallback secret, other agents used .env secret → Token validation failed!
+
+### Impact
+- **Authentication completely broken** for all new agents
+- **Tokens created by auth agent** couldn't be validated by offers/advertising/supplier/marketplace agents
+- **403 Forbidden errors** on all authenticated endpoints
+- **User couldn't log in** after Bug #8 fix was applied
+
+### Fix
+Updated `auth_agent_v3.py` to use `JWT_SECRET` (matching shared/auth.py and .env):
+
+```python
+# JWT Configuration - Must match shared/auth.py
+SECRET_KEY = os.getenv("JWT_SECRET")
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET environment variable must be set")
+```
+
+Also updated `get_current_user()` to support both token formats:
+```python
+user_id = payload.get("user_id") or payload.get("sub")
+```
+
+### Files Changed
+- `/agents/auth_agent_v3.py`
+
+### Commit
+```
+commit 984ec92
+Fix Bug #9: Harmonize JWT_SECRET environment variable across all agents
+```
+
+### Verification Steps
+1. Restart auth agent (automatically done)
+2. Clear browser localStorage: `localStorage.clear()`
+3. Log in with merchant credentials
+4. Test Offer Wizard Complete button
+5. Verify authentication works across all agents
 
 ---
 
