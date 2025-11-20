@@ -42,6 +42,10 @@ const AGENT_PORTS = {
   international: 8038,
   gateway: 8100,
   auth: 8017,
+  offers: 8040,
+  advertising: 8041,
+  supplier: 8042,
+  marketplaceintegration: 8043,
 };
 
 // Create proxy configuration for each agent
