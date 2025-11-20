@@ -241,7 +241,12 @@ function ProductManagement() {
     e.preventDefault();
     
     try {
-      await apiService.createProduct(newProduct);
+      // Add merchant_id (hardcoded for now, should come from auth context)
+      const productData = {
+        ...newProduct,
+        merchant_id: 1 // TODO: Get from auth context
+      };
+      await apiService.createProduct(productData);
       setShowAddProductModal(false);
       setNewProduct({
         name: '',
