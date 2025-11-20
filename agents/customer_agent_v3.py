@@ -10,6 +10,10 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
