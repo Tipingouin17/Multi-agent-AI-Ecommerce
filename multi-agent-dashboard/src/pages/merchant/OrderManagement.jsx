@@ -752,14 +752,14 @@ function OrderManagement() {
                       <div>
                         <p className="text-sm text-gray-500">Marketplace</p>
                         <div className="flex items-center">
-                          {selectedOrderDetails.marketplace.icon && (
+                          {selectedOrderDetails.marketplace?.icon && (
                             <img
                               src={selectedOrderDetails.marketplace.icon}
                               alt={selectedOrderDetails.marketplace.name}
                               className="h-4 w-4 mr-1"
                             />
                           )}
-                          <span className="font-medium">{selectedOrderDetails.marketplace.name}</span>
+                          <span className="font-medium">{selectedOrderDetails.marketplace?.name || 'Unknown'}</span>
                         </div>
                       </div>
                     </div>
