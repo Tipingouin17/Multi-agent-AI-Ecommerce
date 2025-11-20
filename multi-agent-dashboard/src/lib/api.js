@@ -79,7 +79,7 @@ const createAgentClient = (agentName) => {
   client.interceptors.request.use(
     (config) => {
       // Add authentication token if available
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('token')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }
@@ -97,7 +97,7 @@ const createAgentClient = (agentName) => {
       // Handle specific error cases
       if (error.response?.status === 401) {
         // Unauthorized - redirect to login or refresh token
-        localStorage.removeItem('auth_token')
+        localStorage.removeItem('token')
         // Could trigger a global auth state update here
       }
       
