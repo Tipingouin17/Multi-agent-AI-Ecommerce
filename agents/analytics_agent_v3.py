@@ -90,8 +90,8 @@ async def get_sales_overview(timeRange: str = Query("30d")):
         cursor.execute("""
             SELECT 
                 COUNT(*) as total_orders,
-                COALESCE(SUM(total_amount), 0) as total_revenue,
-                COALESCE(AVG(total_amount), 0) as average_order_value,
+                COALESCE(SUM(total), 0) as total_revenue,
+                COALESCE(AVG(total), 0) as average_order_value,
                 COUNT(DISTINCT customer_id) as total_customers
             FROM orders
             WHERE created_at >= %s AND created_at <= %s
@@ -107,8 +107,8 @@ async def get_sales_overview(timeRange: str = Query("30d")):
         cursor.execute("""
             SELECT 
                 COUNT(*) as total_orders,
-                COALESCE(SUM(total_amount), 0) as total_revenue,
-                COALESCE(AVG(total_amount), 0) as average_order_value,
+                COALESCE(SUM(total), 0) as total_revenue,
+                COALESCE(AVG(total), 0) as average_order_value,
                 COUNT(DISTINCT customer_id) as total_customers
             FROM orders
             WHERE created_at >= %s AND created_at < %s
