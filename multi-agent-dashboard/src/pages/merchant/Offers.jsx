@@ -167,7 +167,7 @@ const Offers = () => {
             Create and manage special offers for your products
           </p>
         </div>
-        <Button onClick={() => navigate('/merchant/offers/new')}>
+        <Button onClick={() => navigate('/offers/new')}>
           <Plus className="mr-2 h-4 w-4" />
           Create Offer
         </Button>
@@ -235,7 +235,7 @@ const Offers = () => {
               <Button
                 variant="outline"
                 className="mt-4"
-                onClick={() => navigate('/merchant/offers/new')}
+                onClick={() => navigate('/offers/new')}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Your First Offer
@@ -292,13 +292,13 @@ const Offers = () => {
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => navigate(`/merchant/offers/${offer.id}/analytics`)}
+                            onClick={() => navigate(`/offers/${offer.id}/analytics`)}
                           >
                             <BarChart3 className="mr-2 h-4 w-4" />
                             View Analytics
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => navigate(`/merchant/offers/${offer.id}/edit`)}
+                            onClick={() => navigate(`/offers/${offer.id}/edit`)}
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
