@@ -49,8 +49,10 @@ app.add_middleware(
 # Security
 security = HTTPBearer()
 
-# JWT Configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+# JWT Configuration - Must match shared/auth.py
+SECRET_KEY = os.getenv("JWT_SECRET")
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET environment variable must be set")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
@@ -145,7 +147,8 @@ def get_current_user(
     """Get the current authenticated user from token"""
     token = credentials.credentials
     payload = decode_token(token)
-    user_id = payload.get("sub")
+    # Support both old (sub) and new (user_id) token formats
+    user_id = payload.get("user_id") or payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
