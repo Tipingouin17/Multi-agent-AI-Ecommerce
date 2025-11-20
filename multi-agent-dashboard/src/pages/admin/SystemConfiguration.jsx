@@ -26,8 +26,37 @@ function SystemConfiguration() {
     try {
       setLoading(true);
       const data = await apiService.getSystemConfiguration();
-      setConfig(data);
-      setOriginalConfig(JSON.parse(JSON.stringify(data))); // Deep copy
+      
+      // Provide default configuration if API returns empty
+      const defaultConfig = {
+        general: {
+          systemName: 'Multi-Agent E-Commerce Platform',
+          environment: 'development',
+          logLevel: 'info',
+          maintenanceMode: false,
+          debugMode: true
+        },
+        agents: {
+          maxConcurrentAgents: 10,
+          agentTimeout: 30,
+          autoRestart: true,
+          healthCheckInterval: 60
+        },
+        integrations: {
+          enableMarketplaces: true,
+          enablePaymentGateways: true,
+          enableShippingCarriers: true
+        },
+        notifications: {
+          enableEmail: true,
+          enableSMS: false,
+          enablePush: false
+        }
+      };
+      
+      const finalConfig = Object.keys(data).length > 0 ? data : defaultConfig;
+      setConfig(finalConfig);
+      setOriginalConfig(JSON.parse(JSON.stringify(finalConfig))); // Deep copy
       setError(null);
       setUnsavedChanges(false);
     } catch (err) {

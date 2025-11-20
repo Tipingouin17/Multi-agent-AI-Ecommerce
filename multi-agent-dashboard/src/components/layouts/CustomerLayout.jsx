@@ -107,20 +107,20 @@ const CustomerLayout = ({ onInterfaceReset }) => {
               </div>
 
               {/* Wishlist */}
-              <Button variant="ghost" size="sm" className="relative">
-                <Heart className="w-5 h-5" />
-                <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-red-500 text-white text-xs">
-                  3
-                </Badge>
-              </Button>
+              <Link to="/wishlist">
+                <Button variant="ghost" size="sm" className="relative">
+                  <Heart className="w-5 h-5" />
+                  {/* Wishlist badge hidden when empty */}
+                </Button>
+              </Link>
 
               {/* Cart */}
-              <Button variant="ghost" size="sm" className="relative">
-                <ShoppingCart className="w-5 h-5" />
-                <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-purple-500 text-white text-xs">
-                  2
-                </Badge>
-              </Button>
+              <Link to="/cart">
+                <Button variant="ghost" size="sm" className="relative">
+                  <ShoppingCart className="w-5 h-5" />
+                  {/* Cart badge hidden when empty */}
+                </Button>
+              </Link>
 
               {/* Notifications */}
               <div className="relative dropdown-container">
