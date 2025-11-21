@@ -379,6 +379,88 @@ def create_product(product_data: ProductCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(product)
         
+        # Handle related tables using raw SQL (until SQLAlchemy models are added)
+        product_id = product.id
+        
+        # Step 2: Insert custom specifications
+        if product_data.specifications:
+            for spec_name, spec_value in product_data.specifications.items():
+                db.execute(
+                    "INSERT INTO product_specifications (product_id, spec_name, spec_value) VALUES (:pid, :name, :value)",
+                    {"pid": product_id, "name": spec_name, "value": spec_value}
+                )
+        
+        # Step 4: Insert pricing tiers
+        if product_data.pricing_tiers:
+            for tier in product_data.pricing_tiers:
+                db.execute(
+                    "INSERT INTO product_pricing_tiers (product_id, min_quantity, max_quantity, unit_price) VALUES (:pid, :min, :max, :price)",
+                    {"pid": product_id, "min": tier.get('min_quantity'), "max": tier.get('max_quantity'), "price": tier.get('unit_price')}
+                )
+        
+        # Step 5: Insert warehouse inventory
+        if product_data.warehouse_inventory:
+            for inv in product_data.warehouse_inventory:
+                db.execute(
+                    "INSERT INTO product_warehouse_inventory (product_id, warehouse_id, quantity, low_stock_threshold) VALUES (:pid, :wid, :qty, :threshold)",
+                    {"pid": product_id, "wid": inv.get('warehouse_id'), "qty": inv.get('quantity', 0), "threshold": inv.get('low_stock_threshold', 10)}
+                )
+        
+        # Step 6: Insert bundle items
+        if product_data.is_bundle and product_data.bundle_items:
+            for item in product_data.bundle_items:
+                db.execute(
+                    "INSERT INTO bundle_components (bundle_product_id, component_product_id, quantity) VALUES (:bid, :cid, :qty)",
+                    {"bid": product_id, "cid": item.get('product_id'), "qty": item.get('quantity', 1)}
+                )
+        
+        # Step 7: Insert marketplace listings
+        if product_data.marketplace_listings:
+            for marketplace in product_data.marketplace_listings:
+                db.execute(
+                    "INSERT INTO product_marketplace_listings (product_id, marketplace_name, listing_status) VALUES (:pid, :name, :status)",
+                    {"pid": product_id, "name": marketplace, "status": "pending"}
+                )
+        
+        # Step 7: Insert product identifiers
+        if product_data.gtin:
+            db.execute(
+                "INSERT INTO product_identifiers (product_id, identifier_type, identifier_value) VALUES (:pid, :type, :value)",
+                {"pid": product_id, "type": "GTIN", "value": product_data.gtin}
+            )
+        if product_data.upc:
+            db.execute(
+                "INSERT INTO product_identifiers (product_id, identifier_type, identifier_value) VALUES (:pid, :type, :value)",
+                {"pid": product_id, "type": "UPC", "value": product_data.upc}
+            )
+        if product_data.ean:
+            db.execute(
+                "INSERT INTO product_identifiers (product_id, identifier_type, identifier_value) VALUES (:pid, :type, :value)",
+                {"pid": product_id, "type": "EAN", "value": product_data.ean}
+            )
+        if product_data.isbn:
+            db.execute(
+                "INSERT INTO product_identifiers (product_id, identifier_type, identifier_value) VALUES (:pid, :type, :value)",
+                {"pid": product_id, "type": "ISBN", "value": product_data.isbn}
+            )
+        if product_data.asin:
+            db.execute(
+                "INSERT INTO product_identifiers (product_id, identifier_type, identifier_value) VALUES (:pid, :type, :value)",
+                {"pid": product_id, "type": "ASIN", "value": product_data.asin}
+            )
+        
+        # Step 7: Insert certifications
+        if product_data.certifications:
+            for cert in product_data.certifications:
+                db.execute(
+                    "INSERT INTO product_compliance (product_id, compliance_type, certification_name) VALUES (:pid, :type, :name)",
+                    {"pid": product_id, "type": "certification", "name": cert}
+                )
+        
+        # Commit all related data
+        db.commit()
+        
+        logger.info(f"Product created successfully: {product_id} - {product.name}")
         return product.to_dict()
     
     except HTTPException:
