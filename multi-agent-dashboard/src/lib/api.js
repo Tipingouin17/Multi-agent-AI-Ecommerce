@@ -1907,7 +1907,8 @@ class ApiService {
       const response = await clients.marketplaceintegration.get(`/api/marketplaces/${marketplaceId}/analytics`, { params })
       return response.data
     } catch (error) {
-      throw new Error(`Failed to get marketplace analytics: ${error.message}`)
+      console.error(`Failed to get marketplace analytics for ${marketplaceId}:`, error.message)
+      return null // Return null instead of throwing error
     }
   }
 
