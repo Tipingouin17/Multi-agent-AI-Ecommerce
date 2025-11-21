@@ -170,7 +170,7 @@ class Product(Base):
     brand = Column(String(255))
     model_number = Column(String(255))
     product_type = Column(String(50), default='simple')
-    key_features = Column(JSON)
+    key_features = Column(JSON)  # Changed from TEXT[] to JSON for flexibility
     
     # Wizard Step 2 - Specifications (dimensions moved from JSON to individual columns)
     dimensions_length = Column(Numeric(8, 2))
@@ -204,8 +204,8 @@ class Product(Base):
     hazmat_class = Column(String(50))
     requires_signature = Column(Boolean, default=False)
     has_export_restrictions = Column(Boolean, default=False)
-    export_restriction_countries = Column(JSON)
-    safety_warnings = Column(JSON)
+    export_restriction_countries = Column(JSON)  # Changed from TEXT[] to JSON
+    safety_warnings = Column(JSON)  # Changed from TEXT[] to JSON
     
     # Wizard Step 8 - Publishing
     is_draft = Column(Boolean, default=True)
