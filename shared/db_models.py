@@ -164,6 +164,54 @@ class Product(Base):
     sales_count = Column(Integer, default=0)
     tags = Column(JSON)
     extra_data = Column('metadata', JSON)
+    
+    # Wizard Step 1 - Basic Information
+    display_name = Column(String(255))
+    brand = Column(String(255))
+    model_number = Column(String(255))
+    product_type = Column(String(50), default='simple')
+    key_features = Column(JSON)
+    
+    # Wizard Step 2 - Specifications (dimensions moved from JSON to individual columns)
+    dimensions_length = Column(Numeric(8, 2))
+    dimensions_width = Column(Numeric(8, 2))
+    dimensions_height = Column(Numeric(8, 2))
+    dimensions_unit = Column(String(10), default='cm')
+    weight_unit = Column(String(10), default='kg')
+    material = Column(String(255))
+    color = Column(String(100))
+    warranty_period = Column(Integer)
+    country_of_origin = Column(String(100))
+    
+    # Wizard Step 4 - Pricing & Costs
+    profit_margin = Column(Numeric(5, 2))
+    currency = Column(String(3), default='USD')
+    
+    # Wizard Step 5 - Inventory & Logistics
+    shipping_weight = Column(Numeric(8, 3))
+    shipping_length = Column(Numeric(8, 2))
+    shipping_width = Column(Numeric(8, 2))
+    shipping_height = Column(Numeric(8, 2))
+    handling_time_days = Column(Integer, default=1)
+    requires_shipping = Column(Boolean, default=True)
+    is_fragile = Column(Boolean, default=False)
+    is_perishable = Column(Boolean, default=False)
+    
+    # Wizard Step 7 - Compliance
+    has_age_restriction = Column(Boolean, default=False)
+    min_age = Column(Integer)
+    is_hazmat = Column(Boolean, default=False)
+    hazmat_class = Column(String(50))
+    requires_signature = Column(Boolean, default=False)
+    has_export_restrictions = Column(Boolean, default=False)
+    export_restriction_countries = Column(JSON)
+    safety_warnings = Column(JSON)
+    
+    # Wizard Step 8 - Publishing
+    is_draft = Column(Boolean, default=True)
+    published_at = Column(DateTime)
+    scheduled_publish_at = Column(DateTime)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
