@@ -543,8 +543,8 @@ class ApiService {
       const response = await clients.marketplace.get('/api/marketplaces/available')
       return response.data
     } catch (error) {
-      console.warn('Available marketplaces unavailable, using mock data')
-      return this.getMockAvailableMarketplaces()
+      console.error('Failed to get available marketplaces:', error.message)
+      return [] // Return empty array instead of mock data
     }
   }
   
@@ -1821,8 +1821,8 @@ class ApiService {
       const response = await clients.marketplaceintegration.get('/api/marketplaces', { params })
       return response.data
     } catch (error) {
-      console.warn('Marketplaces unavailable, using mock data:', error.message)
-      return this.getMockMarketplaces()
+      console.error('Failed to get marketplaces:', error.message)
+      return [] // Return empty array instead of mock data
     }
   }
 
@@ -1897,14 +1897,8 @@ class ApiService {
       const response = await clients.marketplaceintegration.get(`/api/marketplaces/${marketplaceId}/sync-status`)
       return response.data
     } catch (error) {
-      console.warn(`Marketplace sync status unavailable for ${marketplaceId}, using mock data:`, error.message)
-      return {
-        last_sync: new Date(Date.now() - 300000).toISOString(),
-        status: 'success',
-        synced_products: 0,
-        synced_orders: 0,
-        errors: []
-      }
+      console.error(`Failed to get sync status for ${marketplaceId}:`, error.message)
+      return null // Return null instead of mock data
     }
   }
 
