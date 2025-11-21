@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '@/lib/api'
 import { formatDateTime } from '@/utils/dateFormatter'
+import ProductWizard from '@/components/product-wizard/ProductWizard'
 
 /**
  * Product Management
@@ -250,36 +251,43 @@ function ProductManagement() {
     }));
   }
   
-  // Handle add product form submission
-  async function handleAddProduct(e) {
-    e.preventDefault();
-    
+  // Handle add product from wizard
+  async function handleAddProduct(wizardData) {
     try {
-      // Add merchant_id (hardcoded for now, should come from auth context)
+      // Transform wizard data to API format
       const productData = {
-        ...newProduct,
+        name: wizardData.name,
+        sku: wizardData.sku,
+        display_name: wizardData.display_name,
+        description: wizardData.description,
+        brand: wizardData.brand,
+        model_number: wizardData.model_number,
+        product_type: wizardData.product_type,
+        price: parseFloat(wizardData.price) || 0,
+        cost: parseFloat(wizardData.cost) || 0,
+        compare_price: parseFloat(wizardData.compare_price) || null,
+        category: wizardData.category,
+        status: wizardData.status || wizardData.publish_status || 'draft',
+        images: wizardData.images || [],
+        key_features: wizardData.key_features || [],
+        specifications: wizardData.specifications || {},
+        dimensions: {
+          length: wizardData.length,
+          width: wizardData.width,
+          height: wizardData.height,
+          weight: wizardData.weight
+        },
+        inventory: {
+          track_inventory: wizardData.track_inventory,
+          low_stock_threshold: wizardData.low_stock_threshold,
+          reorder_point: wizardData.reorder_point,
+          reorder_quantity: wizardData.reorder_quantity
+        },
         merchant_id: 1 // TODO: Get from auth context
       };
+      
       await apiService.createProduct(productData);
       setShowAddProductModal(false);
-      setNewProduct({
-        name: '',
-        sku: '',
-        display_name: '',
-        description: '',
-        brand: '',
-        model_number: '',
-        price: '',
-        cost: '',
-        category: '',
-        images: [],
-        inventory: {
-          quantity: '',
-          warehouse: '',
-          reorderLevel: '',
-          lowStockAlert: true
-        }
-      });
       loadProducts();
     } catch (err) {
       setError(`Failed to create product: ${err.message}`);
@@ -913,294 +921,17 @@ function ProductManagement() {
         </>
       )}
       
-      {/* Add Product Modal */}
-      {showAddProductModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Add New Product</h2>
-                <button
-                  onClick={() => setShowAddProductModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <form onSubmit={handleAddProduct}>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={newProduct.name}
-                      onChange={handleNewProductChange}
-                      required
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                    <input
-                      type="text"
-                      id="display_name"
-                      name="display_name"
-                      value={newProduct.display_name}
-                      onChange={handleNewProductChange}
-                      placeholder="Optional display name for marketplaces"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="sku" className="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        id="sku"
-                        name="sku"
-                        value={newProduct.sku}
-                        onChange={handleNewProductChange}
-                        required
-                        placeholder="Product SKU"
-                        className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleGenerateSKU}
-                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md font-medium"
-                      >
-                        Generate
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-                      <input
-                        type="text"
-                        id="brand"
-                        name="brand"
-                        value={newProduct.brand}
-                        onChange={handleNewProductChange}
-                        placeholder="Product brand"
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="model_number" className="block text-sm font-medium text-gray-700 mb-1">Model Number</label>
-                      <input
-                        type="text"
-                        id="model_number"
-                        name="model_number"
-                        value={newProduct.model_number}
-                        onChange={handleNewProductChange}
-                        placeholder="Model number"
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">Price *</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <span className="text-gray-500">$</span>
-                        </div>
-                        <input
-                          type="number"
-                          id="price"
-                          name="price"
-                          value={newProduct.price}
-                          onChange={handleNewProductChange}
-                          required
-                          min="0"
-                          step="0.01"
-                          className="w-full border border-gray-300 rounded-md pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-1">Cost</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <span className="text-gray-500">$</span>
-                        </div>
-                        <input
-                          type="number"
-                          id="cost"
-                          name="cost"
-                          value={newProduct.cost}
-                          onChange={handleNewProductChange}
-                          min="0"
-                          step="0.01"
-                          className="w-full border border-gray-300 rounded-md pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                    <select
-                      id="category"
-                      name="category"
-                      value={newProduct.category}
-                      onChange={handleNewProductChange}
-                      required
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map(category => (
-                        <option key={category.id} value={category.id}>{category.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={newProduct.description}
-                      onChange={handleNewProductChange}
-                      rows="4"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    ></textarea>
-                  </div>
-                  
-                  {/* Inventory Section */}
-                  <div className="border-t border-gray-200 pt-4 mt-4">
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">Inventory</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">Initial Quantity</label>
-                        <input
-                          type="number"
-                          id="quantity"
-                          name="quantity"
-                          value={newProduct.inventory.quantity}
-                          onChange={handleInventoryChange}
-                          min="0"
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="0"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="warehouse" className="block text-sm font-medium text-gray-700 mb-1">Warehouse Location</label>
-                        <input
-                          type="text"
-                          id="warehouse"
-                          name="warehouse"
-                          value={newProduct.inventory.warehouse}
-                          onChange={handleInventoryChange}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Main Warehouse"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label htmlFor="reorderLevel" className="block text-sm font-medium text-gray-700 mb-1">Reorder Level</label>
-                        <input
-                          type="number"
-                          id="reorderLevel"
-                          name="reorderLevel"
-                          value={newProduct.inventory.reorderLevel}
-                          onChange={handleInventoryChange}
-                          min="0"
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="10"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center pt-6">
-                        <input
-                          type="checkbox"
-                          id="lowStockAlert"
-                          name="lowStockAlert"
-                          checked={newProduct.inventory.lowStockAlert}
-                          onChange={handleInventoryChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <label htmlFor="lowStockAlert" className="ml-2 block text-sm text-gray-700">
-                          Enable low stock alerts
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {newProduct.images.map((image, index) => (
-                        <div key={index} className="relative w-20 h-20">
-                          <img
-                            src={image}
-                            alt={`Product ${index + 1}`}
-                            className="w-full h-full object-cover rounded-md"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setNewProduct(prev => ({
-                                ...prev,
-                                images: prev.images.filter((_, i) => i !== index)
-                              }));
-                            }}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                          >
-                            &times;
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <label className="block w-full border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50">
-                      <span className="text-gray-600">Click to upload images</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddProductModal(false)}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-                  >
-                    Add Product
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Product Creation Wizard */}
+      <ProductWizard
+        isOpen={showAddProductModal}
+        onClose={() => setShowAddProductModal(false)}
+        onSave={handleAddProduct}
+        categories={categories}
+        warehouses={[]}
+        marketplaces={marketplaces}
+        availableProducts={products}
+      />
+
     </div>
   );
 }
