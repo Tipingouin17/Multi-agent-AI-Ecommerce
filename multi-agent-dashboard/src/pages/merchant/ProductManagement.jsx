@@ -34,7 +34,10 @@ function ProductManagement() {
   const [newProduct, setNewProduct] = useState({
     name: '',
     sku: '',
+    display_name: '',
     description: '',
+    brand: '',
+    model_number: '',
     price: '',
     cost: '',
     category: '',
@@ -51,6 +54,17 @@ function ProductManagement() {
     lastSync: null,
     marketplaces: {}
   });
+  
+  // Calculate metrics
+  const metrics = {
+    totalProducts: products.length,
+    lowStockItems: products.filter(p => (p.inventory?.total_quantity || 0) < (p.low_stock_threshold || 10)).length,
+    activeProducts: products.filter(p => p.status === 'active').length,
+    marketplaceConnected: products.filter(p => p.marketplaces && p.marketplaces.length > 0).length
+  };
+  
+  const activePercentage = products.length > 0 ? Math.round((metrics.activeProducts / products.length) * 100) : 0;
+  const marketplaceCoverage = products.length > 0 ? Math.round((metrics.marketplaceConnected / products.length) * 100) : 0;
   
   // Load products on component mount and when filters, sort, or pagination change
   useEffect(() => {
@@ -251,7 +265,10 @@ function ProductManagement() {
       setNewProduct({
         name: '',
         sku: '',
+        display_name: '',
         description: '',
+        brand: '',
+        model_number: '',
         price: '',
         cost: '',
         category: '',
@@ -306,6 +323,23 @@ function ProductManagement() {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
+  }
+  
+  // Generate SKU
+  function generateSKU() {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const category = newProduct.category ? newProduct.category.substring(0, 3).toUpperCase() : 'PRD';
+    return `${category}-${timestamp}-${random}`;
+  }
+  
+  // Handle SKU generation
+  function handleGenerateSKU() {
+    const generatedSKU = generateSKU();
+    setNewProduct(prev => ({
+      ...prev,
+      sku: generatedSKU
+    }));
   }
   
   return (
@@ -399,6 +433,97 @@ function ProductManagement() {
           )}
         </div>
       )}
+      
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {/* Total Products */}
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Total Products</p>
+              <p className="text-3xl font-bold text-gray-900">{pagination.totalItems || metrics.totalProducts}</p>
+              <p className="text-xs text-gray-500 mt-1">Products in catalog</p>
+            </div>
+            <div className="text-blue-500">
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        {/* Low Stock Items */}
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-medium text-gray-600">Low Stock Items</p>
+                {metrics.lowStockItems > 0 && (
+                  <span className="px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Attention</span>
+                )}
+              </div>
+              <p className="text-3xl font-bold text-gray-900">{metrics.lowStockItems}</p>
+              <p className="text-xs text-gray-500 mt-1">Below threshold</p>
+            </div>
+            <div className="text-yellow-500">
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        {/* Active Products */}
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600 mb-1">Active Products</p>
+              <p className="text-3xl font-bold text-gray-900">{metrics.activeProducts}</p>
+              <p className="text-xs text-gray-500 mt-1">Active share</p>
+              <div className="mt-2">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                  <span>{activePercentage}% active</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${activePercentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div className="text-green-500 ml-4">
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        {/* Marketplace Connected */}
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600 mb-1">Marketplace Connected</p>
+              <p className="text-3xl font-bold text-gray-900">{metrics.marketplaceConnected}</p>
+              <p className="text-xs text-gray-500 mt-1">{marketplaceCoverage}% coverage</p>
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${marketplaceCoverage}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div className="text-purple-500 ml-4">
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Search and Filters */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
@@ -614,22 +739,24 @@ function ProductManagement() {
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4">
                           <div className="flex items-center">
                             {product.images && product.images.length > 0 ? (
                               <img
                                 src={product.images[0]}
                                 alt={product.name}
-                                className="h-10 w-10 rounded-md object-cover mr-3"
+                                className="h-10 w-10 rounded-md object-cover mr-3 flex-shrink-0"
                               />
                             ) : (
-                              <div className="h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center mr-3">
+                              <div className="h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center mr-3 flex-shrink-0">
                                 <span className="text-gray-500 text-xs">No img</span>
                               </div>
                             )}
-                            <div>
-                              <div className="font-medium text-gray-900">{product.name}</div>
-                              <div className="text-sm text-gray-500">{product.category}</div>
+                            <div className="min-w-0">
+                              <div className="font-medium text-gray-900 truncate">{product.name}</div>
+                              <div className="text-sm text-gray-500 truncate">
+                                {product.description || product.category || 'No description'}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -819,16 +946,67 @@ function ProductManagement() {
                   </div>
                   
                   <div>
-                    <label htmlFor="sku" className="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
+                    <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
                     <input
                       type="text"
-                      id="sku"
-                      name="sku"
-                      value={newProduct.sku}
+                      id="display_name"
+                      name="display_name"
+                      value={newProduct.display_name}
                       onChange={handleNewProductChange}
-                      required
+                      placeholder="Optional display name for marketplaces"
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="sku" className="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        id="sku"
+                        name="sku"
+                        value={newProduct.sku}
+                        onChange={handleNewProductChange}
+                        required
+                        placeholder="Product SKU"
+                        className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleGenerateSKU}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md font-medium"
+                      >
+                        Generate
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                      <input
+                        type="text"
+                        id="brand"
+                        name="brand"
+                        value={newProduct.brand}
+                        onChange={handleNewProductChange}
+                        placeholder="Product brand"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="model_number" className="block text-sm font-medium text-gray-700 mb-1">Model Number</label>
+                      <input
+                        type="text"
+                        id="model_number"
+                        name="model_number"
+                        value={newProduct.model_number}
+                        onChange={handleNewProductChange}
+                        placeholder="Model number"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
