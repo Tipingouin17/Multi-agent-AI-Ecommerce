@@ -70,6 +70,69 @@ class ProductCreate(BaseModel):
     compare_at_price: Optional[float] = None
     weight: Optional[float] = None
     status: str = "draft"
+    
+    # Step 1: Basic Information
+    display_name: Optional[str] = None
+    brand: Optional[str] = None
+    model_number: Optional[str] = None
+    product_type: str = "simple"  # simple, variable, grouped, external
+    key_features: Optional[List[str]] = None
+    
+    # Step 2: Specifications
+    dimensions_length: Optional[float] = None
+    dimensions_width: Optional[float] = None
+    dimensions_height: Optional[float] = None
+    dimensions_unit: str = "cm"
+    weight_unit: str = "kg"
+    material: Optional[str] = None
+    color: Optional[str] = None
+    warranty_period: Optional[str] = None
+    country_of_origin: Optional[str] = None
+    specifications: Optional[Dict[str, str]] = None  # Custom specs
+    
+    # Step 3: Visual Assets (handled separately via media endpoints)
+    # images: List[str] = []  # URLs will be handled by separate media upload
+    
+    # Step 4: Pricing & Costs
+    currency: str = "USD"
+    tax_rate: Optional[float] = None
+    pricing_tiers: Optional[List[Dict[str, Any]]] = None  # Bulk pricing
+    
+    # Step 5: Inventory & Logistics
+    shipping_weight: Optional[float] = None
+    shipping_length: Optional[float] = None
+    shipping_width: Optional[float] = None
+    shipping_height: Optional[float] = None
+    handling_time_days: Optional[int] = None
+    requires_shipping: bool = True
+    is_fragile: bool = False
+    is_perishable: bool = False
+    warehouse_inventory: Optional[List[Dict[str, Any]]] = None  # [{warehouse_id, quantity, low_stock_threshold}]
+    
+    # Step 6: Bundle & Kit Config
+    is_bundle: bool = False
+    bundle_items: Optional[List[Dict[str, Any]]] = None  # [{product_id, quantity}]
+    
+    # Step 7: Marketplace & Compliance
+    marketplace_listings: Optional[List[str]] = None  # ["amazon", "ebay", etc.]
+    gtin: Optional[str] = None
+    upc: Optional[str] = None
+    ean: Optional[str] = None
+    isbn: Optional[str] = None
+    asin: Optional[str] = None
+    certifications: Optional[List[str]] = None
+    has_age_restriction: bool = False
+    min_age: Optional[int] = None
+    is_hazmat: bool = False
+    hazmat_class: Optional[str] = None
+    requires_signature: bool = False
+    has_export_restrictions: bool = False
+    export_restriction_countries: Optional[List[str]] = None
+    safety_warnings: Optional[List[str]] = None
+    
+    # Step 8: Review & Activation
+    is_draft: bool = True
+    scheduled_publish_at: Optional[datetime] = None
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -251,7 +314,12 @@ def create_product(product_data: ProductCreate, db: Session = Depends(get_db)):
         # Create slug from name
         slug = product_data.name.lower().replace(' ', '-').replace("'", '')
         
-        # Create product
+        # Determine published_at based on draft status
+        published_at = None
+        if not product_data.is_draft:
+            published_at = product_data.scheduled_publish_at or datetime.utcnow()
+        
+        # Create product with all wizard fields
         product = Product(
             merchant_id=product_data.merchant_id,
             category_id=product_data.category_id,
@@ -264,7 +332,47 @@ def create_product(product_data: ProductCreate, db: Session = Depends(get_db)):
             cost=product_data.cost,
             compare_at_price=product_data.compare_at_price,
             weight=product_data.weight,
-            status=product_data.status
+            status="draft" if product_data.is_draft else "active",
+            # Step 1: Basic Information
+            display_name=product_data.display_name,
+            brand=product_data.brand,
+            model_number=product_data.model_number,
+            product_type=product_data.product_type,
+            key_features=product_data.key_features or [],
+            # Step 2: Specifications
+            dimensions_length=product_data.dimensions_length,
+            dimensions_width=product_data.dimensions_width,
+            dimensions_height=product_data.dimensions_height,
+            dimensions_unit=product_data.dimensions_unit,
+            weight_unit=product_data.weight_unit,
+            material=product_data.material,
+            color=product_data.color,
+            warranty_period=product_data.warranty_period,
+            country_of_origin=product_data.country_of_origin,
+            # Step 4: Pricing & Costs
+            currency=product_data.currency,
+            # Step 5: Inventory & Logistics
+            shipping_weight=product_data.shipping_weight,
+            shipping_length=product_data.shipping_length,
+            shipping_width=product_data.shipping_width,
+            shipping_height=product_data.shipping_height,
+            handling_time_days=product_data.handling_time_days,
+            requires_shipping=product_data.requires_shipping,
+            is_fragile=product_data.is_fragile,
+            is_perishable=product_data.is_perishable,
+            # Step 7: Marketplace & Compliance
+            has_age_restriction=product_data.has_age_restriction,
+            min_age=product_data.min_age,
+            is_hazmat=product_data.is_hazmat,
+            hazmat_class=product_data.hazmat_class,
+            requires_signature=product_data.requires_signature,
+            has_export_restrictions=product_data.has_export_restrictions,
+            export_restriction_countries=product_data.export_restriction_countries or [],
+            safety_warnings=product_data.safety_warnings or [],
+            # Step 8: Review & Activation
+            is_draft=product_data.is_draft,
+            published_at=published_at,
+            scheduled_publish_at=product_data.scheduled_publish_at
         )
         
         db.add(product)

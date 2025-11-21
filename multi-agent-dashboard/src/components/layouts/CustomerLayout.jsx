@@ -47,11 +47,11 @@ const CustomerLayout = ({ onInterfaceReset }) => {
   }, [])
 
   const navigation = [
-    { name: 'Home', href: '/home', icon: Home },
-    { name: 'Products', href: '/products', icon: Search },
-    { name: 'Cart', href: '/cart', icon: ShoppingCart },
-    { name: 'Orders', href: '/orders', icon: Package },
-    { name: 'Account', href: '/account', icon: User },
+    { name: 'Home', href: '/customer', icon: Home },
+    { name: 'Products', href: '/customer/products', icon: Search },
+    { name: 'Cart', href: '/customer/cart', icon: ShoppingCart },
+    { name: 'Orders', href: '/customer/orders', icon: Package },
+    { name: 'Account', href: '/customer/account', icon: User },
   ]
 
   return (

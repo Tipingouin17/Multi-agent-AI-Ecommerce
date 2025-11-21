@@ -52,15 +52,15 @@ const MerchantLayout = ({ onInterfaceReset }) => {
   }, [])
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Products', href: '/products', icon: Package },
-    { name: 'Orders', href: '/orders', icon: ShoppingCart },
-    { name: 'Inventory', href: '/inventory', icon: Warehouse },
-    { name: 'Offers', href: '/offers', icon: Tag },
-    { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
-    { name: 'Suppliers', href: '/suppliers', icon: Truck },
-    { name: 'Marketplaces', href: '/marketplaces', icon: Store },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Dashboard', href: '/merchant/dashboard', icon: LayoutDashboard },
+    { name: 'Products', href: '/merchant/products', icon: Package },
+    { name: 'Orders', href: '/merchant/orders', icon: ShoppingCart },
+    { name: 'Inventory', href: '/merchant/inventory', icon: Warehouse },
+    { name: 'Offers', href: '/merchant/offers', icon: Tag },
+    { name: 'Campaigns', href: '/merchant/campaigns', icon: Megaphone },
+    { name: 'Suppliers', href: '/merchant/suppliers', icon: Truck },
+    { name: 'Marketplaces', href: '/merchant/marketplaces', icon: Store },
+    { name: 'Analytics', href: '/merchant/analytics', icon: BarChart3 },
   ]
 
   return (

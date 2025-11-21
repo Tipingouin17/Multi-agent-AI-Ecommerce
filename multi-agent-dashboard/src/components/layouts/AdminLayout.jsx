@@ -53,19 +53,19 @@ const AdminLayout = ({ onInterfaceReset }) => {
   }, [])
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Agent Management', href: '/agents', icon: Bot },
-    { name: 'System Monitoring', href: '/monitoring', icon: Activity },
-    { name: 'Alerts & Issues', href: '/alerts', icon: AlertTriangle },
-    { name: 'Performance Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Inbound Management', href: '/inbound', icon: Package },
-    { name: 'Fulfillment', href: '/fulfillment', icon: Package },
-    { name: 'Carriers', href: '/carriers', icon: Truck },
-    { name: 'RMA Returns', href: '/rma', icon: AlertTriangle },
-    { name: 'Advanced Analytics', href: '/advanced-analytics', icon: BarChart3 },
-    { name: 'Demand Forecasting', href: '/forecasting', icon: TrendingUp },
-    { name: 'International Shipping', href: '/international', icon: Globe },
-    { name: 'System Configuration', href: '/settings', icon: Settings },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Agent Management', href: '/admin/agents', icon: Bot },
+    { name: 'System Monitoring', href: '/admin/monitoring', icon: Activity },
+    { name: 'Alerts & Issues', href: '/admin/alerts', icon: AlertTriangle },
+    { name: 'Performance Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Inbound Management', href: '/admin/inbound', icon: Package },
+    { name: 'Fulfillment', href: '/admin/fulfillment', icon: Package },
+    { name: 'Carriers', href: '/admin/carriers', icon: Truck },
+    { name: 'RMA Returns', href: '/admin/rma', icon: AlertTriangle },
+    { name: 'Advanced Analytics', href: '/admin/advanced-analytics', icon: BarChart3 },
+    { name: 'Demand Forecasting', href: '/admin/forecasting', icon: TrendingUp },
+    { name: 'International Shipping', href: '/admin/international', icon: Globe },
+    { name: 'System Configuration', href: '/admin/configuration', icon: Settings },
   ]
 
   return (
