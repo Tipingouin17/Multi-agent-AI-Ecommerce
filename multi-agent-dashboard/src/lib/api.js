@@ -1821,7 +1821,8 @@ class ApiService {
       const response = await clients.marketplaceintegration.get('/api/marketplaces', { params })
       return response.data
     } catch (error) {
-      throw new Error(`Failed to get marketplaces: ${error.message}`)
+      console.warn('Marketplaces unavailable, using mock data:', error.message)
+      return this.getMockMarketplaces()
     }
   }
 
